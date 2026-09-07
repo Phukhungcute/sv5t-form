@@ -1,4 +1,4 @@
-export default function Page() {
+export default function EditPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">

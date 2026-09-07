@@ -3,6 +3,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+    FACULTY_NAME,
+    FACULTY_NAME_NORMAL,
+    ACADEMIC_YEAR,
+    buildSchedule,
+    type ScheduleSettings,
+    isWithinPeriod,
+    getDateAfter,
+} from "@/lib/constants";
 
 type Student = {
   mssv: string;
@@ -22,6 +31,37 @@ export default function Dashboard() {
 
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [schedule, setSchedule] =
+  useState<ScheduleSettings | null>(null);
+
+  async function loadSchedule() {
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("schedule_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
+
+  if (error) {
+    console.error(
+      "SCHEDULE ERROR:",
+      error
+    );
+
+    return;
+  }
+
+  setSchedule(data);
+}
+
+  const SCHEDULE =
+    schedule
+      ? buildSchedule(schedule)
+      : null;
 
   useEffect(() => {
     async function loadStudent() {
@@ -90,7 +130,60 @@ export default function Dashboard() {
     }
 
     loadStudent();
+    loadSchedule();
   }, [router]);
+
+  const submissionOpen =
+    schedule
+      ? schedule.submission_enabled &&
+        isWithinPeriod(
+          schedule.start_date,
+          getDateAfter(
+            schedule.start_date,
+            schedule.submission_days
+          ).toISOString()
+        )
+      : false;
+
+  const additionOpen =
+    schedule
+      ? schedule.addition_enabled &&
+        isWithinPeriod(
+          getDateAfter(
+            schedule.start_date,
+            schedule.submission_days +
+              schedule.review1_days
+          ).toISOString(),
+          getDateAfter(
+            schedule.start_date,
+            schedule.submission_days +
+              schedule.review1_days +
+              schedule.addition_days
+          ).toISOString()
+        )
+      : false;
+
+  const resultOpen =
+    schedule
+      ? schedule.result_enabled &&
+        isWithinPeriod(
+          getDateAfter(
+            schedule.start_date,
+            schedule.submission_days +
+              schedule.review1_days +
+              schedule.addition_days +
+              schedule.review2_days
+          ).toISOString(),
+          getDateAfter(
+            schedule.start_date,
+            schedule.submission_days +
+              schedule.review1_days +
+              schedule.addition_days +
+              schedule.review2_days +
+              schedule.result_days
+          ).toISOString()
+        )
+      : false;
 
   const infoSectionRef = useRef<HTMLElement>(null);
   const [infoHeight, setInfoHeight] = useState(0);
@@ -100,7 +193,7 @@ export default function Dashboard() {
 
   setInfoHeight(infoSectionRef.current.offsetHeight);
 }, [student]);
-
+    
   // ==========================================
   // Loading
   // ==========================================
@@ -146,11 +239,11 @@ export default function Dashboard() {
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              SV5T Form
+              SV5T Form {ACADEMIC_YEAR}
             </h1>
 
             <p className="mt-1 text-gray-500">
-              Hệ thống quản lý hồ sơ sinh viên
+              Hệ thống quản lý hồ sơ SV5T
             </p>
           </div>
 
@@ -264,7 +357,7 @@ export default function Dashboard() {
               </p>
 
               <p className="mt-1 font-medium text-gray-900">
-                {"Giáo dục Tiểu học"}
+                {FACULTY_NAME_NORMAL}
               </p>
             </div>
           </div>
@@ -283,19 +376,122 @@ export default function Dashboard() {
               Điền và gửi hồ sơ của bạn đến hệ thống.
             </p>
 
-            <p className="mt-4 text-sm font-medium text-green-600">
-              ● Đang mở
-            </p>
+            {submissionOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đang mở
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Đang đóng
+              </p>
+            )}
 
             <p className="mt-1 text-sm text-gray-500">
-              Hạn gửi: 30/09/2026
+              Hạn gửi: {SCHEDULE?.submission.start} - {SCHEDULE?.submission.end}
             </p>
 
             <button
-              onClick={() => router.push("/dashboard/submit")}
-              className="cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700"
+              onClick={() => {
+                if (!submissionOpen) {
+                  alert("Đang ngoài thời gian nộp hồ sơ.");
+                  return;
+                }
+
+                router.push("/dashboard/submit");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+                !submissionOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
             >
               Gửi hồ sơ
+            </button>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Tạo minh chứng
+            </h3>
+
+            {/* Minh chứng */}
+            <p className="mt-2 text-gray-600">
+              Tạo và gửi minh chứng của bạn đến hệ thống.
+            </p>
+
+            {submissionOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đang mở
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Đang đóng
+              </p>
+            )}
+
+            <p className="mt-1 text-sm text-gray-500">
+              Hạn gửi: {SCHEDULE?.submission.start} - {SCHEDULE?.submission.end}
+            </p>
+
+            <button
+              onClick={() => {
+                if (!submissionOpen) {
+                  alert("Đang ngoài thời gian nộp minh chứng.");
+                  return;
+                }
+
+                router.push("/dashboard/proof");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+                !submissionOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+            >
+              Tạo minh chứng
+            </button>
+          </div>
+
+          {/* Chỉnh sửa */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Yêu cầu chỉnh sửa
+            </h3>
+
+            <p className="mt-2 text-gray-600">
+              Yêu cầu chỉnh sửa, bổ sung hồ sơ (nếu có).
+            </p>
+
+            {additionOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đang mở
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Đang đóng
+              </p>
+            )}
+
+            <p className="mt-1 text-sm text-gray-500">
+              Hạn xem yêu cầu: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
+            </p>
+
+            <button
+              onClick={() => {
+                if (!additionOpen) {
+                  alert("Đang ngoài thời gian xem yêu cầu.");
+                  return;
+                }
+
+                router.push("/dashboard/request");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-orange-400 px-4 py-3 font-medium text-white transition hover:bg-orange-300 ${
+                !additionOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+            >
+              Xem yêu cầu
             </button>
           </div>
 
@@ -306,22 +502,80 @@ export default function Dashboard() {
             </h3>
 
             <p className="mt-2 text-gray-600">
-              Cập nhật thông tin hồ sơ đã gửi.
-              <br />
-              <br />
+              Chỉnh sửa thông tin hồ sơ đã gửi trong thời gian cho phép.
             </p>
 
-            <p className="mt-4 text-sm font-medium text-green-600">
-              ● Đang mở
-            </p>
+            {additionOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đang mở
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Đang đóng
+              </p>
+            )}
 
             <p className="mt-1 text-sm text-gray-500">
-              Hạn chỉnh sửa: 05/10/2026
+              Hạn chỉnh sửa: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
             </p>
 
             <button
-              onClick={() => router.push("/dashboard/edit")}
-              className="cursor-pointer mt-5 w-full rounded-lg border border-blue-600 px-4 py-3 font-medium text-blue-600 transition hover:bg-blue-50"
+              onClick={() => {
+                if (!additionOpen) {
+                  alert("Đang ngoài thời gian chỉnh sửa hồ sơ.");
+                  return;
+                }
+
+                router.push("/dashboard/edit");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+                !additionOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+            >
+              Chỉnh sửa
+            </button>
+          </div>
+
+          {/* Chỉnh sửa hồ sơ */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Chỉnh sửa minh chứng
+            </h3>
+
+            <p className="mt-2 text-gray-600">
+              Chỉnh sửa thông tin minh chứng đã gửi trong thời gian cho phép.
+            </p>
+
+            {additionOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đang mở
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Đang đóng
+              </p>
+            )}
+
+            <p className="mt-1 text-sm text-gray-500">
+              Hạn chỉnh sửa: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
+            </p>
+
+            <button
+              onClick={() => {
+                if (!additionOpen) {
+                  alert("Đang ngoài thời gian chỉnh sửa minh chứng.");
+                  return;
+                }
+
+                router.push("/dashboard/editproof");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+                !additionOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
             >
               Chỉnh sửa
             </button>
@@ -337,21 +591,45 @@ export default function Dashboard() {
               Theo dõi trạng thái và kết quả hồ sơ của bạn.
             </p>
 
-            <p className="mt-4 text-sm font-medium text-gray-500">
-              ● Chưa có kết quả
-            </p>
+            {resultOpen ? (
+              <p className="mt-4 text-sm font-medium text-green-600">
+                ● Đã có kết quả
+              </p>
+            ) : (
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                ● Chưa có kết quả
+              </p>
+            )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Kết quả sẽ được cập nhật sau.
-            </p>
+              {SCHEDULE?.result?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Kết quả: {SCHEDULE.result.start} {"-"}{" "}
+                  {SCHEDULE.result.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
-              onClick={() => router.push("/dashboard/result")}
-              className="cursor-pointer mt-5 w-full rounded-lg bg-gray-200 px-4 py-3 font-medium text-gray-600 transition hover:bg-gray-300"
+              onClick={() => {
+                if (!resultOpen) {
+                  alert("Đang ngoài thời gian xem kết quả.");
+                  return;
+                }
+
+                router.push("/dashboard/result");
+              }}
+              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+                !resultOpen
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
             >
               Xem kết quả
             </button>
-          </div>
+          </div>     
 
         </section>
       </div>

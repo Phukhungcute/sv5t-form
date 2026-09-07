@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState} from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+    MAJOR,
+    FACULTY_NAME,
+    FACULTY_NAME_NORMAL,
+    STANDARD,
+    ACADEMIC_YEAR
+} from "@/lib/constants";
+import { initializeStudentPage } from "@/lib/initializeStudentPage";
 
 type Student = {
   mssv: string;
@@ -12,16 +20,79 @@ type Student = {
   class_name: string;
 };
 
+type SubmissionData = {
+  ethnicity: string;
+  phone: string;
+  studentYear: string;
+  position: string;
+  unionDate: string;
+  email: string;
+  address: string;
+
+  probationHasDate: boolean | null;
+  probationDate: string;
+  officialHasDate: boolean | null;
+  officialDate: string;
+
+  conductScore: string;
+  unionEvaluation: string;
+  ethics3: string;
+  ethics4: string;
+  ethics5: string;
+  ethics6: string;
+  ethics7: string;
+
+  gpa: string;
+  study2: string;
+  study3: string;
+  study4: string;
+  study5: string;
+  study6: string;
+
+  physical1: string;
+  physical2: string;
+  physical3: string;
+  physical4: string;
+
+  volunteer1: string;
+  volunteer2: string;
+  volunteer3: string;
+  volunteer4: string;
+
+  foreignLanguage1: string;
+  foreignLanguage2: string;
+  foreignLanguage3: string;
+  skill4: string;
+  skill5: string;
+  skill6: string;
+  skill7: string;
+  integration8: string;
+  integration9: string;
+
+  priority1: string;
+  priority2: string;
+  priority3: string;
+  priority4: string;
+  priority5: string;
+  priority6: string;
+};
+
 type TextFieldProps = {
+  field: string;
   title: string;
   description?: string;
   placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
 };
 
 function TextField({
+  field,
   title,
   description,
   placeholder = "Để trống nếu không có...",
+  value,
+  onChange,
 }: TextFieldProps) {
   return (
     <div className="rounded-xl border border-gray-200 p-5">
@@ -38,6 +109,8 @@ function TextField({
       <textarea
         rows={4}
         maxLength={1000}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="mt-4 w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
       />
@@ -64,11 +137,19 @@ function getOfficialDate(date: string) {
 
 type DateOptionProps = {
   title: string;
+  hasDate: boolean | null;
+  setHasDate: (value: boolean) => void;
+  date: string;
+  setDate: (value: string) => void;
 };
 
-function DateOption({ title }: DateOptionProps) {
-  const [hasDate, setHasDate] = useState<boolean | null>(null);
-
+function DateOption({
+  title,
+  hasDate,
+  setHasDate,
+  date,
+  setDate,
+}: DateOptionProps) {
   return (
     <div>
       <label className="mb-2 block font-medium text-gray-700">
@@ -102,6 +183,8 @@ function DateOption({ title }: DateOptionProps) {
       {hasDate === true && (
         <input
           type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
           className="mt-4 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
       )}
@@ -111,6 +194,12 @@ function DateOption({ title }: DateOptionProps) {
 
 export default function SubmitPage() {
   const router = useRouter();
+
+  useEffect(() => {
+  initializeStudentPage(router, "submission");
+}, [router]);
+
+  const pathname = usePathname();
 
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -180,9 +269,9 @@ useEffect(() => {
   const gender = student?.gender ?? ""
   const birthDate = student?.birth_date ?? ""
   const [ethnicity, setEthnicity] = useState("");
-  const major = "Giáo dục Tiểu học";
+  const major = MAJOR;
   const className = student?.class_name ?? ""
-  const faculty = "Giáo dục Tiểu học";
+  const faculty = FACULTY_NAME_NORMAL;
   const [phone, setPhone] = useState("");
   const [studentYear, setStudentYear] = useState("");
   const [position, setPosition] = useState("");
@@ -191,10 +280,170 @@ useEffect(() => {
   const [address, setAddress] = useState("");
   const [showWarning, setShowWarning] = useState(false);
 
+  const [unionHasDate, setUnionHasDate] = useState<boolean | null>(null);
   const [probationHasDate, setProbationHasDate] = useState<boolean | null>(null);
   const [probationDate, setProbationDate] = useState("");
   const [officialHasDate, setOfficialHasDate] = useState<boolean | null>(null);
+  const [officialDate, setOfficialDate] = useState("");
+
+  useEffect(() => {
+  setOfficialDate(getOfficialDate(probationDate));
+}, [probationDate]);
   
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  function setAnswer(key: string, value: string) {
+    setAnswers((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  const submissionData = {
+    // Thông tin chung
+  ethnicity,
+  phone,
+  studentYear,
+  position,
+  unionDate,
+  email,
+  address,
+
+  probationHasDate,
+  probationDate,
+  officialHasDate,
+  officialDate: getOfficialDate(probationDate),
+
+  // Các tiêu chuẩn
+  ...answers,
+};
+
+function getSubmissionData() {
+  return {
+    ethnicity,
+    phone,
+    studentYear,
+    position,
+    unionDate,
+    email,
+    address,
+
+    probationHasDate,
+    probationDate,
+
+    officialHasDate,
+    officialDate,
+
+    ...answers,
+  };
+}
+
+useEffect(() => {
+  if (!student?.mssv) return;
+
+  const savedDraft = localStorage.getItem(
+    `sv5t_draft_${student.mssv}`
+  );
+
+  if (savedDraft) {
+    try {
+      const draft = JSON.parse(savedDraft);
+
+      setEthnicity(draft.ethnicity ?? "");
+      setPhone(draft.phone ?? "");
+      setStudentYear(draft.studentYear ?? "");
+      setPosition(draft.position ?? "");
+      setUnionDate(draft.unionDate ?? "");
+      setEmail(draft.email ?? "");
+      setAddress(draft.address ?? "");
+
+      setProbationHasDate(
+        draft.probationHasDate ?? null
+      );
+      setProbationDate(
+        draft.probationDate ?? ""
+      );
+
+      setOfficialHasDate(
+        draft.officialHasDate ?? null
+      );
+      setOfficialDate(
+        draft.officialDate ?? ""
+      );
+
+      setAnswers(draft.answers ?? {});
+
+      console.log(
+        "DRAFT LOADED:",
+        `sv5t_draft_${student.mssv}`,
+        draft
+      );
+    } catch (error) {
+      console.error("DRAFT LOAD ERROR:", error);
+    }
+  }
+
+  setDraftLoaded(true);
+}, [student?.mssv]);
+
+useEffect(() => {
+  if (!draftLoaded || !student?.mssv) return;
+
+  const draft = {
+    ethnicity,
+    phone,
+    studentYear,
+    position,
+    unionDate,
+    email,
+    address,
+
+    probationHasDate,
+    probationDate,
+
+    officialHasDate,
+    officialDate,
+
+    answers,
+  };
+
+  localStorage.setItem(
+    `sv5t_draft_${student.mssv}`,
+    JSON.stringify(draft)
+  );
+
+  console.log(
+    "DRAFT SAVED:",
+    `sv5t_draft_${student.mssv}`,
+    draft
+  );
+}, [
+  draftLoaded,
+  student?.mssv,
+  ethnicity,
+  phone,
+  studentYear,
+  position,
+  unionDate,
+  email,
+  address,
+  probationHasDate,
+  probationDate,
+  officialHasDate,
+  officialDate,
+  answers,
+]);
+
+function finishForm() {
+  localStorage.setItem(
+  "sv5t_submission",
+  JSON.stringify(getSubmissionData())
+);
+
+router.push("/dashboard/submit/review");
+}
+
 function isStep1Complete() {
   return (
     fullName.trim() !== "" &&
@@ -235,6 +484,11 @@ function isStep1Complete() {
   if (currentStep < totalSteps) {
     setShowWarning(false);
     setCurrentStep(currentStep + 1);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 }
 
@@ -443,7 +697,7 @@ function isStep1Complete() {
 
                 <input
                   type="text"
-                  value={faculty}
+                  value={major}
                   readOnly
                   className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 text-gray-600"
                 />
@@ -468,7 +722,7 @@ function isStep1Complete() {
                 </label>
 
                 <input
-                  value={major}
+                  value={faculty}
                   readOnly
                   className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 text-gray-600"
                   />
@@ -534,7 +788,13 @@ function isStep1Complete() {
                 />
               </div>
 
-              <DateOption title="Ngày vào Đoàn" />
+              <DateOption
+                title="Ngày vào Đoàn"
+                hasDate={unionHasDate}
+                setHasDate={setUnionHasDate}
+                date={unionDate}
+                setDate={setUnionDate}
+              />
               
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
@@ -630,7 +890,7 @@ function isStep1Complete() {
               {officialHasDate === true && (
                 <input
                   type="date"
-                  value={getOfficialDate(probationDate)}
+                  value={officialDate}
                   readOnly
                   className="mt-4 w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 outline-none"
                 />
@@ -702,9 +962,9 @@ function isStep1Complete() {
 
                 <div>
                   <label className="mb-2 block font-medium leading-7 text-gray-700">
-                    1. Điểm rèn luyện năm học 2025 - 2026
+                      {STANDARD.CONDUCTSCORE.CONTENT}
                     <span className="ml-1 text-sm text-gray-500">
-                      (Không ghi xếp loại)
+                      {STANDARD.CONDUCTSCORE.DESC}
                     </span>
                   </label>
 
@@ -713,6 +973,26 @@ function isStep1Complete() {
                     min="0"
                     max="100"
                     step="1"
+                    value={answers.conductScore ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === "") {
+                        setAnswer("conductScore", "");
+                        return;
+                      }
+
+                      // Chỉ cho phép số nguyên, không cho dấu . hoặc -
+                      if (!/^\d+$/.test(value)) {
+                        return;
+                      }
+
+                      const num = Number(value);
+
+                      if (num >= 0 && num <= 100) {
+                        setAnswer("conductScore", value);
+                      }
+                    }}
                     placeholder="Nhập điểm rèn luyện"
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
@@ -720,13 +1000,16 @@ function isStep1Complete() {
 
                 <div>
                   <label className="mb-3 block font-medium leading-7 text-gray-700">
-                    2. Phân tích chất lượng Đoàn viên năm học 2025 - 2026
+                      {STANDARD.UNIONEVALUATION.CONTENT}
                     <span className="ml-1 text-sm text-gray-500">
-                      (đối với Hội viên là Đoàn viên)
+                      {STANDARD.UNIONEVALUATION.DESC}
                     </span>
                   </label>
 
-                  <select className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                  <select
+                    value={answers.unionEvaluation ?? ""}
+                    onChange={(e) => setAnswer("unionEvaluation", e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                     <option value="">-- Chọn kết quả --</option>
 
                     <option>
@@ -761,26 +1044,43 @@ function isStep1Complete() {
               <div className="mt-8 space-y-5">
 
                 <TextField
-                  title="3. Là thành viên chính thức đội thi tìm hiểu về chủ nghĩa Mác - Lênin, tư tưởng Hồ Chí Minh từ cấp khoa trở lên"
+                  field="ethics3"
+                  title={`${STANDARD.ETHIC3.CONTENT}`}
+                  description={`${STANDARD.ETHIC3.DESC}`}
+                  value={answers.ethics3 ?? ""}
+                  onChange={(value) => setAnswer("ethics3", value)}
                 />
 
                 <TextField
-                  title="4. Có tham luận, bài viết được trình bày tại các diễn đàn học thuật về các môn khoa học Mác - Lênin, tư tưởng Hồ Chí Minh từ cấp khoa trở lên"
-                  description="Ghi rõ tên tham luận, diễn đàn, cấp và thời gian tổ chức."
+                  field="ethics4"
+                  title={`${STANDARD.ETHIC4.CONTENT}`}
+                  description={`${STANDARD.ETHIC4.DESC}`}
+                  value={answers.ethics4 ?? ""}
+                  onChange={(value) => setAnswer("ethics4", value)}
                 />
 
                 <TextField
-                  title="5. Đạt danh hiệu “Thanh niên tiên tiến làm theo lời Bác” các cấp, Sao tháng “Thanh niên SGU nghĩ đúng – sống đẹp” hoặc là điển hình được biểu dương trong việc thực hiện “Đẩy mạnh học tập và làm theo tư tưởng, đạo đức, phong cách Hồ Chí Minh” từ cấp khoa trở lên"
-                  description="Ghi rõ danh hiệu, cấp tổ chức và thời gian tuyên dương."
+                  field="ethics5"
+                  title={`${STANDARD.ETHIC5.CONTENT}`}
+                  description={`${STANDARD.ETHIC5.DESC}`}
+                  value={answers.ethics5 ?? ""}
+                  onChange={(value) => setAnswer("ethics5", value)}
                 />
 
                 <TextField
-                  title="6. Có hành động dũng cảm cứu người bị nạn, bắt cướp, giúp người neo đơn, người nghèo hoặc người gặp khó khăn, hoạn nạn trong tình trạng nguy hiểm và cấp thiết được khen thưởng, biểu dương từ trường, cấp xã, phường trở lên hoặc được nêu gương trên các phương tiện truyền thông đại chúng"
-                  description="Ghi rõ nội dung, hình thức khen thưởng hoặc biểu dương, cấp tổ chức và thời gian."
+                  field="ethics6"
+                  title={`${STANDARD.ETHIC6.CONTENT}`}
+                  description={`${STANDARD.ETHIC6.DESC}`}
+                  value={answers.ethics6 ?? ""}
+                  onChange={(value) => setAnswer("ethics6", value)}
                 />
 
                 <TextField
-                  title="7. Tham gia các chương trình hoặc cuộc thi tìm hiểu về lịch sử, truyền thống của Đảng, Nhà nước, chủ quyền biển đảo và tổ chức Đoàn Thanh niên, Hội Sinh viên,... được tổ chức từ cấp khoa trở lên"
+                  field="ethics7"
+                  title={`${STANDARD.ETHIC7.CONTENT}`}
+                  description={`${STANDARD.ETHIC7.DESC}`}
+                  value={answers.ethics7 ?? ""}
+                  onChange={(value) => setAnswer("ethics7", value)}
                 />
 
               </div>
@@ -808,9 +1108,9 @@ function isStep1Complete() {
 
               <div className="mt-5">
                 <label className="mb-2 block font-medium leading-7 text-gray-700">
-                  1. Điểm trung bình chung học tập năm học 2025 - 2026
+                    {STANDARD.GPA.CONTENT}
                   <span className="ml-1 text-sm text-gray-500">
-                    (Không ghi xếp loại)
+                    {STANDARD.GPA.DESC}
                   </span>
                 </label>
 
@@ -819,7 +1119,31 @@ function isStep1Complete() {
                   min="0"
                   max="10"
                   step="0.01"
-                  placeholder="Ví dụ: 8.50"
+                  value={answers.gpa ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Cho phép xóa ô
+                    if (value === "") {
+                      setAnswer("gpa", "");
+                      return;
+                    }
+
+                    // Chỉ cho số và tối đa 2 số sau dấu .
+                    if (!/^\d*\.?\d{0,2}$/.test(value)) {
+                      return;
+                    }
+
+                    // Không cho vượt quá 10
+                    const num = Number(value);
+
+                    if (num > 10) {
+                      return;
+                    }
+
+                    setAnswer("gpa", value);
+                  }}
+                  placeholder="Ví dụ: 8.55"
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
@@ -835,26 +1159,43 @@ function isStep1Complete() {
               <div className="mt-8 space-y-5">
 
                 <TextField
-                  title="2. Có đề tài nghiên cứu khoa học sinh viên hoặc khóa luận Tốt nghiệp trong năm học được hội đồng khoa học từ cấp khoa trở lên nghiệm thu đánh giá"
+                  field="study2"
+                  title={`${STANDARD.STUDY2.CONTENT}`}
+                  description={`${STANDARD.STUDY2.DESC}`}
+                  value={answers.study2 ?? ""}
+                  onChange={(value) => setAnswer("study2", value)}
                 />
 
                 <TextField
-                  title="3. Có ít nhất 01 bài viết về lĩnh vực chuyên môn đang theo học, đăng tải trên các sản phẩm của các cơ quan truyền thông uy tín hoặc các bài báo, tạp chí khoa học chuyên ngành của trường hoặc có bài tham luận tham gia các hội thảo khoa học cấp khoa trở lên"
-                  description="Ghi rõ tên bài viết, tên - số báo hoặc tạp chí và ngày phát hành."
+                  field="study3"
+                  title={`${STANDARD.STUDY3.CONTENT}`}
+                  description={`${STANDARD.STUDY3.DESC}`}
+                  value={answers.study3 ?? ""}
+                  onChange={(value) => setAnswer("study3", value)}
                 />
 
                 <TextField
-                  title="4. Đạt giải thưởng trong nghiên cứu khoa học, giải thưởng trong các cuộc thi học thuật và ý tưởng sáng tạo từ cấp khoa trở lên"
-                  description="Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được."
+                  field="study4"
+                  title={`${STANDARD.STUDY4.CONTENT}`}
+                  description={`${STANDARD.STUDY4.DESC}`}
+                  value={answers.study4 ?? ""}
+                  onChange={(value) => setAnswer("study4", value)}
                 />
 
                 <TextField
-                  title="5. Đạt giải khuyến khích trở lên trong các cuộc thi chuyên môn cấp Thành do các hiệp hội ngành nghề, các trường đại học, học viện, các cơ quan thông tấn hoặc báo chí tổ chức"
-                  description="Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được."
+                  field="study5"
+                  title={`${STANDARD.STUDY5.CONTENT}`}
+                  description={`${STANDARD.STUDY5.DESC}`}
+                  value={answers.study5 ?? ""}
+                  onChange={(value) => setAnswer("study5", value)}
                 />
 
                 <TextField
-                  title="6. Tham gia và có chứng nhận hoạt động tích cực ít nhất 01 CLB về học thuật từ cấp khoa trở lên"
+                  field="study6"
+                  title={`${STANDARD.STUDY6.CONTENT}`}
+                  description={`${STANDARD.STUDY6.DESC}`}
+                  value={answers.study6 ?? ""}
+                  onChange={(value) => setAnswer("study6", value)}
                 />
 
               </div>
@@ -869,154 +1210,242 @@ function isStep1Complete() {
         ====================================================== */}
 
         {currentStep === 4 && (
-  <section className="rounded-2xl bg-white p-6 shadow-sm">
-    <h2 className="text-2xl font-semibold text-gray-900">
-      Thể lực tốt
-    </h2>
+          <section className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Thể lực tốt
+            </h2>
 
-    <div className="mt-8 space-y-5">
-      <TextField
-        title="1. Tham gia các hoạt động sát hạch thể lực và đạt danh hiệu “Sinh viên khỏe”; “Thanh niên khỏe” từ cấp trường trở lên"
-        description="Ví dụ: Giấy chứng nhận “Sinh viên khỏe” năm 2025, Khoa Toán – Ứng dụng."
-      />
+            <div className="mt-8 space-y-5">
+              <TextField
+                field="physical1"
+                title={`${STANDARD.PHYSICAL1.CONTENT}`}
+                description={`${STANDARD.PHYSICAL1.DESC}`}
+                value={answers.physical1 ?? ""}
+                onChange={(value) => setAnswer("physical1", value)}
+              />
 
-      <TextField
-        title="2. Đạt giải khuyến khích trở lên trong các hội thao từ cấp khoa trở lên"
-        description="Ghi rõ tên hội thao, đơn vị tổ chức và giải thưởng đạt được."
-      />
+              <TextField
+                field="physical2"
+                title={`${STANDARD.PHYSICAL2.CONTENT}`}
+                description={`${STANDARD.PHYSICAL2.DESC}`}
+                value={answers.physical2 ?? ""}
+                onChange={(value) => setAnswer("physical2", value)}
+              />
 
-      <TextField
-        title="3. Là thành viên đội tuyển cấp trường các môn thể dục thể thao"
-        description="Ghi rõ tên đội tuyển và cấp."
-      />
+              <TextField
+                field="physical3"
+                title={`${STANDARD.PHYSICAL3.CONTENT}`}
+                description={`${STANDARD.PHYSICAL3.DESC}`}
+                value={answers.physical3 ?? ""}
+                onChange={(value) => setAnswer("physical3", value)}
+              />
 
-      <TextField
-        title="4. Đối với những sinh viên khuyết tật, tiêu chuẩn về thể lực bao gồm tập thể dục hằng ngày và rèn luyện ít nhất 01 môn thể thao dành cho người khuyết tật"
-        description="Ghi rõ tên môn thể thao và thời gian tập luyện."
-      />
-    </div>
-  </section>
-)}
+              <TextField
+                field="physical4"
+                title={`${STANDARD.PHYSICAL4.CONTENT}`}
+                description={`${STANDARD.PHYSICAL4.DESC}`}
+                value={answers.physical4 ?? ""}
+                onChange={(value) => setAnswer("physical4", value)}
+              />
+            </div>
+          </section>
+        )}
 
         {/* =====================================================
             BƯỚC 5 — TÌNH NGUYỆN TỐT
         ====================================================== */}
 
-{currentStep === 5 && (
-  <section className="rounded-2xl bg-white p-6 shadow-sm">
-    <h2 className="text-2xl font-semibold text-gray-900">
-      Tình nguyện tốt
-    </h2>
+        {currentStep === 5 && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Tình nguyện tốt
+            </h2>
 
-    <div className="mt-8 space-y-5">
-      <TextField
-        title="1. Được khen thưởng từ cấp trường trở lên về hoạt động tình nguyện"
-        description="Ghi rõ hình thức, nội dung và cấp khen thưởng."
-      />
+            <div className="mt-8 space-y-5">
+              <TextField
+                field="volunteer1"
+                title={`${STANDARD.VOLUNTEER1.CONTENT}`}
+                description={`${STANDARD.VOLUNTEER1.DESC}`}
+                value={answers.volunteer1 ?? ""}
+                onChange={(value) => setAnswer("volunteer1", value)}
+              />
 
-      <TextField
-        title="2. Tham gia và được cấp giấy chứng nhận hoàn thành một trong các chiến dịch, chương trình tình nguyện"
-        description="Ghi rõ tên chiến dịch hoặc chương trình và thời gian tham gia."
-      />
+              <TextField
+                field="volunteer2"
+                title={`${STANDARD.VOLUNTEER2.CONTENT}`}
+                description={`${STANDARD.VOLUNTEER2.DESC}`}
+                value={answers.volunteer2 ?? ""}
+                onChange={(value) => setAnswer("volunteer2", value)}
+              />
 
-      <TextField
-        title="3. Tham gia ít nhất 05 ngày hoạt động tình nguyện trong năm"
-        description="Ghi rõ số ngày thực tế tham gia các hoạt động tình nguyện cộng đồng."
-      />
+              <TextField
+                field="volunteer3"
+                title={`${STANDARD.VOLUNTEER3.CONTENT}`}
+                description={`${STANDARD.VOLUNTEER3.DESC}`}
+                value={answers.volunteer3 ?? ""}
+                onChange={(value) => setAnswer("volunteer3", value)}
+              />
 
-      <TextField
-        title="4. Tham gia các hoạt động đặc biệt do Nhà trường huy động"
-      />
-    </div>
-  </section>
-)}
+              <TextField
+                field="volunteer4"
+                title={`${STANDARD.VOLUNTEER4.CONTENT}`}
+                description={`${STANDARD.VOLUNTEER4.DESC}`}
+                value={answers.volunteer4 ?? ""}
+                onChange={(value) => setAnswer("volunteer4", value)}
+              />
+            </div>
+          </section>
+        )}
 
         {/* =====================================================
             BƯỚC 6 — HỘI NHẬP TỐT
         ====================================================== */}
 
-{currentStep === 6 && (
-  <section className="rounded-2xl bg-white p-6 shadow-sm">
-    <h2 className="text-2xl font-semibold text-gray-900">
-      Hội nhập tốt
-    </h2>
+        {currentStep === 6 && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Hội nhập tốt
+            </h2>
 
-    {/* NGOẠI NGỮ */}
+            {/* NGOẠI NGỮ */}
 
-    <div className="mt-8">
-      <h3 className="text-xl font-semibold text-gray-800">
-        Về ngoại ngữ
-      </h3>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Về ngoại ngữ
+              </h3>
 
-      <div className="mt-5 space-y-5">
-        <TextField
-          title="1. Các chứng chỉ ngoại ngữ đã đạt"
-          description="Ghi rõ tên chứng chỉ, ngoại ngữ, mức trình độ, đơn vị cấp và thời gian cấp."
-        />
+              <div className="mt-5 space-y-5">
+                <TextField
+                  field="foreignLanguage1"
+                  title={`${STANDARD.FOREIGNLANGUAGE1.CONTENT}`}
+                  description={`${STANDARD.FOREIGNLANGUAGE1.DESC}`}
+                  value={answers.foreignLanguage1 ?? ""}
+                  onChange={(value) => setAnswer("foreignLanguage1", value)}
+                />
+                
+                <div className="rounded-xl border border-gray-200 p-5">
+                    <div className="mt-5">
+                        <label className="mb-2 block font-medium leading-7 text-gray-700">
+                            {STANDARD.FOREIGNLANGUAGE2.CONTENT}
+                          <span className="ml-1 text-sm text-gray-500">
+                            {STANDARD.FOREIGNLANGUAGE2.DESC}
+                          </span>
+                        </label>
 
-        <TextField
-          title="2. Điểm trung bình các học phần Ngoại ngữ"
-          description="Không bao gồm môn Ngoại ngữ chuyên ngành."
-        />
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.01"
+                          value={answers.foreignLanguage2 ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
 
-        <TextField
-          title="3. Tham gia và đạt giải khuyến khích trở lên các cuộc thi Ngoại ngữ từ cấp khoa trở lên"
-          description="Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được."
-        />
-      </div>
-    </div>
+                            // Cho phép xóa ô
+                            if (value === "") {
+                              setAnswer("foreignLanguage2", "");
+                              return;
+                            }
 
-    {/* KỸ NĂNG */}
+                            // Chỉ cho số và tối đa 2 số sau dấu .
+                            if (!/^\d*\.?\d{0,2}$/.test(value)) {
+                              return;
+                            }
 
-    <div className="mt-10 border-t border-gray-200 pt-8">
-      <h3 className="text-xl font-semibold text-gray-800">
-        Về kỹ năng
-      </h3>
+                            // Không cho vượt quá 10
+                            const num = Number(value);
 
-      <div className="mt-5 space-y-5">
-        <TextField
-          title="4. Tham gia và có giấy chứng nhận hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội từ cấp khoa trở lên"
-          description="Ghi rõ số lượng, nội dung kỹ năng và xếp loại nếu có."
-        />
+                            if (num > 10) {
+                              return;
+                            }
 
-        <TextField
-          title="5. Tham gia và có giấy chứng nhận hoàn thành ít nhất 01 hoạt động trang bị kỹ năng đúng với chuyên ngành của sinh viên"
-          description="Ghi rõ số lượng, nội dung kỹ năng và xếp loại nếu có."
-        />
+                            setAnswer("foreignLanguage2", value);
+                          }}
+                          placeholder="Ví dụ: 7.56"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        />
+                    </div>
+                </div>
 
-        <TextField
-          title="6. Được Đoàn Thanh niên - Hội Sinh viên từ cấp trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn, phong trào thanh niên hoặc công tác Hội, phong trào sinh viên"
-          description="Ghi rõ hình thức, nội dung và cấp khen thưởng."
-        />
+                <TextField
+                  field="foreignLanguage3"
+                  title={`${STANDARD.FOREIGNLANGUAGE3.CONTENT}`}
+                  description={`${STANDARD.FOREIGNLANGUAGE3.DESC}`}
+                  value={answers.foreignLanguage3 ?? ""}
+                  onChange={(value) => setAnswer("foreignLanguage3", value)}
+                />
+              </div>
+            </div>
 
-        <TextField
-          title="7. Đạt thành tích trong các cuộc thi về kỹ năng từ cấp khoa trở lên"
-          description="Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được."
-        />
-      </div>
-    </div>
+            {/* KỸ NĂNG */}
 
-    {/* HỘI NHẬP */}
+            <div className="mt-10 border-t border-gray-200 pt-8">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Về kỹ năng
+              </h3>
 
-    <div className="mt-10 border-t border-gray-200 pt-8">
-      <h3 className="text-xl font-semibold text-gray-800">
-        Về hoạt động hội nhập
-      </h3>
+              <div className="mt-5 space-y-5">
+                <TextField
+                  field="skill4"
+                  title={`${STANDARD.SKILL4.CONTENT}`}
+                  description={`${STANDARD.SKILL4.DESC}`}
+                  value={answers.skill4 ?? ""}
+                  onChange={(value) => setAnswer("skill4", value)}
+                />
 
-      <div className="mt-5 space-y-5">
-        <TextField
-          title="8. Tham gia tích cực ít nhất 01 hoạt động về hội nhập do cấp khoa trở lên tổ chức"
-          description="Ghi rõ tên hoạt động, đơn vị tổ chức, địa điểm, thời gian tổ chức và vai trò khi tham gia."
-        />
+                <TextField
+                  field="skill5"
+                  title={`${STANDARD.SKILL5.CONTENT}`}
+                  description={`${STANDARD.SKILL5.DESC}`}
+                  value={answers.skill5 ?? ""}
+                  onChange={(value) => setAnswer("skill5", value)}
+                />
 
-        <TextField
-          title="9. Tham gia ít nhất 01 hoạt động giao lưu quốc tế"
-          description="Ghi rõ tên hoạt động, đơn vị tổ chức, địa điểm, thời gian tổ chức, giao lưu với ai và vai trò khi tham gia."
-        />
-      </div>
-    </div>
-  </section>
-)}
+                <TextField
+                  field="skill6"
+                  title={`${STANDARD.SKILL6.CONTENT}`}
+                  description={`${STANDARD.SKILL6.DESC}`}
+                  value={answers.skill6 ?? ""}
+                  onChange={(value) => setAnswer("skill6", value)}
+                />
+
+                <TextField
+                  field="skill7"
+                  title={`${STANDARD.SKILL7.CONTENT}`}
+                  description={`${STANDARD.SKILL7.DESC}`}
+                  value={answers.skill7 ?? ""}
+                  onChange={(value) => setAnswer("skill7", value)}
+                />
+              </div>
+            </div>
+
+            {/* HỘI NHẬP */}
+
+            <div className="mt-10 border-t border-gray-200 pt-8">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Về hoạt động hội nhập
+              </h3>
+
+              <div className="mt-5 space-y-5">
+                <TextField
+                  field="integration8"
+                  title={`${STANDARD.INTEGRATION8.CONTENT}`}
+                  description={`${STANDARD.INTEGRATION8.DESC}`}
+                  value={answers.integration8 ?? ""}
+                  onChange={(value) => setAnswer("integration8", value)}
+                />
+
+                <TextField
+                  field="integration9"
+                  title={`${STANDARD.INTEGRATION9.CONTENT}`}
+                  description={`${STANDARD.INTEGRATION9.DESC}`}
+                  value={answers.integration9 ?? ""}
+                  onChange={(value) => setAnswer("integration9", value)}
+                />
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* =====================================================
             BƯỚC 7 — TIÊU CHUẨN ƯU TIÊN
@@ -1030,30 +1459,51 @@ function isStep1Complete() {
 
     <div className="mt-8 space-y-5">
       <TextField
-        title="1. Có đề tài nghiên cứu khoa học sinh viên trong năm học được hội đồng khoa học từ cấp khoa trở lên nghiệm thu đánh giá từ 8.0 điểm hoặc loại Tốt trở lên"
+        field="priority1"
+        title={`${STANDARD.PRIORITY1.CONTENT}`}
+        description={`${STANDARD.PRIORITY1.DESC}`}
+        value={answers.priority1 ?? ""}
+        onChange={(value) => setAnswer("priority1", value)}
       />
 
       <TextField
-        title="2. Đạt chứng chỉ tiếng Anh trình độ B1 hoặc tương đương B1 hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên"
-        description="Không xét thời hạn của chứng chỉ. Đối với sinh viên chuyên ngành Ngoại ngữ, chứng chỉ được áp dụng với môn Ngoại ngữ 2."
+        field="priority2"
+        title={`${STANDARD.PRIORITY2.CONTENT}`}
+        description={`${STANDARD.PRIORITY2.DESC}`}
+        value={answers.priority2 ?? ""}
+        onChange={(value) => setAnswer("priority2", value)}
       />
 
       <TextField
-        title="3. Được khen thưởng từ cấp trường trở lên về hoạt động tình nguyện hoặc tham gia hiến máu tình nguyện"
+        field="priority3"
+        title={`${STANDARD.PRIORITY3.CONTENT}`}
+        description={`${STANDARD.PRIORITY3.DESC}`}
+        value={answers.priority3 ?? ""}
+        onChange={(value) => setAnswer("priority3", value)}
       />
 
       <TextField
-        title="4. Được nêu gương, khen thưởng tại địa phương hoặc đơn vị trên các phương tiện truyền thông đại chúng vì là thanh niên tiêu biểu trên các lĩnh vực"
+        field="priority4"
+        title={`${STANDARD.PRIORITY4.CONTENT}`}
+        description={`${STANDARD.PRIORITY4.DESC}`}
+        value={answers.priority4 ?? ""}
+        onChange={(value) => setAnswer("priority4", value)}
       />
 
       <TextField
-        title="5. Tham gia và đạt giải ba trở lên trong các cuộc thi từ cấp trường trở lên"
-        description="Ghi rõ tên cuộc thi, thời gian, đơn vị tổ chức và giải thưởng đạt được."
+        field="priority5"
+        title={`${STANDARD.PRIORITY5.CONTENT}`}
+        description={`${STANDARD.PRIORITY5.DESC}`}
+        value={answers.priority5 ?? ""}
+        onChange={(value) => setAnswer("priority5", value)}
       />
 
       <TextField
-        title="6. Các thành tích nổi bật trong công tác Đoàn – Hội cấp khoa trở lên"
-        description="Ghi rõ nội dung và cấp khen thưởng."
+        field="priority6"
+        title={`${STANDARD.PRIORITY6.CONTENT}`}
+        description={`${STANDARD.PRIORITY6.DESC}`}
+        value={answers.priority6 ?? ""}
+        onChange={(value) => setAnswer("priority6", value)}
       />
     </div>
   </section>
@@ -1095,6 +1545,7 @@ function isStep1Complete() {
           ) : (
             <button
               type="button"
+              onClick={finishForm}
               className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
             >
               Hoàn tất
