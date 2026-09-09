@@ -67,7 +67,7 @@ const emptyProofData: ProofData = {
 };
 
 const DRAFT_PREFIX = "sv5t_proof_draft_";
-const REVIEW_PREFIX = "sv5t_proof_review_";
+const EDIT_REVIEW_PREFIX = "sv5t_editproof_review_";
 
 function createEmptyItem(): ProofItem {
   return {
@@ -82,7 +82,7 @@ function createEmptyItem(): ProofItem {
    INDEXED DB
 ========================================================= */
 
-const DB_NAME = "sv5t-proof-db";
+const DB_NAME = "sv5t-editproof-db";
 const STORE_NAME = "drafts";
 
 function openProofDB(): Promise<IDBDatabase> {
@@ -246,7 +246,7 @@ export default function ProofPage() {
   const router = useRouter();
   
   useEffect(() => {
-  initializeStudentPage(router, "submission");
+  initializeStudentPage(router, "addition");
 }, [router]);
 
   const [student, setStudent] =
@@ -609,7 +609,7 @@ export default function ProofPage() {
 
     try {
       const key =
-        `${REVIEW_PREFIX}${student.mssv}`;
+        `${EDIT_REVIEW_PREFIX}${student.mssv}`;
 
       /*
         Đồng thời lưu vào IndexedDB để tránh mất
@@ -621,8 +621,18 @@ export default function ProofPage() {
         cleanedData
       );
 
+      console.log(
+  "EDIT PROOF SAVING KEY:",
+  key
+);
+
+console.log(
+  "EDIT PROOF SAVING DATA:",
+  cleanedData
+);
+      
       router.push(
-        "/dashboard/proof/review"
+        "/dashboard/editproof/review"
       );
     } catch (error) {
       console.error(

@@ -2,732 +2,2162 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import jsPDF from "jspdf";
 import { supabase } from "@/lib/supabase";
 import {
     FACULTY_NAME,
     FACULTY_NAME_NORMAL,
     ACADEMIC_YEAR,
-    STANDARD,
-    isSubmissionPeriod,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
 
-type SubmissionData = {
-  ethnicity: string;
-  phone: string;
-  studentYear: string;
-  position: string;
-  unionDate: string;
-  email: string;
-  address: string;
-
-  probationHasDate: boolean | null;
-  probationDate: string;
-
-  officialHasDate: boolean | null;
-  officialDate?: string;
-
-  [key: string]: string | boolean | null | undefined;
+type ProofItem = {
+  id: string;
+  image: string;
+  fileName: string;
+  description: string;
 };
+
+type CategoryKey =
+  | "ethics"
+  | "study"
+  | "physical"
+  | "volunteer"
+  | "integration"
+  | "priority";
+
+type ProofData = Record<
+  CategoryKey,
+  ProofItem[]
+>;
 
 type Student = {
   mssv: string;
   full_name: string;
-  birth_date: string;
-  gender: string;
   class_name: string;
 };
 
-export default function EditSubmitReviewPage() {
+const categories: {
+  key: CategoryKey;
+  title: string;
+}[] = [
+  {
+    key: "ethics",
+    title: "1. Đạo đức tốt",
+  },
+  {
+    key: "study",
+    title: "2. Học tập tốt",
+  },
+  {
+    key: "physical",
+    title: "3. Thể lực tốt",
+  },
+  {
+    key: "volunteer",
+    title: "4. Tình nguyện tốt",
+  },
+  {
+    key: "integration",
+    title: "5. Hội nhập tốt",
+  },
+  {
+    key: "priority",
+    title: "6. Tiêu chuẩn ưu tiên",
+  },
+];
+
+const emptyProofData: ProofData = {
+  ethics: [],
+  study: [],
+  physical: [],
+  volunteer: [],
+  integration: [],
+  priority: [],
+};
+
+/*
+  KEY RIÊNG CHO EDIT PROOF REVIEW
+*/
+const EDIT_REVIEW_PREFIX =
+  "sv5t_editproof_review_";
+
+const DB_NAME =
+  "sv5t-editproof-db";
+
+const STORE_NAME =
+  "drafts";
+
+/* =========================================================
+   INDEXED DB
+========================================================= */
+
+function openEditProofDB(): Promise<IDBDatabase> {
+  return new Promise(
+    (resolve, reject) => {
+      const request =
+        indexedDB.open(
+          DB_NAME,
+          1
+        );
+
+      request.onupgradeneeded =
+        () => {
+          const db =
+            request.result;
+
+          if (
+            !db.objectStoreNames.contains(
+              STORE_NAME
+            )
+          ) {
+            db.createObjectStore(
+              STORE_NAME
+            );
+          }
+        };
+
+      request.onsuccess =
+        () =>
+          resolve(
+            request.result
+          );
+
+      request.onerror =
+        () =>
+          reject(
+            request.error
+          );
+    }
+  );
+}
+
+async function compressImage(
+  dataUrl: string,
+  maxSize = 1800,
+  quality = 0.72
+): Promise<string> {
+  const img = await loadImage(dataUrl);
+
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+
+  // Resize nếu ảnh quá lớn
+  if (width > maxSize || height > maxSize) {
+    const ratio = Math.min(
+      maxSize / width,
+      maxSize / height
+    );
+
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Không thể tạo canvas.");
+  }
+
+  ctx.drawImage(
+    img,
+    0,
+    0,
+    width,
+    height
+  );
+
+  return canvas.toDataURL(
+    "image/jpeg",
+    quality
+  );
+}
+
+async function loadEditProofData(
+  key: string
+): Promise<ProofData | null> {
+  const db =
+    await openEditProofDB();
+
+  return new Promise(
+    (resolve, reject) => {
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          "readonly"
+        );
+
+      const request =
+        transaction
+          .objectStore(
+            STORE_NAME
+          )
+          .get(key);
+
+      request.onsuccess =
+        () => {
+          db.close();
+
+          resolve(
+            request.result ??
+              null
+          );
+        };
+
+      request.onerror =
+        () => {
+          db.close();
+
+          reject(
+            request.error
+          );
+        };
+    }
+  );
+}
+
+async function deleteEditProofData(
+  key: string
+) {
+  const db =
+    await openEditProofDB();
+
+  return new Promise<void>(
+    (resolve, reject) => {
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          "readwrite"
+        );
+
+      transaction
+        .objectStore(
+          STORE_NAME
+        )
+        .delete(key);
+
+      transaction.oncomplete =
+        () => {
+          db.close();
+          resolve();
+        };
+
+      transaction.onerror =
+        () => {
+          db.close();
+          reject(
+            transaction.error
+          );
+        };
+    }
+  );
+}
+
+/* =========================================================
+   IMAGE LOADER
+========================================================= */
+
+function loadImage(
+  src: string
+): Promise<HTMLImageElement> {
+  return new Promise(
+    (resolve, reject) => {
+      const image =
+        new Image();
+
+      image.onload =
+        () => resolve(image);
+
+      image.onerror =
+        () =>
+          reject(
+            new Error(
+              "Không thể tải hình ảnh"
+            )
+          );
+
+      image.src = src;
+    }
+  );
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+export default function EditProofReviewPage() {
   const router = useRouter();
+
+  const [student, setStudent] =
+    useState<Student | null>(
+      null
+    );
+
+  const [proofData, setProofData] =
+    useState<ProofData>(
+      emptyProofData
+    );
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  /* =======================================================
+     INITIALIZE
+  ======================================================= */
 
   useEffect(() => {
   initializeStudentPage(router, "addition");
 }, [router]);
 
-  const [submission, setSubmission] =
-    useState<SubmissionData | null>(null);
-
-  const [student, setStudent] =
-    useState<Student | null>(null);
-
-  const [submitting, setSubmitting] = useState(false);
-
   useEffect(() => {
-    async function loadData() {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+  async function loadData() {
+    try {
+      // =================================================
+      // 1. CHECK USER
+      // =================================================
 
-        if (userError || !user) {
-          router.push("/");
-          return;
-        }
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-        const {
-          data: profile,
-          error: profileError,
-        } = await supabase
-          .from("profiles")
-          .select("mssv, role")
-          .eq("id", user.id)
-          .single();
+      if (userError || !user) {
+        router.push("/");
+        return;
+      }
 
-        if (profileError || !profile) {
-          console.error("PROFILE ERROR:", profileError);
-          return;
-        }
+      // =================================================
+      // 2. CHECK PROFILE
+      // =================================================
 
-        if (profile.role !== "student") {
-          router.push("/admin");
-          return;
-        }
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .select("mssv, role")
+        .eq("id", user.id)
+        .single();
 
-        const {
-          data: studentData,
-          error: studentError,
-        } = await supabase
-          .from("students")
-          .select("mssv, full_name, birth_date, gender, class_name")
-          .eq("mssv", profile.mssv)
-          .single();
-
-        if (studentError || !studentData) {
-          console.error("STUDENT ERROR:", studentError);
-          return;
-        }
-
-        const saved = sessionStorage.getItem(
-          `sv5t_edit_submission_${studentData.mssv}`
+      if (profileError || !profile) {
+        console.error(
+          "PROFILE ERROR:",
+          profileError
         );
 
-        if (!saved) {
-          router.push("/dashboard/editsubmit");
-          return;
-        }
-
-        setSubmission(JSON.parse(saved));
-        setStudent(studentData);
-      } catch (error) {
-        console.error("EDIT SUBMISSION REVIEW LOAD ERROR:", error);
+        router.push("/");
+        return;
       }
+
+      if (profile.role !== "student") {
+        router.push("/admin");
+        return;
+      }
+
+      // =================================================
+      // 3. LOAD STUDENT
+      // =================================================
+
+      const {
+        data: studentData,
+        error: studentError,
+      } = await supabase
+        .from("students")
+        .select(
+          "mssv, full_name, class_name"
+        )
+        .eq("mssv", profile.mssv)
+        .single();
+
+      if (studentError || !studentData) {
+        console.error(
+          "STUDENT ERROR:",
+          studentError
+        );
+        return;
+      }
+
+      setStudent(studentData);
+
+      // =================================================
+      // 4. CHECK SUBMISSION
+      // =================================================
+
+      const {
+        data: submission,
+        error: submissionError,
+      } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("mssv", studentData.mssv)
+        .maybeSingle();
+
+      if (submissionError) {
+        console.error(
+          "SUBMISSION CHECK ERROR:",
+          submissionError
+        );
+
+        alert(
+          "Không thể kiểm tra trạng thái hồ sơ. Vui lòng thử lại."
+        );
+
+        return;
+      }
+
+      if (!submission) {
+        console.warn(
+          "EDIT PROOF BLOCKED: Bạn chưa nộp hồ sơ..."
+        );
+
+        alert(
+          "Bạn chưa nộp hồ sơ. Vui lòng nộp hồ sơ trước khi chỉnh sửa minh chứng."
+        );
+
+        router.replace("/dashboard");
+
+        return;
+      }
+
+      // =================================================
+      // 4. LOAD EDIT REVIEW DATA
+      // =================================================
+
+      const key =
+        `${EDIT_REVIEW_PREFIX}${studentData.mssv}`;
+
+      console.log(
+        "EDIT PROOF REVIEW KEY:",
+        key
+      );
+
+      /*
+        1. Kiểm tra localStorage
+      */
+
+      const local =
+        localStorage.getItem(key);
+
+      console.log(
+        "EDIT PROOF LOCALSTORAGE:",
+        local
+      );
+
+      if (local) {
+        try {
+          const parsed =
+            JSON.parse(local);
+
+          console.log(
+            "EDIT PROOF REVIEW DATA FROM LOCAL:",
+            parsed
+          );
+
+          setProofData(parsed);
+          return;
+        } catch (error) {
+          console.error(
+            "EDIT PROOF LOCALSTORAGE PARSE ERROR:",
+            error
+          );
+        }
+      }
+
+      /*
+        2. Kiểm tra IndexedDB
+      */
+
+      console.log(
+        "EDIT PROOF: Đang tìm trong IndexedDB..."
+      );
+
+      const saved =
+        await loadEditProofData(key);
+
+      console.log(
+        "EDIT PROOF INDEXEDDB DATA:",
+        saved
+      );
+
+      if (saved) {
+        setProofData(saved);
+
+        console.log(
+          "EDIT PROOF REVIEW LOAD SUCCESS"
+        );
+      } else {
+        console.warn(
+          "EDIT PROOF REVIEW: KHÔNG TÌM THẤY DATA → QUAY VỀ EDITPROOF"
+        );
+
+        router.push(
+          "/dashboard/editproof"
+        );
+      }
+
+    } catch (error) {
+      console.error(
+        "EDIT PROOF REVIEW LOAD ERROR:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadData();
-  }, [router]);
+  loadData();
+}, [router]);
 
-async function handleConfirm() {
-  if (!submission || !student) {
+  /* =======================================================
+     CREATE PDF
+======================================================= */
+
+  /* =========================================================
+     Tính dung lượng
+  ========================================================= */
+  
+  const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB / ảnh
+  const MAX_TOTAL_SIZE = 1000 * 1024 * 1024; // 1000 MB tổng
+  
+  function getDataUrlSize(dataUrl: string): number {
+    if (!dataUrl) return 0;
+  
+    const base64 = dataUrl.split(",")[1] ?? "";
+  
+    // Dung lượng bytes thực của Base64
+    return Math.ceil((base64.length * 3) / 4);
+  }
+  
+  function getTotalProofSize(data: ProofData): number {
+    return categories.reduce((total, category) => {
+      return (
+        total +
+        data[category.key].reduce(
+          (categoryTotal, item) =>
+            categoryTotal + getDataUrlSize(item.image),
+          0
+        )
+      );
+    }, 0);
+  }
+  
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+  
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+  
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  }
+  
+  /* =========================================================
+     CREATE PDF
+  ========================================================= */
+  
+  async function loadFontAsBase64(
+    url: string
+  ): Promise<string> {
+    const response = await fetch(url);
+  
+    if (!response.ok) {
+      throw new Error(
+        `Không thể tải font: ${url}`
+      );
+    }
+  
+    const buffer =
+      await response.arrayBuffer();
+  
+    const bytes =
+      new Uint8Array(buffer);
+  
+    let binary = "";
+  
+    const chunkSize = 0x8000;
+  
+    for (
+      let i = 0;
+      i < bytes.length;
+      i += chunkSize
+    ) {
+      const chunk =
+        bytes.subarray(
+          i,
+          i + chunkSize
+        );
+  
+      binary += String.fromCharCode(
+        ...chunk
+      );
+    }
+  
+    return btoa(binary);
+  }
+  
+  async function registerVietnameseFonts(
+    pdf: jsPDF
+  ) {
+    const regular =
+      await loadFontAsBase64(
+        "/fonts/Times New Roman-Regular.ttf"
+      );
+  
+    const bold =
+      await loadFontAsBase64(
+        "/fonts/Times New Roman-Bold.ttf"
+      );
+  
+    pdf.addFileToVFS(
+      "Times New Roman-Regular.ttf",
+      regular
+    );
+  
+    pdf.addFont(
+      "Times New Roman-Regular.ttf",
+      "Times New Roman",
+      "normal"
+    );
+  
+    pdf.addFileToVFS(
+      "Times New Roman-Bold.ttf",
+      bold
+    );
+  
+    pdf.addFont(
+      "Times New Roman-Bold.ttf",
+      "Times New Roman",
+      "bold"
+    );
+  }
+  
+  async function createProofPDF(
+    student: Student,
+    proofData: ProofData
+  ): Promise<Blob> {
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+  
+    await registerVietnameseFonts(pdf);
+  
+    const pageWidth =
+      pdf.internal.pageSize.getWidth();
+  
+    const pageHeight =
+      pdf.internal.pageSize.getHeight();
+  
+    const margin = 15;
+  
+    const boxWidth = 32;
+    const boxHeight = 18;
+  
+    const headerWidth =
+      pageWidth - margin * 2 - boxWidth - 5;
+  
+    const contentWidth =
+      pageWidth - margin * 2;
+  
+    let y = 18;
+  
+    /* =====================================================
+       HEADER
+    ===================================================== */
+  
+    pdf.setFontSize(13);
+  
+    pdf.setFont(
+      "Times New Roman",
+      "normal"
+    );
+  
+    pdf.text(
+      "HỘI SINH VIÊN VIỆT NAM TRƯỜNG ĐẠI HỌC SÀI GÒN",
+      margin,
+      y
+    );
+  
+    y += 6;
+  
+    pdf.setFont(
+      "Times New Roman",
+      "bold"
+    );
+  
+    pdf.text(
+      `BCH LCH SV KHOA ${FACULTY_NAME}`,
+      26,
+      y
+    );
+  
+    pdf.text(
+      "____",
+      60,
+      y + 6
+    );
+  
+    /* =====================================================
+       MẪU 3
+    ===================================================== */
+  
+    const boxX =
+      pageWidth - margin - boxWidth;
+  
+    const boxY = 8;
+  
+    pdf.setLineWidth(0.3);
+  
+    pdf.rect(
+      boxX,
+      boxY,
+      boxWidth,
+      boxHeight
+    );
+  
+    pdf.setFontSize(14);
+  
+    pdf.text(
+      "MẪU 3",
+      boxX + boxWidth / 2,
+      boxY + 11,
+      {
+        align: "center",
+      }
+    );
+  
+    /* =====================================================
+       TITLE
+    ===================================================== */
+  
+    y += 24;
+  
+    pdf.setFontSize(15);
+  
+    pdf.text(
+      "MINH CHỨNG CÁC TIÊU CHUẨN XÉT CHỌN DANH HIỆU",
+      pageWidth / 2,
+      y,
+      {
+        align: "center",
+      }
+    );
+  
+    y += 6;
+  
+    pdf.text(
+      `“SINH VIÊN 5 TỐT” CẤP TRƯỜNG NĂM HỌC ${ACADEMIC_YEAR}`,
+      pageWidth / 2,
+      y,
+      {
+        align: "center",
+      }
+    );
+  
+    y += 10;
+  
+    /* =====================================================
+       LINE
+    ===================================================== */
+  
+    pdf.setLineWidth(0.25);
+  
+    pdf.line(
+      pageWidth / 2 - 25,
+      y,
+      pageWidth / 2 + 25,
+      y
+    );
+  
+    y += 12;
+  
+    /* =====================================================
+       I. THÔNG TIN CÁ NHÂN
+    ===================================================== */
+  
+    pdf.setFontSize(13);
+  
+    pdf.setFont(
+      "Times New Roman",
+      "bold"
+    );
+  
+    pdf.text(
+      "I. THÔNG TIN CÁ NHÂN",
+      margin,
+      y
+    );
+  
+    y += 9;
+  
+    pdf.setFont(
+      "Times New Roman",
+      "normal"
+    );
+  
+    pdf.setFontSize(13);
+  
+    const leftX = margin;
+  
+    const rightX =
+      pageWidth / 2 + 5;
+  
+    pdf.text(
+      `1. Họ và tên: ${student.full_name}`,
+      leftX,
+      y
+    );
+  
+    pdf.text(
+      `2. Mã số sinh viên: ${student.mssv}`,
+      rightX,
+      y
+    );
+  
+    y += 7;
+  
+    pdf.text(
+      `3. Khoa: ${FACULTY_NAME_NORMAL}`,
+      leftX,
+      y
+    );
+  
+    pdf.text(
+      `4. Lớp: ${student.class_name}`,
+      rightX,
+      y
+    );
+  
+    y += 12;
+  
+    /* =====================================================
+       II. MINH CHỨNG
+    ===================================================== */
+  
+    pdf.setFont(
+      "Times New Roman",
+      "bold"
+    );
+  
+    pdf.setFontSize(13);
+  
+    pdf.text(
+      "II. MINH CHỨNG CÁC TIÊU CHUẨN XÉT CHỌN DANH HIỆU",
+      margin,
+      y
+    );
+  
+    y += 10;
+  
+    /* =====================================================
+       TÌM CATEGORY CUỐI CÙNG CÓ MINH CHỨNG
+    ===================================================== */
+  
+    const lastCategory =
+      [...categories]
+        .reverse()
+        .find(
+          (category) =>
+            proofData[category.key]?.length > 0
+        );
+  
+    const lastCategoryKey =
+      lastCategory?.key;
+  
+    let evidenceNumber = 0;
+  
+    /* =====================================================
+       CATEGORY
+    ===================================================== */
+  
+    for (const category of categories) {
+    const items =
+      proofData[category.key] ?? [];
+  
+    if (y > pageHeight - 45) {
+      pdf.addPage();
+      y = 20;
+    }
+  
+    // ==========================================
+    // CATEGORY TITLE
+    // ==========================================
+  
+    pdf.setFont(
+      "Times New Roman",
+      "bold"
+    );
+  
+    pdf.setFontSize(13);
+  
+    pdf.text(
+      category.title,
+      margin,
+      y
+    );
+  
+    y += 7;
+  
+    // ==========================================
+    // KHÔNG CÓ MINH CHỨNG
+    // ==========================================
+  
+    if (items.length === 0) {
+      pdf.setFont(
+        "Times New Roman",
+        "normal"
+      );
+  
+      pdf.setFontSize(13);
+  
+      pdf.text(
+        "Minh chứng: Không",
+        margin + 5,
+        y
+      );
+  
+      y += 10;
+  
+      continue;
+    }
+  
+    // ==========================================
+    // CÓ MINH CHỨNG
+    // ==========================================
+  
+    for (
+      let index = 0;
+      index < items.length;
+      index++
+    ) {
+      const item =
+        items[index];
+  
+      evidenceNumber++;
+    }
+  
+      /* =================================================
+        MINH CHỨNG
+      ================================================= */
+  
+      for (
+        let index = 0;
+        index < items.length;
+        index++
+      ) {
+        const item =
+          items[index];
+  
+        evidenceNumber++;
+  
+        /*
+          Nếu phần tiêu đề + mô tả đã quá thấp,
+          chuyển minh chứng sang trang mới.
+        */
+  
+        if (
+          y >
+          pageHeight - 60
+        ) {
+          pdf.addPage();
+  
+          y = 20;
+        }
+  
+        /* ===============================================
+           MINH CHỨNG TITLE
+        =============================================== */
+  
+        pdf.setFont(
+          "Times New Roman",
+          "bold"
+        );
+  
+        pdf.setFontSize(10.5);
+  
+        pdf.text(
+          `Minh chứng ${index + 1}`,
+          margin + 5,
+          y
+        );
+  
+        y += 6;
+  
+        /* ===============================================
+           DESCRIPTION
+        =============================================== */
+  
+        if (
+          item.description?.trim()
+        ) {
+          pdf.setFont(
+            "Times New Roman",
+            "normal"
+          );
+  
+          pdf.setFontSize(10);
+  
+          const description =
+            pdf.splitTextToSize(
+              `Mô tả: ${item.description}`,
+              contentWidth - 10
+            );
+  
+          pdf.text(
+            description,
+            margin + 5,
+            y
+          );
+  
+          y +=
+            description.length * 5 +
+            3;
+        }
+  
+        /* ===============================================
+           LOAD IMAGE
+        =============================================== */
+  
+        const compressedImage =
+          await compressImage(
+            item.image,
+            1800,
+            0.72
+          );
+  
+        const img =
+          await loadImage(
+            compressedImage
+          );
+  
+        const maxWidth =
+          contentWidth - 10;
+  
+        const maxHeight =
+          pageHeight - y - 20;
+  
+        let ratio = Math.min(
+          maxWidth / img.naturalWidth,
+          maxHeight / img.naturalHeight,
+          1
+        );
+  
+        const imgWidth =
+          img.naturalWidth * ratio;
+  
+        const imgHeight =
+          img.naturalHeight * ratio;
+  
+        if (
+          y + imgHeight >
+          pageHeight - 15
+        ) {
+          pdf.addPage();
+          y = 20;
+  
+          const newMaxHeight =
+            pageHeight - y - 15;
+  
+          ratio = Math.min(
+            maxWidth / img.naturalWidth,
+            newMaxHeight / img.naturalHeight,
+            1
+          );
+        }
+  
+        const finalWidth =
+          img.naturalWidth * ratio;
+  
+        const finalHeight =
+          img.naturalHeight * ratio;
+  
+        pdf.setLineWidth(0.2);
+  
+        pdf.rect(
+          margin + 5,
+          y,
+          finalWidth,
+          finalHeight
+        );
+  
+        pdf.addImage(
+          compressedImage,
+          "JPEG",
+          margin + 5,
+          y,
+          finalWidth,
+          finalHeight,
+          undefined,
+          "MEDIUM"
+        );
+  
+        y +=
+          finalHeight + 10;
+      }
+  
+      y += 3;
+    }
+  
+    /* =====================================================
+       NO PROOF
+    ===================================================== */
+  
+    if (
+      evidenceNumber === 0
+    ) {
+      pdf.setFont(
+        "Times New Roman",
+        "normal"
+      );
+  
+      pdf.setFontSize(13);
+  
+      pdf.text(
+        "Không có minh chứng.",
+        margin,
+        y
+      );
+    }
+  
+    return pdf.output("blob");
+  }
+
+  async function cleanupPreviousEditProof(
+  mssv: string,
+  currentVersion: number,
+  protectedPath: string | null
+) {
+  const previousVersion =
+    currentVersion - 1;
+
+  if (previousVersion < 1) {
     return;
   }
 
-  try {
-    setSubmitting(true);
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      alert(
-        "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-      );
-      router.push("/");
-      return;
+  console.log(
+    "CLEANUP PREVIOUS VERSION:",
+    {
+      mssv,
+      currentVersion,
+      previousVersion,
+      protectedPath,
     }
+  );
 
-    const {
-      data,
-      error,
-    } = await supabase.rpc(
-      "edit_student_form",
-      {
-        p_mssv: student.mssv,
-        p_data: submission,
-      }
+  /* =====================================================
+     1. LẤY EDIT PROOF CỦA VERSION TRƯỚC
+  ===================================================== */
+
+  const {
+    data: previousEditProof,
+    error: editFetchError,
+  } = await supabase
+    .from("edit_proofs")
+    .select(
+      "id, version, file_path"
+    )
+    .eq("mssv", mssv)
+    .eq("version", previousVersion)
+    .maybeSingle();
+
+  if (editFetchError) {
+    console.error(
+      "FETCH PREVIOUS EDIT PROOF ERROR:",
+      editFetchError
     );
 
-    if (error) {
-      console.error("EDIT SUBMISSION ERROR:", error);
-      alert(`Không thể lưu chỉnh sửa: ${error.message}`);
-      return;
-    }
-
-    console.log("EDIT SUBMISSION CREATED, ID:", data);
-
-    // Giữ lại logic cleanup 2 phiên bản gần nhất.
-    const {
-      data: latestSubmission,
-      error: latestError,
-    } = await supabase
-      .from("submissions")
-      .select("version")
-      .eq("mssv", student.mssv)
-      .order("version", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (latestError) {
-      console.error("LATEST EDIT VERSION ERROR:", latestError);
-    } else if (latestSubmission) {
-      await cleanupOldSubmissions(
-        student.mssv,
-        latestSubmission.version
-      );
-    }
-
-    sessionStorage.removeItem(
-      `sv5t_edit_submission_${student.mssv}`
-    );
-
-    alert("Chỉnh sửa hồ sơ thành công!");
-    router.push("/dashboard");
-  } catch (error) {
-    console.error("CONFIRM EDIT SUBMISSION ERROR:", error);
-    alert("Đã xảy ra lỗi khi xác nhận chỉnh sửa.");
-  } finally {
-    setSubmitting(false);
+    return;
   }
+
+  /* =====================================================
+     2. NẾU VERSION TRƯỚC LÀ EDIT
+     
+     Ví dụ:
+       current = v25*
+       previous = v24*
+
+     => xoá v24*
+  ===================================================== */
+
+  if (previousEditProof) {
+    const filePath =
+      previousEditProof.file_path;
+
+    /*
+      Không bao giờ xoá protected file.
+    */
+
+    if (
+      protectedPath &&
+      filePath === protectedPath
+    ) {
+      console.log(
+        "SKIP PROTECTED FILE:",
+        filePath
+      );
+
+      return;
+    }
+
+    /* ===================================================
+       XOÁ STORAGE
+    =================================================== */
+
+    if (filePath) {
+      const {
+        error: storageError,
+      } = await supabase.storage
+        .from("proofs")
+        .remove([
+          filePath,
+        ]);
+
+      if (storageError) {
+        console.error(
+          "DELETE PREVIOUS EDIT FILE ERROR:",
+          storageError
+        );
+
+        /*
+          Storage xoá thất bại
+          => không xoá DB record.
+        */
+
+        return;
+      }
+
+      console.log(
+        "PREVIOUS EDIT FILE DELETED:",
+        filePath
+      );
+    }
+
+    /* ===================================================
+       XOÁ DB
+    =================================================== */
+
+    const {
+      error: deleteError,
+    } = await supabase
+      .from("edit_proofs")
+      .delete()
+      .eq(
+        "id",
+        previousEditProof.id
+      );
+
+    if (deleteError) {
+      console.error(
+        "DELETE PREVIOUS EDIT DB ERROR:",
+        deleteError
+      );
+
+      return;
+    }
+
+    console.log(
+      "PREVIOUS EDIT RECORD DELETED:",
+      previousEditProof
+    );
+
+    return;
+  }
+
+  /* =====================================================
+     3. NẾU VERSION TRƯỚC KHÔNG PHẢI EDIT
+     
+     Nghĩa là nó có thể là bản gốc trong proofs.
+
+     Ví dụ lần edit đầu:
+       proofs       v23
+       edit_proofs  chưa có
+       tạo          v24*
+
+     previousVersion = 23
+
+     => KHÔNG XOÁ v23
+        vì v23 là bản gốc.
+  ===================================================== */
+
+  const {
+    data: previousOriginal,
+    error: originalFetchError,
+  } = await supabase
+    .from("proofs")
+    .select(
+      "id, version, file_path"
+    )
+    .eq("mssv", mssv)
+    .eq("version", previousVersion)
+    .maybeSingle();
+
+  if (originalFetchError) {
+    console.error(
+      "FETCH PREVIOUS ORIGINAL ERROR:",
+      originalFetchError
+    );
+
+    return;
+  }
+
+  if (previousOriginal) {
+    console.log(
+      "PREVIOUS VERSION IS ORIGINAL → KEEP:",
+      previousOriginal
+    );
+
+    /*
+      Tuyệt đối không xoá bản gốc.
+    */
+
+    return;
+  }
+
+  console.log(
+    "NO PREVIOUS VERSION FOUND:",
+    previousVersion
+  );
 }
 
-  if (!submission) {
+  /* =======================================================
+     CONFIRM
+======================================================= */
+
+  async function confirmEdit() {
+    if (!student?.mssv) {
+      alert("Không tìm thấy thông tin sinh viên.");
+      return;
+    }
+
+    if (!proofData) {
+      alert("Không có dữ liệu minh chứng.");
+      return;
+    }
+
+    setSaving(true);
+
+    let uploadedFilePath: string | null = null;
+    let insertedEditProofId: number | null = null;
+
+    try {
+      const mssv = student.mssv;
+
+      /* =====================================================
+        1. LẤY PDF GỐC GẦN NHẤT
+      ===================================================== */
+
+      const {
+        data: latestProof,
+        error: latestProofError,
+      } = await supabase
+        .from("proofs")
+        .select("id, version, file_path")
+        .eq("mssv", mssv)
+        .order("version", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestProofError) {
+        console.error(
+          "LATEST PROOF ERROR:",
+          latestProofError
+        );
+
+        alert(
+          "Không thể xác định phiên bản minh chứng gốc."
+        );
+
+        return;
+      }
+
+      /* =====================================================
+        2. LẤY PDF EDIT GẦN NHẤT
+      ===================================================== */
+
+      const {
+        data: latestEditProof,
+        error: latestEditError,
+      } = await supabase
+        .from("edit_proofs")
+        .select(
+          "id, version, base_version, file_path, status"
+        )
+        .eq("mssv", mssv)
+        .order("version", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestEditError) {
+        console.error(
+          "LATEST EDIT PROOF ERROR:",
+          latestEditError
+        );
+
+        alert(
+          "Không thể xác định phiên bản chỉnh sửa."
+        );
+
+        return;
+      }
+
+      console.log(
+        "LATEST ORIGINAL PROOF:",
+        latestProof
+      );
+
+      console.log(
+        "LATEST EDIT PROOF:",
+        latestEditProof
+      );
+
+      /* =====================================================
+        3. XÁC ĐỊNH PDF GẦN NHẤT
+      ===================================================== */
+
+      const latestOriginalVersion =
+        latestProof?.version ?? 0;
+
+      const latestEditedVersion =
+        latestEditProof?.version ?? 0;
+
+      /*
+        Nếu edit_proofs có version lớn hơn proofs
+        => PDF gần nhất là PDF EDIT.
+
+        Nếu không
+        => PDF gần nhất là PDF GỐC.
+      */
+
+      const latestIsEdited =
+        latestEditedVersion >
+        latestOriginalVersion;
+
+      let baseVersion: number;
+      let newVersion: number;
+      let protectedPath: string | null = null;
+
+      if (latestIsEdited) {
+        /*
+          ================================================
+          TRƯỜNG HỢP 1:
+          PDF GẦN NHẤT ĐÃ LÀ EDIT
+
+          Ví dụ:
+            proofs       v23
+            edit_proofs  v24*
+
+          => tạo v25*
+        ================================================
+        */
+
+        baseVersion =
+          latestEditedVersion;
+
+        newVersion =
+          latestEditedVersion + 1;
+
+        console.log(
+          "LATEST PDF IS EDITED"
+        );
+
+        console.log(
+          "BASE VERSION:",
+          baseVersion
+        );
+
+        console.log(
+          "NEW VERSION:",
+          newVersion
+        );
+      } else {
+        /*
+          ================================================
+          TRƯỜNG HỢP 2:
+          PDF GẦN NHẤT LÀ BẢN GỐC
+
+          Ví dụ:
+            proofs v23
+            edit_proofs chưa có
+
+          => bảo vệ v23
+          => tạo v24*
+        ================================================
+        */
+
+        if (!latestProof) {
+          alert(
+            "Không tìm thấy hồ sơ minh chứng gốc."
+          );
+
+          return;
+        }
+
+        baseVersion =
+          latestOriginalVersion;
+
+        newVersion =
+          baseVersion + 1;
+
+        console.log(
+          "LATEST PDF IS ORIGINAL"
+        );
+
+        console.log(
+          "BASE VERSION:",
+          baseVersion
+        );
+
+        console.log(
+          "NEW VERSION:",
+          newVersion
+        );
+      }
+
+      /* =====================================================
+        4. TẠO PDF
+      ===================================================== */
+
+      const pdfBlob =
+        await createProofPDF(
+          student,
+          proofData
+        );
+
+      console.log(
+        "EDIT PDF SIZE:",
+        pdfBlob.size,
+        `(${(
+          pdfBlob.size /
+          1024 /
+          1024
+        ).toFixed(2)} MB)`
+      );
+
+      /* =====================================================
+        5. TÊN FILE
+      ===================================================== */
+
+      function removeVietnameseDiacritics(
+        text: string
+      ): string {
+        return text
+          .normalize("NFD")
+          .replace(
+            /[\u0300-\u036f]/g,
+            ""
+          )
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D");
+      }
+
+      const safeFullName =
+        removeVietnameseDiacritics(
+          student.full_name
+        )
+          .trim()
+          .replace(/\s+/g, "-");
+
+      /*
+        PDF EDIT luôn có dấu *
+      */
+
+      const editFileName =
+        `${mssv}-${safeFullName}-proof-v${newVersion}*.pdf`;
+
+      const newFilePath =
+        `${mssv}/${editFileName}`;
+
+      console.log(
+        "EDIT PDF PATH:",
+        newFilePath
+      );
+
+      /* =====================================================
+        6. BẢO VỆ BẢN GỐC
+        
+        CHỈ LÀM KHI LATEST KHÔNG PHẢI EDIT.
+      ===================================================== */
+
+      if (!latestIsEdited) {
+        const originalPath =
+          latestProof?.file_path;
+
+        if (!originalPath) {
+          alert(
+            "Không tìm thấy file PDF gốc."
+          );
+
+          return;
+        }
+
+        /*
+          Ví dụ:
+
+          original:
+          3123150146/...-proof-v23.pdf
+
+          protected:
+          3123150146/...-proof-v23-original.pdf
+        */
+
+        protectedPath =
+          originalPath.replace(
+            /\.pdf$/i,
+            "-original.pdf"
+          );
+
+        console.log(
+          "PROTECT ORIGINAL:",
+          {
+            originalPath,
+            protectedPath,
+          }
+        );
+
+        /*
+          Kiểm tra protected file đã tồn tại chưa.
+          Nếu đã tồn tại thì không copy lại.
+        */
+
+        if (!protectedPath) {
+          console.error("PROTECTED PATH IS NULL");
+          alert("Không tìm thấy đường dẫn file bản gốc.");
+          return;
+        }
+
+        const {
+          data: existingProtectedFile,
+          error: protectedCheckError,
+        } = await supabase.storage
+          .from("proofs")
+          .list(mssv, {
+            search:
+              protectedPath
+                .split("/")
+                .pop() ?? "",
+          });
+
+        if (protectedCheckError) {
+          console.error(
+            "CHECK PROTECTED FILE ERROR:",
+            protectedCheckError
+          );
+
+          alert(
+            "Không thể kiểm tra bản gốc được bảo vệ."
+          );
+
+          return;
+        }
+
+        const protectedFileName =
+          protectedPath
+            .split("/")
+            .pop();
+
+        const protectedExists =
+          existingProtectedFile?.some(
+            (file) =>
+              file.name ===
+              protectedFileName
+          );
+
+        if (!protectedExists) {
+          const {
+            error: copyError,
+          } = await supabase.storage
+            .from("proofs")
+            .copy(
+              originalPath,
+              protectedPath
+            );
+
+          if (copyError) {
+            console.error(
+              "PROTECT ORIGINAL ERROR:",
+              copyError
+            );
+
+            /*
+              Nếu trong lúc kiểm tra/copy,
+              file đã được tạo bởi request khác
+              thì không coi đó là lỗi nghiêm trọng.
+            */
+
+            if (
+              !copyError.message
+                ?.toLowerCase()
+                .includes(
+                  "already exists"
+                )
+            ) {
+              alert(
+                "Không thể bảo vệ file minh chứng gốc."
+              );
+
+              return;
+            }
+          }
+
+          console.log(
+            "ORIGINAL PROTECTED:",
+            protectedPath
+          );
+        } else {
+          console.log(
+            "PROTECTED ORIGINAL ALREADY EXISTS:",
+            protectedPath
+          );
+        }
+      } else {
+        console.log(
+          "LATEST IS EDITED → KHÔNG PROTECT LẠI"
+        );
+      }
+
+      /* =====================================================
+        7. UPLOAD PDF EDIT
+      ===================================================== */
+
+      const {
+        error: uploadError,
+      } = await supabase.storage
+        .from("proofs")
+        .upload(
+          newFilePath,
+          pdfBlob,
+          {
+            contentType:
+              "application/pdf",
+            upsert: false,
+          }
+        );
+
+      if (uploadError) {
+        console.error(
+          "EDIT PROOF UPLOAD ERROR:",
+          uploadError
+        );
+
+        /*
+          Nếu upload bị "already exists",
+          nghĩa là file version này đã tồn tại.
+        */
+
+        if (
+          uploadError.message
+            ?.toLowerCase()
+            .includes(
+              "already exists"
+            )
+        ) {
+          alert(
+            `File minh chứng v${newVersion}* đã tồn tại. Vui lòng tải lại trang và thử lại.`
+          );
+        } else {
+          alert(
+            "Không thể tải PDF lên hệ thống."
+          );
+        }
+
+        return;
+      }
+
+      uploadedFilePath =
+        newFilePath;
+
+      console.log(
+        "EDIT PDF UPLOADED:",
+        uploadedFilePath
+      );
+
+      /* =====================================================
+        8. INSERT edit_proofs
+      ===================================================== */
+
+      const {
+        data: insertedEditProof,
+        error: insertError,
+      } = await supabase
+        .from("edit_proofs")
+        .insert({
+          mssv,
+          version: newVersion,
+          base_version: baseVersion,
+          file_path: newFilePath,
+          status: "submitted",
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error(
+          "EDIT PROOF DB ERROR:",
+          insertError
+        );
+
+        /*
+          DB insert fail:
+          xoá PDF vừa upload.
+        */
+
+        await supabase.storage
+          .from("proofs")
+          .remove([
+            newFilePath,
+          ]);
+
+        /*
+          Xử lý duplicate version.
+        */
+
+        if (
+          insertError.code ===
+          "23505"
+        ) {
+          alert(
+            `Phiên bản v${newVersion}* đã tồn tại trong hệ thống. Vui lòng tải lại trang và thử lại.`
+          );
+        } else {
+          alert(
+            "Không thể lưu hồ sơ chỉnh sửa."
+          );
+        }
+
+        return;
+      }
+
+      insertedEditProofId =
+        insertedEditProof.id;
+
+      console.log(
+        "EDIT PROOF CREATED:",
+        insertedEditProof
+      );
+
+      /* =====================================================
+        9. XOÁ REVIEW DATA
+      ===================================================== */
+
+      await deleteEditProofData(
+        `${EDIT_REVIEW_PREFIX}${mssv}`
+      );
+
+      /* =====================================================
+        10. CLEANUP VERSION TRƯỚC
+        
+        Ví dụ:
+          tạo v25*
+          => xoá v24*
+        
+        Nhưng nếu v24 là bản gốc
+        và đã được protected
+        => KHÔNG XOÁ.
+      ===================================================== */
+
+      await cleanupPreviousEditProof(
+        mssv,
+        newVersion,
+        protectedPath
+      );
+
+      /* =====================================================
+        11. DOWNLOAD PDF
+      ===================================================== */
+
+      const downloadUrl =
+        URL.createObjectURL(
+          pdfBlob
+        );
+
+      const downloadLink =
+        document.createElement("a");
+
+      downloadLink.href =
+        downloadUrl;
+
+      downloadLink.download =
+        `${mssv}-${student.full_name}-proof-v${newVersion}*.pdf`;
+
+      document.body.appendChild(
+        downloadLink
+      );
+
+      downloadLink.click();
+
+      document.body.removeChild(
+        downloadLink
+      );
+
+      URL.revokeObjectURL(
+        downloadUrl
+      );
+
+      /* =====================================================
+        12. HOÀN TẤT
+      ===================================================== */
+
+      alert(
+        `Đã gửi hồ sơ bổ sung minh chứng v${newVersion}*.`
+      );
+
+      router.replace(
+        "/dashboard"
+      );
+    } catch (error) {
+      console.error(
+        "CONFIRM EDIT PROOF ERROR:",
+        error
+      );
+
+      /*
+        Rollback file edit nếu đã upload
+        nhưng xảy ra lỗi sau đó.
+      */
+
+      if (uploadedFilePath) {
+        await supabase.storage
+          .from("proofs")
+          .remove([
+            uploadedFilePath,
+          ]);
+      }
+
+      /*
+        Rollback DB edit_proofs nếu đã insert.
+      */
+
+      if (
+        insertedEditProofId !== null
+      ) {
+        await supabase
+          .from("edit_proofs")
+          .delete()
+          .eq(
+            "id",
+            insertedEditProofId
+          );
+      }
+
+      alert(
+        "Có lỗi xảy ra khi xác nhận hồ sơ. Vui lòng thử lại."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* =======================================================
+     BACK
+  ======================================================== */
+
+  function goBack() {
+    router.push(
+      "/dashboard/editproof"
+    );
+  }
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
+  if (
+    loading
+  ) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100">
         <p className="text-gray-500">
-          Đang tải hồ sơ...
+          Đang tải...
         </p>
       </main>
     );
   }
 
-  function formatDate(date: string) {
-    if (!date) return "Không có";
-
-    return new Date(date).toLocaleDateString("vi-VN");
-  }
-
-  function display(value: unknown) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return "Không";
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Có" : "Không";
-  }
-
-  // Đổi YYYY-MM-DD → DD-MM-YYYY
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-");
-    return `${day}-${month}-${year}`;
-  }
-
-  return String(value);
-}
-
-async function cleanupOldSubmissions(
-  mssv: string,
-  latestVersion: number
-) {
-  const deleteBeforeVersion =
-    latestVersion - 2;
-
-  // Chưa đủ 3 version thì chưa cần xóa
-  if (deleteBeforeVersion < 1) {
-    return;
-  }
-
-  const { error } = await supabase
-    .from("submissions")
-    .delete()
-    .eq("mssv", mssv)
-    .lte("version", deleteBeforeVersion);
-
-  if (error) {
-    console.error(
-      "CLEANUP OLD SUBMISSIONS ERROR:",
-      error
-    );
-  }
-}
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* Header */}
+        {/* HEADER */}
 
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Xem lại hồ sơ
-            </h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Xem xét minh chứng bổ sung
+          </h1>
 
-            <p className="mt-2 text-gray-600">
-              Vui lòng kiểm tra toàn bộ thông tin trước khi xác nhận.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/editsubmit")}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
-          >
-            ← Chỉnh sửa
-          </button>
+          <p className="mt-2 text-gray-600">
+            Vui lòng kiểm tra lại toàn bộ
+            minh chứng trước khi xác nhận.
+          </p>
         </div>
 
-        {/* =====================================================
-            THÔNG TIN SINH VIÊN
-        ====================================================== */}
+        {/* STUDENT */}
 
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
+        <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-900">
             Thông tin sinh viên
           </h2>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="mt-4 space-y-2 text-gray-700">
+            <p>
+              <span className="font-medium">
+                Họ tên:
+              </span>{" "}
+              {student?.full_name}
+            </p>
 
-            <ReviewItem
-              label="Mã số sinh viên"
-              value={display(student?.mssv)}
-            />
+            <p>
+              <span className="font-medium">
+                MSSV:
+              </span>{" "}
+              {student?.mssv}
+            </p>
+          </div>
+        </div>
 
-            <ReviewItem
-              label="Họ và tên"
-              value={student?.full_name ?? "Đang cập nhật"}
-            />
+        {/* PREVIEW */}
 
-            <ReviewItem
-              label="Ngày sinh"
-              value={
-                student?.birth_date
-                  ? formatDate(student.birth_date)
-                  : "Đang cập nhật"
+        <div className="space-y-6">
+
+          {categories.map(
+            (category) => {
+              const items =
+                proofData[
+                  category.key
+                ];
+
+              if (
+                items.length === 0
+              ) {
+                return null;
               }
-            />
 
-            <ReviewItem
-              label="Giới tính"
-              value={student?.gender ?? "Đang cập nhật"}
-            />
-
-            <ReviewItem
-              label="Lớp"
-              value={student?.class_name ?? "Đang cập nhật"}
-            />
-
-            <ReviewItem
-              label="Khoa"
-              value="Giáo dục Tiểu học"
-            />
-
-          </div>
-        </section>
-
-        {/* =====================================================
-            THÔNG TIN CHUNG
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Thông tin chung
-          </h2>
-
-          <div className="grid gap-5 md:grid-cols-2">
-
-            <ReviewItem
-              label="Dân tộc"
-              value={display(submission.ethnicity)}
-            />
-
-            <ReviewItem
-              label="Số điện thoại"
-              value={display(submission.phone)}
-            />
-
-            <ReviewItem
-              label="Sinh viên năm thứ"
-              value={display(submission.studentYear)}
-            />
-
-            <ReviewItem
-              label="Chức vụ"
-              value={display(submission.position)}
-            />
-
-            <ReviewItem
-              label="Ngày vào Đoàn"
-              value={display(submission.unionDate)}
-            />
-
-            <div>
-            <label className="text-sm text-gray-500 nhưng nhạt hơn mt-1">
-                Ngày vào Đảng (Nếu có)
-            </label>
-
-                <div className="flex gap-8">
-                <ReviewItem
-                label="a/ Dự bị"
-                value={display(submission.probationDate)}
-                />
-
-                <ReviewItem
-                label="b/ Chính thức"
-                value={display(submission.officialDate)}
-                />
-                </div>
-            
-            </div>
-
-            <ReviewItem
-              label="Email"
-              value={display(submission.email)}
-            />
-
-            <div className="md:col-span-2">
-              <ReviewItem
-                label="Địa chỉ"
-                value={display(submission.address)}
-              />
-            </div>
-
-          </div>
-        </section>
-
-        {/* =====================================================
-            ĐẠO ĐỨC TỐT
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            2. Đạo đức tốt
-          </h2>
-
-          <div className="space-y-5">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Tiêu chuẩn bắt buộc
-          </h2>
-
-            <ReviewItem
-              label={`${STANDARD.CONDUCTSCORE.CONTENT} ${STANDARD.CONDUCTSCORE.DESC}`}
-              value={display(submission.conductScore)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.UNIONEVALUATION.CONTENT} ${STANDARD.UNIONEVALUATION.DESC}`}
-              value={display(submission.unionEvaluation)}
-            />
-
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Tiêu chuẩn khác
-          </h2>
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC3.CONTENT} ${STANDARD.ETHIC3.DESC}`}
-              value={display(submission.ethics3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC4.CONTENT} ${STANDARD.ETHIC4.DESC}`}
-              value={display(submission.ethics4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC5.CONTENT} ${STANDARD.ETHIC5.DESC}`}
-              value={display(submission.ethics5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC6.CONTENT} ${STANDARD.ETHIC6.DESC}`}
-              value={display(submission.ethics6)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC7.CONTENT} ${STANDARD.ETHIC7.DESC}`}
-              value={display(submission.ethics7)}
-            />
-
-          </div>
-        </section>
-
-        {/* =====================================================
-            HỌC TẬP TỐT
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            3. Học tập tốt
-          </h2>
-
-          <div className="space-y-5">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Tiêu chuẩn bắt buộc
-          </h2>
-
-            <ReviewItem
-              label={`${STANDARD.GPA.CONTENT} ${STANDARD.GPA.DESC}`}
-              value={display(submission.gpa)}
-            />
-
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Tiêu chuẩn khác
-          </h2>
-
-            <ReviewItem
-              label={`${STANDARD.STUDY2.CONTENT} ${STANDARD.STUDY2.DESC}`}
-              value={display(submission.study2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.STUDY3.CONTENT} ${STANDARD.STUDY3.DESC}`}
-              value={display(submission.study3)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.STUDY4.CONTENT} ${STANDARD.STUDY4.DESC}`}
-              value={display(submission.study4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.STUDY5.CONTENT} ${STANDARD.STUDY5.DESC}`}
-              value={display(submission.study5)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.STUDY6.CONTENT} ${STANDARD.STUDY6.DESC}`}
-              value={display(submission.study6)}
-            />
-          
-          </div>
-        </section>
-
-        {/* =====================================================
-            THỂ LỰC TỐT
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            4. Thể lực tốt
-          </h2>
-
-          <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL1.CONTENT} ${STANDARD.PHYSICAL1.DESC}`}
-              value={display(submission.physical1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL2.CONTENT} ${STANDARD.PHYSICAL2.DESC}`}
-              value={display(submission.physical2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL3.CONTENT} ${STANDARD.PHYSICAL3.DESC}`}
-              value={display(submission.physical3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL4.CONTENT} ${STANDARD.PHYSICAL4.DESC}`}
-              value={display(submission.physical4)}
-            />
-                  
-          </div>
-        </section>
-
-        {/* =====================================================
-            TÌNH NGUYỆN TỐT
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            5. Tình nguyện tốt
-          </h2>
-
-          <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER1.CONTENT} ${STANDARD.VOLUNTEER1.DESC}`}
-              value={display(submission.volunteer1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER2.CONTENT} ${STANDARD.VOLUNTEER2.DESC}`}
-              value={display(submission.volunteer2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER3.CONTENT} ${STANDARD.VOLUNTEER3.DESC}`}
-              value={display(submission.volunteer3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER4.CONTENT} ${STANDARD.VOLUNTEER4.DESC}`}
-              value={display(submission.volunteer4)}
-            />
-            
-          </div>
-        </section>
-
-        {/* =====================================================
-            HỘI NHẬP TỐT
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            6. Hội nhập tốt
-          </h2>
-
-          <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE1.CONTENT} ${STANDARD.FOREIGNLANGUAGE1.DESC}`}
-              value={display(submission.foreignLanguage1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE2.CONTENT} ${STANDARD.FOREIGNLANGUAGE2.DESC}`}
-              value={display(submission.foreignLanguage2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE3.CONTENT} ${STANDARD.FOREIGNLANGUAGE3.DESC}`}
-              value={display(submission.foreignLanguage3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL4.CONTENT} ${STANDARD.SKILL4.DESC}`}
-              value={display(submission.skill4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL5.CONTENT} ${STANDARD.SKILL5.DESC}`}
-              value={display(submission.skill5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL6.CONTENT} ${STANDARD.SKILL6.DESC}`}
-              value={display(submission.skill6)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.SKILL7.CONTENT} ${STANDARD.SKILL7.DESC}`}
-              value={display(submission.skill7)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.INTEGRATION8.CONTENT} ${STANDARD.INTEGRATION8.DESC}`}
-              value={display(submission.integration8)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.INTEGRATION9.CONTENT} ${STANDARD.INTEGRATION9.DESC}`}
-              value={display(submission.integration9)}
-            />
-
-          </div>
-        </section>
-
-        {/* =====================================================
-            TIÊU CHUẨN ƯU TIÊN
-        ====================================================== */}
-
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            7. Tiêu chuẩn ưu tiên
-          </h2>
-
-          <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.PRIORITY1.CONTENT} ${STANDARD.PRIORITY1.DESC}`}
-              value={display(submission.priority1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY2.CONTENT} ${STANDARD.PRIORITY2.DESC}`}
-              value={display(submission.priority2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY3.CONTENT} ${STANDARD.PRIORITY3.DESC}`}
-              value={display(submission.priority3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY4.CONTENT} ${STANDARD.PRIORITY4.DESC}`}
-              value={display(submission.priority4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY5.CONTENT} ${STANDARD.PRIORITY5.DESC}`}
-              value={display(submission.priority5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY6.CONTENT} ${STANDARD.PRIORITY6.DESC}`}
-              value={display(submission.priority6)}
-            />
-            
-          </div>
-        </section>
-
-        {/* =====================================================
-            XÁC NHẬN
-        ====================================================== */}
-
-        <section className="mb-8 rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
-
-          <h2 className="text-lg font-semibold text-gray-900">
-            Xác nhận chỉnh sửa hồ sơ
-          </h2>
-
-          <p className="mt-2 leading-6 text-gray-700">
-            Tôi xác nhận rằng các thông tin trên là chính xác
-            và chịu trách nhiệm về nội dung hồ sơ đã gửi.
-          </p>
+              return (
+                <section
+                  key={
+                    category.key
+                  }
+                  className="rounded-2xl bg-white p-6 shadow-sm"
+                >
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    {
+                      category.title
+                    }
+                  </h2>
+
+                  <div className="mt-6 space-y-5">
+
+                    {items.map(
+                      (
+                        item,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            item.id
+                          }
+                          className="rounded-xl border border-gray-200 bg-gray-50 p-5"
+                        >
+                          <p className="font-medium text-gray-800">
+                            Minh chứng{" "}
+                            {index +
+                              1}
+                          </p>
+
+                          {item.fileName && (
+                            <p className="mt-2 text-sm text-gray-500">
+                              {
+                                item.fileName
+                              }
+                            </p>
+                          )}
+
+                          {item.image && (
+                            <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white p-2">
+                              <img
+                                src={
+                                  item.image
+                                }
+                                alt="Minh chứng"
+                                className="max-h-96 w-full object-contain"
+                              />
+                            </div>
+                          )}
+
+                          {item.description && (
+                            <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+                              <p className="text-sm font-medium text-gray-700">
+                                Mô tả
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm text-gray-600">
+                                {
+                                  item.description
+                                }
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    )}
+
+                  </div>
+                </section>
+              );
+            }
+          )}
+
+        </div>
+
+        {/* BUTTONS */}
+
+        <div className="mt-8 flex items-center justify-between">
 
           <button
             type="button"
-            onClick={handleConfirm}
-            disabled={submitting}
-            className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-            {submitting
-                ? "Đang gửi hồ sơ..."
-                : "✓ Xác nhận và lưu chỉnh sửa"}
+            onClick={
+              goBack
+            }
+            disabled={saving}
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            ← Chỉnh sửa lại
           </button>
 
-        </section>
+          <button
+            type="button"
+            onClick={
+              confirmEdit
+            }
+            disabled={saving}
+            className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving
+              ? "Đang xác nhận..."
+              : "Xác nhận"}
+          </button>
+
+        </div>
 
       </div>
     </main>
-  );
-}
-
-/* =========================================================
-   COMPONENT HIỂN THỊ MỘT TRƯỜNG
-========================================================= */
-
-function ReviewItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div>
-    <label className="text-sm text-gray-500 nhưng nhạt hơn mt-1">
-        {label}
-    </label>
-
-    <p className="whitespace-pre-wrap break-words font-medium text-gray-900">
-        {value}
-    </p>
-    </div>
   );
 }

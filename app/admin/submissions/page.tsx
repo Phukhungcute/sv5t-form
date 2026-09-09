@@ -33,13 +33,23 @@ type Proof = {
   file_path: string;
   status: string;
   created_at: string;
-  is_edit: boolean
+};
+
+type EditProof = {
+  id: number;
+  mssv: string;
+  version: number;
+  base_version: number;
+  file_path: string;
+  status: string;
+  created_at: string;
 };
 
 type StudentSubmission = {
   student: Student;
   submission: Submission | null;
   proof: Proof | null;
+  proofEdit: EditProof | null;
 };
 
 type ReviewStatus = "passed" | "failed" | "consider" | null;
@@ -164,7 +174,7 @@ export default function SubmissionsPage() {
       } = await supabase
         .from("submissions")
         .select(
-          "id, mssv, version, data, status, created_at, reviewed_at, reviewed_by"
+          "id, mssv, version, data, status, created_at, reviewed_at, reviewed_by, is_edit"
         )
         .order("version", {
           ascending: false,
@@ -183,7 +193,7 @@ export default function SubmissionsPage() {
       }
 
       // ==========================================
-      // 5. LẤY PROOF
+      // 5a. LẤY PROOF
       // ==========================================
 
       const {
@@ -201,6 +211,33 @@ export default function SubmissionsPage() {
         console.log("=== PROOFS ===");
         console.log("DATA:", proofData);
         console.log("ERROR:", proofError);
+
+      // ==========================================
+      // 5b. LẤY PROOF EDIT
+      // ==========================================
+
+      const {
+        data: editProofData,
+        error: editProofError,
+      } = await supabase
+        .from("edit_proofs")
+        .select(
+          "id, mssv, version, base_version, file_path, status, created_at"
+        )
+        .order("version", {
+          ascending: false,
+        });
+
+      console.log("=== EDIT PROOFS ===");
+      console.log("DATA:", editProofData);
+      console.log("ERROR:", editProofError);
+
+      if (editProofError) {
+        console.error(
+          "EDIT PROOF ERROR:",
+          editProofError
+        );
+      }
 
       // ==========================================
       // 6. LẤY BẢN SUBMISSION / PROOF MỚI NHẤT
@@ -234,6 +271,20 @@ export default function SubmissionsPage() {
         }
       }
 
+      const latestEditProofs = new Map<
+        string,
+        EditProof
+      >();
+
+      for (const editProof of editProofData ?? []) {
+        if (!latestEditProofs.has(editProof.mssv)) {
+          latestEditProofs.set(
+            editProof.mssv,
+            editProof as EditProof
+          );
+        }
+      }
+
 
       // ==========================================
       // 7. GỘP THÀNH StudentSubmission
@@ -251,6 +302,11 @@ export default function SubmissionsPage() {
 
         proof:
           latestProofs.get(
+            student.mssv
+          ) ?? null,
+
+        proofEdit:
+          latestEditProofs.get(
             student.mssv
           ) ?? null,
       }));
@@ -850,7 +906,7 @@ export default function SubmissionsPage() {
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
 
           {/* HEADER */}
-          <div className="grid grid-cols-[180px_465px_180px_110px_130px_150px] items-center border-b bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
+          <div className="grid grid-cols-[180px_150px_180px_110px_130px_150px_150px_150px] items-center border-b bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
 
             <div>MSSV</div>
             <div>Họ và tên</div>
@@ -863,7 +919,15 @@ export default function SubmissionsPage() {
               <div>Version</div>
               <div>(Minh chứng)</div>
             </div>
+            <div className="text-center">
+              <div>Version</div>
+              <div>(Minh chứng - edited)</div>
+            </div>
             <div className="text-center">PDF</div>
+            <div className="text-center">
+              <div>PDF</div>
+              <div>(edited)</div>
+            </div>
           </div>
 
           {/* BODY */}
@@ -883,7 +947,7 @@ export default function SubmissionsPage() {
                   onClick={() =>
                     openStudent(item)
                   }
-                  className="grid cursor-pointer grid-cols-[180px_465px_180px_110px_130px_150px] items-center border-b px-6 py-4 transition hover:bg-gray-50"
+                  className="grid grid-cols-[180px_150px_180px_110px_130px_150px_150px_150px] items-center border-b bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700"
                 >
 
                   {/* MSSV */}
@@ -921,7 +985,14 @@ export default function SubmissionsPage() {
                   {/* VERSION MINH CHỨNG */}
                   <div className="text-center text-gray-600">
                     {item.proof
-                      ? `v${item.proof.version}${item.proof.is_edit ? "*" : ""}`
+                      ? `v${item.proof.version}`
+                      : "—"}
+                  </div>
+
+                  {/* VER LATEST ĐÃ EDIT */}
+                  <div className="text-center text-gray-600">
+                    {item.proofEdit
+                      ? `v${item.proofEdit.version}*`
                       : "—"}
                   </div>
 
@@ -942,6 +1013,32 @@ export default function SubmissionsPage() {
                         className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
                       >
                         📄 PDF
+                      </button>
+                    ) : (
+                      <span className="text-sm text-gray-300">
+                        —
+                      </span>
+                    )}
+                  </div>
+
+                  {/* PDF EDIT */}
+                  <div
+                    className="text-center"
+                    onClick={(e) =>
+                      e.stopPropagation()
+                    }
+                  >
+                    {item.proofEdit ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openPDF(
+                            item.proofEdit!.file_path
+                          )
+                        }
+                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        📄 PDF edit
                       </button>
                     ) : (
                       <span className="text-sm text-gray-300">

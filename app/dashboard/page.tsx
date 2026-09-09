@@ -87,7 +87,7 @@ export default function Dashboard() {
         const { data: profile, error: profileError } =
           await supabase
             .from("profiles")
-            .select("mssv, role")
+            .select("mssv, role, must_change_password")
             .eq("id", user.id)
             .single();
 
@@ -101,6 +101,14 @@ export default function Dashboard() {
         if (profile.role !== "student") {
           router.push("/admin");
           return;
+        }
+
+        if (
+          profile.role === "student" &&
+          profile.must_change_password
+        ) {
+          router.replace("/change-password");
+          return false;
         }
 
         // ==========================================
@@ -386,9 +394,16 @@ export default function Dashboard() {
               </p>
             )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Hạn gửi: {SCHEDULE?.submission.start} - {SCHEDULE?.submission.end}
-            </p>
+            {SCHEDULE?.submission?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
+                  {SCHEDULE?.submission.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
               onClick={() => {
@@ -429,9 +444,16 @@ export default function Dashboard() {
               </p>
             )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Hạn gửi: {SCHEDULE?.submission.start} - {SCHEDULE?.submission.end}
-            </p>
+            {SCHEDULE?.submission?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
+                  {SCHEDULE?.submission.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
               onClick={() => {
@@ -472,9 +494,16 @@ export default function Dashboard() {
               </p>
             )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Hạn xem yêu cầu: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
-            </p>
+            {SCHEDULE?.addition?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Hạn xem: {SCHEDULE?.addition.start} {"-"}{" "}
+                  {SCHEDULE?.addition.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
               onClick={() => {
@@ -515,9 +544,16 @@ export default function Dashboard() {
               </p>
             )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Hạn chỉnh sửa: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
-            </p>
+            {SCHEDULE?.addition?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Hạn chỉnh sửa: {SCHEDULE?.addition.start} {"-"}{" "}
+                  {SCHEDULE?.addition.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
               onClick={() => {
@@ -526,7 +562,7 @@ export default function Dashboard() {
                   return;
                 }
 
-                router.push("/dashboard/edit");
+                router.push("/dashboard/editsubmit");
               }}
               className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
                 !additionOpen
@@ -541,11 +577,11 @@ export default function Dashboard() {
           {/* Chỉnh sửa hồ sơ */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
             <h3 className="text-xl font-semibold text-gray-900">
-              Chỉnh sửa minh chứng
+              Bổ sung minh chứng
             </h3>
 
             <p className="mt-2 text-gray-600">
-              Chỉnh sửa thông tin minh chứng đã gửi trong thời gian cho phép.
+              Bổ sung thông tin minh chứng đã gửi trong thời gian cho phép.
             </p>
 
             {additionOpen ? (
@@ -557,10 +593,17 @@ export default function Dashboard() {
                 ● Đang đóng
               </p>
             )}
-
-            <p className="mt-1 text-sm text-gray-500">
-              Hạn chỉnh sửa: {SCHEDULE?.addition.start} - {SCHEDULE?.addition.end}
-            </p>
+            
+            {SCHEDULE?.addition?.enabled ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Hạn bổ sung: {SCHEDULE?.addition.start} {"-"}{" "}
+                  {SCHEDULE?.addition.end}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Coming soon
+                </p>
+              )}
 
             <button
               onClick={() => {

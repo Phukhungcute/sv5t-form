@@ -195,9 +195,178 @@ function DateOption({
 export default function EditSubmitPage() {
   const router = useRouter();
 
+  // Chỉ load dữ liệu sau khi initializeStudentPage xác nhận
+  // đúng thời gian + đúng quyền truy cập.
   useEffect(() => {
-  initializeStudentPage(router, "addition");
-}, [router]);
+    let mounted = true;
+
+    async function initializeAndLoad() {
+      const allowed = await initializeStudentPage(
+        router,
+        "addition"
+      );
+
+      if (!allowed || !mounted) {
+        return;
+      }
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.replace("/");
+          return;
+        }
+
+        const { data: profile, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("mssv, role")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError || !profile) {
+          console.error("PROFILE ERROR:", profileError);
+          router.replace("/");
+          return;
+        }
+
+        if (profile.role !== "student") {
+          router.replace("/admin");
+          return;
+        }
+
+        const { data: studentData, error: studentError } =
+          await supabase
+            .from("students")
+            .select(
+              "mssv, full_name, birth_date, gender, class_name"
+            )
+            .eq("mssv", profile.mssv)
+            .single();
+
+        if (studentError || !studentData) {
+          console.error("STUDENT ERROR:", studentError);
+          return;
+        }
+
+        // =====================================================
+        // BẮT BUỘC: SV PHẢI ĐÃ NỘP HỒ SƠ
+        // =====================================================
+        const { data: latestSubmission, error: submissionError } =
+          await supabase
+            .from("submissions")
+            .select("id, version, data, status, is_edit")
+            .eq("mssv", studentData.mssv)
+            .order("version", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (submissionError) {
+          console.error(
+            "SUBMISSION LOAD ERROR:",
+            submissionError
+          );
+
+          alert("Không thể kiểm tra hồ sơ đã nộp.");
+          return;
+        }
+
+        if (!latestSubmission) {
+          console.warn(
+            "EDIT SUBMISSION: SINH VIÊN CHƯA NỘP HỒ SƠ"
+          );
+
+          alert("Bạn chưa nộp hồ sơ nên không thể chỉnh sửa.");
+          router.replace("/dashboard");
+          return;
+        }
+
+        if (!mounted) return;
+
+        setStudent(studentData);
+
+        // =====================================================
+        // LOAD DATA CỦA HỒ SƠ MỚI NHẤT VÀO FORM
+        // =====================================================
+        const data =
+          latestSubmission.data as Record<string, unknown>;
+
+        setEthnicity(String(data.ethnicity ?? ""));
+        setPhone(String(data.phone ?? ""));
+        setStudentYear(String(data.studentYear ?? ""));
+        setPosition(String(data.position ?? ""));
+        setUnionDate(String(data.unionDate ?? ""));
+        setEmail(String(data.email ?? ""));
+        setAddress(String(data.address ?? ""));
+
+        setProbationHasDate(
+          typeof data.probationHasDate === "boolean"
+            ? data.probationHasDate
+            : null
+        );
+        setProbationDate(String(data.probationDate ?? ""));
+
+        setOfficialHasDate(
+          typeof data.officialHasDate === "boolean"
+            ? data.officialHasDate
+            : null
+        );
+        setOfficialDate(String(data.officialDate ?? ""));
+
+        // submission gốc lưu các answer trực tiếp trong data
+        // chứ không nằm trong data.answers.
+        const answerData: Record<string, string> = {};
+
+        const basicKeys = new Set([
+          "ethnicity",
+          "phone",
+          "studentYear",
+          "position",
+          "unionDate",
+          "email",
+          "address",
+          "probationHasDate",
+          "probationDate",
+          "officialHasDate",
+          "officialDate",
+        ]);
+
+        for (const [key, value] of Object.entries(data)) {
+          if (
+            !basicKeys.has(key) &&
+            typeof value === "string"
+          ) {
+            answerData[key] = value;
+          }
+        }
+
+        setAnswers(answerData);
+
+        console.log("EDIT SUBMISSION LOADED:", {
+          version: latestSubmission.version,
+          status: latestSubmission.status,
+          is_edit: latestSubmission.is_edit,
+          data: latestSubmission.data,
+        });
+      } catch (error) {
+        console.error("EDIT SUBMISSION LOAD ERROR:", error);
+      } finally {
+        if (mounted) {
+          setLoadingStudent(false);
+        }
+      }
+    }
+
+    initializeAndLoad();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -259,57 +428,6 @@ useEffect(() => {
 
   loadStudent();
 }, [router]);
-
-  // LOAD HỒ SƠ HIỆN TẠI TỪ DATABASE
-  useEffect(() => {
-    if (!student?.mssv) return;
-
-    async function loadLatestSubmission() {
-      const {
-        data: latest,
-        error,
-      } = await supabase
-        .from("submissions")
-        .select("data, version")
-        .eq("mssv", student!.mssv)
-        .order("version", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error("EDIT SUBMISSION LOAD ERROR:", error);
-        return;
-      }
-
-      if (!latest?.data) {
-        console.warn("EDIT SUBMISSION: không có hồ sơ trong DB.");
-        return;
-      }
-
-      const data = latest.data as Record<string, any>;
-
-      setEthnicity(data.ethnicity ?? "");
-      setPhone(data.phone ?? "");
-      setStudentYear(data.studentYear ?? "");
-      setPosition(data.position ?? "");
-      setUnionDate(data.unionDate ?? "");
-      setEmail(data.email ?? "");
-      setAddress(data.address ?? "");
-
-      setProbationHasDate(data.probationHasDate ?? null);
-      setProbationDate(data.probationDate ?? "");
-      setOfficialHasDate(data.officialHasDate ?? null);
-      setOfficialDate(data.officialDate ?? "");
-      setAnswers(data.answers ?? {});
-
-      console.log("EDIT SUBMISSION LOADED:", {
-        version: latest.version,
-        data: latest.data,
-      });
-    }
-
-    loadLatestSubmission();
-  }, [student?.mssv]);
 
   // Thông tin sinh viên
   // States:

@@ -122,13 +122,103 @@ export default function AdminPage() {
     pending: 0,
     passed: 0,
     failed: 0,
-    consider: 0.
+    consider: 0,
   });
 
   async function handleLogout() {
   await supabase.auth.signOut();
   router.push("/");
 }
+
+  const [resetMssv, setResetMssv] =
+    useState("");
+
+  const [resetLoading, setResetLoading] =
+    useState(false);
+
+  const [resetMessage, setResetMessage] =
+    useState("");
+
+  const [resetError, setResetError] =
+    useState("");
+
+  async function handleResetPassword(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    setResetMessage("");
+    setResetError("");
+
+    const mssv = resetMssv.trim();
+
+    if (!mssv) {
+      setResetError("Vui lòng nhập MSSV.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn reset mật khẩu của sinh viên ${mssv} về ngày tháng năm sinh không?`
+    );
+
+    if (!confirmed) return;
+
+    setResetLoading(true);
+
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        setResetError(
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+        );
+        return;
+      }
+
+      const response = await fetch(
+        "/api/admin/reset-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ mssv }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setResetError(
+          result?.error ??
+            "Không thể reset mật khẩu."
+        );
+        return;
+      }
+
+      setResetMessage(
+        result?.message ??
+          `Đã reset mật khẩu cho ${mssv}.`
+      );
+
+      setResetMssv("");
+    } catch (error) {
+      console.error(
+        "ADMIN RESET PASSWORD ERROR:",
+        error
+      );
+
+      setResetError(
+        "Không thể kết nối đến máy chủ."
+      );
+    } finally {
+      setResetLoading(false);
+    }
+  }
 
   const [schedule, setSchedule] =
     useState<ScheduleSettings | null>(null);
@@ -154,12 +244,12 @@ export default function AdminPage() {
   }
 
   setSchedule(data);
-  
-  setStartDateInput(
-  formatDateInput(data.start_date)
-  );
 
-  setScheduleLoading(false);
+setStartDateInput(
+  formatDateInput(data.start_date)
+);
+
+setScheduleLoading(false);
 } 
 
   function formatDateInput(
@@ -328,7 +418,6 @@ async function toggleSchedule(
 
       if (profile.role === "admin") {
         await loadSchedule();
-      }
 
       /* =================================================
          LOAD STUDENTS
@@ -452,7 +541,8 @@ async function toggleSchedule(
         failed,
         consider,
       });
-
+     }
+     
     } catch (error) {
       console.error(
         "ADMIN LOAD ERROR:",
@@ -656,7 +746,7 @@ async function toggleSchedule(
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Ngày bắt đầu nộp hồ sơ:
+                  Ngày bắt đầu nộp hồ sơ: SCHEDULE?.submission.start
                 </p>
 
                 <div className="mt-3 flex items-center gap-2">
@@ -797,6 +887,72 @@ async function toggleSchedule(
 
             </div>
           )}
+
+        </section>
+
+        {/* =================================================
+           SECTION 4 - RESET MẬT KHẨU SINH VIÊN
+        ================================================= */}
+
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+
+          <h2 className="text-xl font-bold text-gray-900">
+            4. Reset mật khẩu sinh viên
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Reset mật khẩu về ngày tháng năm sinh của sinh viên.
+            Sau khi reset, sinh viên sẽ được yêu cầu đổi mật khẩu.
+          </p>
+
+          <form
+            onSubmit={handleResetPassword}
+            className="mt-5 max-w-xl"
+          >
+            <label
+              htmlFor="reset-mssv"
+              className="mb-2 block text-sm font-medium text-gray-700"
+            >
+              Mã số sinh viên
+            </label>
+
+            <div className="flex gap-2">
+              <input
+                id="reset-mssv"
+                type="text"
+                value={resetMssv}
+                onChange={(e) =>
+                  setResetMssv(e.target.value)
+                }
+                placeholder="Nhập MSSV cần reset"
+                disabled={resetLoading}
+                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                required
+              />
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resetLoading
+                  ? "Đang reset..."
+                  : "Reset mật khẩu"}
+              </button>
+            </div>
+
+            {resetError && (
+              <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {resetError}
+              </div>
+            )}
+
+            {resetMessage && (
+              <div className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+                {resetMessage}
+              </div>
+            )}
+          </form>
 
         </section>
 

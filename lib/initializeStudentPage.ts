@@ -98,6 +98,7 @@ export async function initializeStudentPage(
       .select(
         `
         start_date,
+        submission_days,
         review1_days,
         addition_days,
         review2_days,
@@ -127,15 +128,26 @@ export async function initializeStudentPage(
       new Date(settings.start_date);
 
     const submissionEnd =
-      new Date(settings.start_date);
+      new Date(submissionStart);
 
     submissionEnd.setDate(
       submissionEnd.getDate() +
+        settings.submission_days
+    );
+
+    const review1Start =
+      new Date(submissionEnd);
+
+    const review1End =
+      new Date(review1Start);
+
+    review1End.setDate(
+      review1End.getDate() +
         settings.review1_days
     );
 
     const additionStart =
-      new Date(submissionEnd);
+      new Date(review1End);
 
     const additionEnd =
       new Date(additionStart);

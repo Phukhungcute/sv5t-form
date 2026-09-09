@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -75,6 +77,7 @@ async function main() {
     }
 
     console.log(`Đã tạo tài khoản và profile: ${student.mssv}`);
+    console.log(`Mật khẩu mặc định của tài khoản là: ${password}`);
 }
 
 main().catch((error) => {

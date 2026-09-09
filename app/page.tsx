@@ -15,6 +15,7 @@ export default function Home() {
   const [mssv, setMssv] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] =
     useState(false);
@@ -191,7 +192,7 @@ export default function Home() {
           return;
         }
 
-        router.push("/admin");
+        router.replace("/admin");
       } else {
         /*
           Đang ở tab Sinh viên nhưng account
@@ -208,7 +209,16 @@ export default function Home() {
           return;
         }
 
-        router.push("/dashboard");
+        // ========================================
+        // KIỂM TRA MUST CHANGE PASSWORD
+        // ========================================
+
+        if (profile.must_change_password) {
+          router.replace("/change-password");
+          return;
+        }
+
+        router.replace("/dashboard");
       }
     } catch (err) {
       console.error(
@@ -367,20 +377,93 @@ export default function Home() {
               Mật khẩu
             </label>
 
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              placeholder="Nhập mật khẩu"
-              autoComplete="current-password"
-              disabled={loading}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-              required
-            />
+            <div>
+
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  placeholder="Nhập mật khẩu"
+                  autoComplete="current-password"
+                  disabled={loading}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword((prev) => !prev)
+                  }
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
+                  aria-label={
+                    showPassword
+                      ? "Ẩn mật khẩu"
+                      : "Hiện mật khẩu"
+                  }
+                >
+                  {showPassword ? (
+                    // Mắt bị gạch — đang hiện mật khẩu
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 3l18 18"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M10.584 10.587a2 2 0 002.829 2.829"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.88 5.09A10.77 10.77 0 0112 4.5c5.25 0 9.27 4.5 10.5 7.5a11.83 11.83 0 01-4.05 4.83"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6.228 6.228C4.44 7.45 3.2 9.18 1.5 12c1.23 3 5.25 7.5 10.5 7.5 1.61 0 3.09-.36 4.37-.99"
+                      />
+                    </svg>
+                  ) : (
+                    // Mắt — đang che mật khẩu
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="2.75"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* ======================================

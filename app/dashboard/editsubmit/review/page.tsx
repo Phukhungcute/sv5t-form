@@ -42,8 +42,141 @@ export default function EditSubmitReviewPage() {
   const router = useRouter();
 
   useEffect(() => {
-  initializeStudentPage(router, "addition");
-}, [router]);
+    let mounted = true;
+
+    async function initializeAndLoad() {
+      const allowed = await initializeStudentPage(
+        router,
+        "addition"
+      );
+
+      if (!allowed || !mounted) {
+        return;
+      }
+
+      try {
+        // ==========================================
+        // 1. KIỂM TRA USER
+        // ==========================================
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.replace("/");
+          return;
+        }
+
+        // ==========================================
+        // 2. CHECK PROFILE
+        // ==========================================
+        const { data: profile, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("mssv, role")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError || !profile) {
+          console.error("PROFILE ERROR:", profileError);
+          router.replace("/");
+          return;
+        }
+
+        if (profile.role !== "student") {
+          router.replace("/admin");
+          return;
+        }
+
+        // ==========================================
+        // 3. KIỂM TRA SV ĐÃ CÓ HỒ SƠ TRÊN DB
+        // ==========================================
+        const { data: latestSubmission, error: submissionError } =
+          await supabase
+            .from("submissions")
+            .select("id, version, data, status, is_edit")
+            .eq("mssv", profile.mssv)
+            .order("version", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (submissionError) {
+          console.error(
+            "SUBMISSION CHECK ERROR:",
+            submissionError
+          );
+
+          alert("Không thể kiểm tra hồ sơ đã nộp.");
+          return;
+        }
+
+        if (!latestSubmission) {
+          console.warn(
+            "EDIT SUBMISSION REVIEW: SINH VIÊN CHƯA NỘP HỒ SƠ"
+          );
+
+          alert("Bạn chưa nộp hồ sơ nên không thể chỉnh sửa.");
+          router.replace("/dashboard");
+          return;
+        }
+
+        // ==========================================
+        // 4. KIỂM TRA DỮ LIỆU CHỜ XÁC NHẬN
+        // ==========================================
+        const saved = sessionStorage.getItem(
+          `sv5t_edit_submission_${profile.mssv}`
+        );
+
+        if (!saved) {
+          console.warn(
+            "EDIT SUBMISSION REVIEW: KHÔNG CÓ DATA CHỜ XÁC NHẬN"
+          );
+
+          router.replace("/dashboard/editsubmit");
+          return;
+        }
+
+        const parsed = JSON.parse(saved);
+
+        if (!mounted) return;
+
+        setSubmission(parsed);
+
+        const { data: studentData, error: studentError } =
+          await supabase
+            .from("students")
+            .select(
+              "mssv, full_name, birth_date, gender, class_name"
+            )
+            .eq("mssv", profile.mssv)
+            .single();
+
+        if (studentError || !studentData) {
+          console.error("STUDENT ERROR:", studentError);
+          return;
+        }
+
+        setStudent(studentData);
+
+        console.log("EDIT SUBMISSION REVIEW LOADED:", {
+          currentVersion: latestSubmission.version,
+          currentIsEdit: latestSubmission.is_edit,
+        });
+      } catch (error) {
+        console.error(
+          "EDIT SUBMISSION REVIEW LOAD ERROR:",
+          error
+        );
+      }
+    }
+
+    initializeAndLoad();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const [submission, setSubmission] =
     useState<SubmissionData | null>(null);

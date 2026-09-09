@@ -240,20 +240,6 @@ function loadImage(
 }
 
 /* =========================================================
-   FORMAT ẢNH PNG/JPG
-========================================================= */
-
-function getImageFormat(
-  dataUrl: string
-): "JPEG" | "PNG" {
-  if (dataUrl.startsWith("data:image/png")) {
-    return "PNG";
-  }
-
-  return "JPEG";
-}
-
-/* =========================================================
    Tính dung lượng
 ========================================================= */
 
