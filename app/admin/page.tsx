@@ -113,6 +113,13 @@ function ScheduleDaysRow({
   );
 }
 
+function formatDateDisplay(dateString: string) {
+  const [year, month, day] =
+    dateString.slice(0, 10).split("-");
+
+  return `${day}/${month}/${year}`;
+}
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -542,7 +549,7 @@ async function toggleSchedule(
         consider,
       });
      }
-     
+
     } catch (error) {
       console.error(
         "ADMIN LOAD ERROR:",
@@ -746,7 +753,7 @@ async function toggleSchedule(
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Ngày bắt đầu nộp hồ sơ: SCHEDULE?.submission.start
+                  Ngày bắt đầu nộp hồ sơ: {formatDateDisplay(startDateInput)}
                 </p>
 
                 <div className="mt-3 flex items-center gap-2">
@@ -894,7 +901,7 @@ async function toggleSchedule(
            SECTION 4 - RESET MẬT KHẨU SINH VIÊN
         ================================================= */}
 
-        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+        <section className="mt-8 rounded-2xl bg-red-100 p-6 shadow-sm">
 
           <h2 className="text-xl font-bold text-gray-900">
             4. Reset mật khẩu sinh viên

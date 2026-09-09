@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ADMIN_NAMES } from "@/lib/constants";
+import { STANDARD } from "@/lib/constants";
 
 type Student = {
   id: number;
@@ -54,12 +54,150 @@ type StudentSubmission = {
 
 type ReviewStatus = "passed" | "failed" | "consider" | null;
 
+const SUBMISSION_FIELD_ORDER = [
+  // =====================================================
+  // BƯỚC 1 — THÔNG TIN CHUNG
+  // =====================================================
+  "fullName",
+  "studentId",
+  "gender",
+  "birthDate",
+  "ethnicity",
+  "major",
+  "className",
+  "faculty",
+  "phone",
+  "studentYear",
+  "position",
+  "unionDate",
+  "unionHasDate",
+  "probationHasDate",
+  "probationDate",
+  "officialHasDate",
+  "officialDate",
+  "email",
+  "address",
+
+  // =====================================================
+  // BƯỚC 2 — ĐẠO ĐỨC TỐT
+  // =====================================================
+  "conductScore",
+  "unionEvaluation",
+  "ethics3",
+  "ethics4",
+  "ethics5",
+  "ethics6",
+  "ethics7",
+
+  // =====================================================
+  // BƯỚC 3 — HỌC TẬP TỐT
+  // =====================================================
+  "gpa",
+  "study2",
+  "study3",
+  "study4",
+  "study5",
+  "study6",
+
+  // =====================================================
+  // BƯỚC 4 — THỂ LỰC TỐT
+  // =====================================================
+  "physical1",
+  "physical2",
+  "physical3",
+  "physical4",
+
+  // =====================================================
+  // BƯỚC 5 — TÌNH NGUYỆN TỐT
+  // =====================================================
+  "volunteer1",
+  "volunteer2",
+  "volunteer3",
+  "volunteer4",
+
+  // =====================================================
+  // BƯỚC 6 — HỘI NHẬP TỐT
+  // =====================================================
+  "foreignLanguage1",
+  "foreignLanguage2",
+  "foreignLanguage3",
+  "skill4",
+  "skill5",
+  "skill6",
+  "skill7",
+  "integration8",
+  "integration9",
+
+  // =====================================================
+  // BƯỚC 7 — TIÊU CHUẨN ƯU TIÊN
+  // =====================================================
+  "priority1",
+  "priority2",
+  "priority3",
+  "priority4",
+  "priority5",
+  "priority6",
+];
+
+function getSubmissionFieldOrder(key: string) {
+  const normalizedKey = key
+    .replace(/[_-]/g, "")
+    .toLowerCase();
+
+  const index = SUBMISSION_FIELD_ORDER.findIndex(
+    (field) =>
+      field
+        .replace(/[_-]/g, "")
+        .toLowerCase() === normalizedKey
+  );
+
+  return index === -1 ? 9999 : index;
+}
+
 /* =====================================================
    CONFIG
 ===================================================== */
 
 // Nếu bucket Storage của bạn có tên khác thì đổi ở đây.
 const PROOF_BUCKET = "proofs";
+
+function ReviewField({
+  label,
+  description,
+  value,
+}: {
+  label: string;
+  description?: string;
+  value: unknown;
+}) {
+  let displayValue: string;
+
+  if (value === null || value === undefined || value === "") {
+    displayValue = "Chưa có";
+  } else if (typeof value === "object") {
+    displayValue = JSON.stringify(value, null, 2);
+  } else {
+    displayValue = String(value);
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-200 p-4">
+      <p className="mb-2 text-sm font-medium leading-6 text-gray-700">
+        {label}
+
+        {description && (
+          <span className="ml-1 text-sm font-normal text-gray-500">
+            {description}
+          </span>
+        )}
+      </p>
+
+      <p className="whitespace-pre-wrap break-words text-gray-800">
+        {displayValue}
+      </p>
+    </div>
+  );
+}
 
 /* =====================================================
    COMPONENT
@@ -97,6 +235,9 @@ export default function SubmissionsPage() {
 
   const [saving, setSaving] =
     useState(false);
+
+  // Dữ liệu hồ sơ nằm trong cột JSONB `submissions.data`.
+  const data = selected?.submission?.data ?? {};
 
   /* =====================================================
      LOAD DATA
@@ -693,69 +834,163 @@ export default function SubmissionsPage() {
      RENDER JSON DATA
   ===================================================== */
 
-  function renderValue(
-    value: any
-  ): string {
+  function renderValue(value: unknown) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "Chưa có";
+  }
+
+  if (typeof value === "string") {
+    // Các field ngày tháng
     if (
-      value === null ||
-      value === undefined
+      /^\d{4}-\d{2}-\d{2}/.test(value)
     ) {
-      return "—";
+      return formatDateInput(value);
     }
 
-    if (
-      typeof value === "object"
-    ) {
-      return JSON.stringify(
-        value,
-        null,
-        2
-      );
-    }
+    return value;
+  }
 
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return String(value);
   }
 
-  function getFieldLabel(
-    key: string
-  ) {
-    const labels: Record<
-      string,
-      string
-    > = {
-      full_name: "Họ và tên",
-      mssv: "MSSV",
-      birth_date:
-        "Ngày tháng năm sinh",
-      gender: "Giới tính",
-      class_name: "Lớp",
-      ethnicity: "Dân tộc",
-      phone: "Số điện thoại",
-      studentYear:
-        "Sinh viên năm thứ",
-      position: "Chức vụ",
-      unionDate:
-        "Ngày vào Đoàn",
-      email: "Email",
-      address: "Địa chỉ",
-      probationDate:
-        "Ngày vào Đảng dự bị",
-      officialDate:
-        "Ngày vào Đảng chính thức",
-      review_note:
-        "Nội dung yêu cầu bổ sung",
-    };
-
-    return (
-      labels[key] ??
-      key
-        .replaceAll("_", " ")
-        .replace(
-          /([A-Z])/g,
-          " $1"
-        )
-    );
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
   }
+
+  return String(value);
+}
+
+  function getFieldLabel(key: string) {
+  const normalizedKey = key
+    .replace(/[_-]/g, "")
+    .toLowerCase();
+
+  const standardMap: Record<string, string> = {
+    conductscore: STANDARD.CONDUCTSCORE.CONTENT,
+    unionevaluation: STANDARD.UNIONEVALUATION.CONTENT,
+
+    ethics3: STANDARD.ETHIC3.CONTENT,
+    ethics4: STANDARD.ETHIC4.CONTENT,
+    ethics5: STANDARD.ETHIC5.CONTENT,
+    ethics6: STANDARD.ETHIC6.CONTENT,
+    ethics7: STANDARD.ETHIC7.CONTENT,
+
+    gpa: STANDARD.GPA.CONTENT,
+    study2: STANDARD.STUDY2.CONTENT,
+    study3: STANDARD.STUDY3.CONTENT,
+    study4: STANDARD.STUDY4.CONTENT,
+    study5: STANDARD.STUDY5.CONTENT,
+    study6: STANDARD.STUDY6.CONTENT,
+
+    physical1: STANDARD.PHYSICAL1.CONTENT,
+    physical2: STANDARD.PHYSICAL2.CONTENT,
+    physical3: STANDARD.PHYSICAL3.CONTENT,
+    physical4: STANDARD.PHYSICAL4.CONTENT,
+
+    volunteer1: STANDARD.VOLUNTEER1.CONTENT,
+    volunteer2: STANDARD.VOLUNTEER2.CONTENT,
+    volunteer3: STANDARD.VOLUNTEER3.CONTENT,
+    volunteer4: STANDARD.VOLUNTEER4.CONTENT,
+
+    foreignlanguage1:
+      STANDARD.FOREIGNLANGUAGE1.CONTENT,
+    foreignlanguage2:
+      STANDARD.FOREIGNLANGUAGE2.CONTENT,
+    foreignlanguage3:
+      STANDARD.FOREIGNLANGUAGE3.CONTENT,
+
+    skill4: STANDARD.SKILL4.CONTENT,
+    skill5: STANDARD.SKILL5.CONTENT,
+    skill6: STANDARD.SKILL6.CONTENT,
+    skill7: STANDARD.SKILL7.CONTENT,
+
+    integration8:
+      STANDARD.INTEGRATION8.CONTENT,
+    integration9:
+      STANDARD.INTEGRATION9.CONTENT,
+
+    priority1: STANDARD.PRIORITY1.CONTENT,
+    priority2: STANDARD.PRIORITY2.CONTENT,
+    priority3: STANDARD.PRIORITY3.CONTENT,
+    priority4: STANDARD.PRIORITY4.CONTENT,
+    priority5: STANDARD.PRIORITY5.CONTENT,
+    priority6: STANDARD.PRIORITY6.CONTENT,
+  };
+
+  if (standardMap[normalizedKey]) {
+    return standardMap[normalizedKey];
+  }
+
+  const generalMap: Record<string, string> = {
+    fullname: "Họ và tên",
+    studentid: "Mã số sinh viên",
+    mssv: "Mã số sinh viên",
+    gender: "Giới tính",
+    birthdate: "Ngày sinh",
+    ethnicity: "Dân tộc",
+    major: "Chuyên ngành đào tạo",
+    classname: "Lớp",
+    faculty: "Khoa",
+    phone: "Số điện thoại",
+    studentyear: "Sinh viên năm thứ",
+    position: "Chức vụ (Đoàn - Hội)",
+    uniondate: "Ngày vào Hội / Ngày vào Đoàn",
+    unionhasdate: "Ngày vào Đoàn",
+    probationhasdate: "Đảng viên dự bị",
+    probationdate: "Ngày vào Đảng — Dự bị",
+    officialhasdate: "Đảng viên chính thức",
+    officialdate: "Ngày vào Đảng — Chính thức",
+    email: "Email",
+    address: "Địa chỉ liên lạc",
+  };
+
+  return (
+    generalMap[normalizedKey] ??
+    key
+  );
+}
+
+  function getStandardLabel(key: string) {
+  const normalizedKey = key
+    .replace(/[_-]/g, "")
+    .toLowerCase();
+
+  for (const [standardKey, standard] of Object.entries(STANDARD)) {
+    if (
+      standardKey
+        .replace(/[_-]/g, "")
+        .toLowerCase() === normalizedKey
+    ) {
+      return standard.CONTENT;
+    }
+  }
+
+  return null;
+}
+
+function formatDateInput(
+  dateString: string | null | undefined
+) {
+  if (!dateString) return "Chưa có";
+
+  const date = dateString.slice(0, 10);
+
+  const [year, month, day] = date.split("-");
+
+  if (!year || !month || !day) {
+    return dateString;
+  }
+
+  return `${day}/${month}/${year}`;
+}
 
   /* =====================================================
      LOADING
@@ -1193,52 +1428,432 @@ export default function SubmissionsPage() {
 
                     <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
                       Version{" "}
-                      {
-                        selected
-                          .submission
-                          .version
-                      }
+                      {selected.submission.version}
                     </span>
 
                   </div>
 
                   <div className="space-y-4">
 
-                    {Object.entries(
-                      selected.submission
-                        .data ?? {}
-                    ).map(
-                      ([key, value]) => (
-                        <div
-                          key={key}
-                          className="rounded-xl border border-gray-200 p-4"
-                        >
+                    <div className="space-y-8">
+                      {/* =====================================================
+                          1. THÔNG TIN CHUNG
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          1. Thông tin chung về sinh viên
+                        </h3>
 
-                          <p className="mb-2 text-sm font-medium text-gray-500">
-                            {getFieldLabel(
-                              key
-                            )}
-                          </p>
+                        <div className="space-y-4">
+                          <ReviewField
+                            label="Họ và tên"
+                            value={data.fullName}
+                          />
 
-                          {typeof value ===
-                            "object" &&
-                          value !== null ? (
-                            <pre className="whitespace-pre-wrap break-words text-sm text-gray-800">
-                              {renderValue(
-                                value
-                              )}
-                            </pre>
-                          ) : (
-                            <p className="whitespace-pre-wrap break-words text-gray-800">
-                              {renderValue(
-                                value
-                              )}
-                            </p>
-                          )}
+                          <ReviewField
+                            label="Mã số sinh viên"
+                            value={data.studentId ?? data.mssv}
+                          />
 
+                          <ReviewField
+                            label="Giới tính"
+                            value={data.gender}
+                          />
+
+                          <ReviewField
+                            label="Ngày sinh"
+                            value={formatDateInput(data.birthDate)}
+                          />
+
+                          <ReviewField
+                            label="Dân tộc"
+                            value={data.ethnicity}
+                          />
+
+                          <ReviewField
+                            label="Chuyên ngành đào tạo"
+                            value={data.major}
+                          />
+
+                          <ReviewField
+                            label="Lớp"
+                            value={data.className}
+                          />
+
+                          <ReviewField
+                            label="Khoa"
+                            value={data.faculty}
+                          />
+
+                          <ReviewField
+                            label="Số điện thoại"
+                            value={data.phone}
+                          />
+
+                          <ReviewField
+                            label="Sinh viên năm thứ"
+                            value={data.studentYear}
+                          />
+
+                          <ReviewField
+                            label="Chức vụ (Đoàn - Hội)"
+                            value={data.position}
+                          />
+
+                          <ReviewField
+                            label="Ngày vào Hội"
+                            value={formatDateInput(data.unionDate)}
+                          />
+
+                          <ReviewField
+                            label="Ngày vào Đoàn"
+                            value={formatDateInput(data.unionDate)}
+                          />
+
+                          <ReviewField
+                            label="Ngày vào Đảng - Dự bị"
+                            value={
+                              data.probationHasDate === false
+                                ? "Không có"
+                                : formatDateInput(data.probationDate)
+                            }
+                          />
+
+                          <ReviewField
+                            label="Ngày vào Đảng - Chính thức"
+                            value={
+                              data.officialHasDate === false
+                                ? "Không có"
+                                : formatDateInput(data.officialDate)
+                            }
+                          />
+
+                          <ReviewField
+                            label="Email"
+                            value={data.email}
+                          />
+
+                          <ReviewField
+                            label="Địa chỉ liên lạc"
+                            value={data.address}
+                          />
                         </div>
-                      )
-                    )}
+                      </div>
+
+                      {/* =====================================================
+                          2. ĐẠO ĐỨC TỐT
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          2. Tiêu chí Đạo đức tốt
+                        </h3>
+
+                        <div className="space-y-4">
+                          <ReviewField
+                            label={`${STANDARD.CONDUCTSCORE.CONTENT} ${STANDARD.CONDUCTSCORE.DESC}`}
+                            value={data.conductScore}
+                          />
+
+                          <ReviewField
+                            label={`${STANDARD.UNIONEVALUATION.CONTENT} ${STANDARD.UNIONEVALUATION.DESC}`}
+                            value={data.unionEvaluation}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC3.CONTENT}
+                            description={STANDARD.ETHIC3.DESC}
+                            value={data.ethics3}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC4.CONTENT}
+                            description={STANDARD.ETHIC4.DESC}
+                            value={data.ethics4}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC5.CONTENT}
+                            description={STANDARD.ETHIC5.DESC}
+                            value={data.ethics5}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC6.CONTENT}
+                            description={STANDARD.ETHIC6.DESC}
+                            value={data.ethics6}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC7.CONTENT}
+                            description={STANDARD.ETHIC7.DESC}
+                            value={data.ethics7}
+                          />
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          3. HỌC TẬP TỐT
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          3. Tiêu chí Học tập tốt
+                        </h3>
+
+                        <div className="space-y-4">
+                          <ReviewField
+                            label={`${STANDARD.GPA.CONTENT} ${STANDARD.GPA.DESC}`}
+                            value={data.gpa}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.STUDY2.CONTENT}
+                            description={STANDARD.STUDY2.DESC}
+                            value={data.study2}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.STUDY3.CONTENT}
+                            description={STANDARD.STUDY3.DESC}
+                            value={data.study3}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.STUDY4.CONTENT}
+                            description={STANDARD.STUDY4.DESC}
+                            value={data.study4}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.STUDY5.CONTENT}
+                            description={STANDARD.STUDY5.DESC}
+                            value={data.study5}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.STUDY6.CONTENT}
+                            description={STANDARD.STUDY6.DESC}
+                            value={data.study6}
+                          />
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          4. THỂ LỰC TỐT
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          4. Tiêu chí Thể lực tốt
+                        </h3>
+
+                        <div className="space-y-4">
+                          <ReviewField
+                            label={STANDARD.PHYSICAL1.CONTENT}
+                            description={STANDARD.PHYSICAL1.DESC}
+                            value={data.physical1}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL2.CONTENT}
+                            description={STANDARD.PHYSICAL2.DESC}
+                            value={data.physical2}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL3.CONTENT}
+                            description={STANDARD.PHYSICAL3.DESC}
+                            value={data.physical3}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL4.CONTENT}
+                            description={STANDARD.PHYSICAL4.DESC}
+                            value={data.physical4}
+                          />
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          5. TÌNH NGUYỆN TỐT
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          5. Tiêu chí Tình nguyện tốt
+                        </h3>
+
+                        <div className="space-y-4">
+                          <ReviewField
+                            label={STANDARD.VOLUNTEER1.CONTENT}
+                            description={STANDARD.VOLUNTEER1.DESC}
+                            value={data.volunteer1}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.VOLUNTEER2.CONTENT}
+                            description={STANDARD.VOLUNTEER2.DESC}
+                            value={data.volunteer2}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.VOLUNTEER3.CONTENT}
+                            description={STANDARD.VOLUNTEER3.DESC}
+                            value={data.volunteer3}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.VOLUNTEER4.CONTENT}
+                            description={STANDARD.VOLUNTEER4.DESC}
+                            value={data.volunteer4}
+                          />
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          6. HỘI NHẬP TỐT
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          6. Tiêu chí Hội nhập tốt
+                        </h3>
+
+                        {/* Ngoại ngữ */}
+                        <div>
+                          <h4 className="mb-3 text-base font-semibold text-gray-800">
+                            Về ngoại ngữ
+                          </h4>
+
+                          <div className="space-y-4">
+                            <ReviewField
+                              label={STANDARD.FOREIGNLANGUAGE1.CONTENT}
+                              description={STANDARD.FOREIGNLANGUAGE1.DESC}
+                              value={data.foreignLanguage1}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.FOREIGNLANGUAGE2.CONTENT}
+                              description={STANDARD.FOREIGNLANGUAGE2.DESC}
+                              value={data.foreignLanguage2}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.FOREIGNLANGUAGE3.CONTENT}
+                              description={STANDARD.FOREIGNLANGUAGE3.DESC}
+                              value={data.foreignLanguage3}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Kỹ năng */}
+                        <div className="mt-8 border-t border-gray-200 pt-6">
+                          <h4 className="mb-3 text-base font-semibold text-gray-800">
+                            Về kỹ năng
+                          </h4>
+
+                          <div className="space-y-4">
+                            <ReviewField
+                              label={STANDARD.SKILL4.CONTENT}
+                              description={STANDARD.SKILL4.DESC}
+                              value={data.skill4}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.SKILL5.CONTENT}
+                              description={STANDARD.SKILL5.DESC}
+                              value={data.skill5}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.SKILL6.CONTENT}
+                              description={STANDARD.SKILL6.DESC}
+                              value={data.skill6}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.SKILL7.CONTENT}
+                              description={STANDARD.SKILL7.DESC}
+                              value={data.skill7}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Hội nhập */}
+                        <div className="mt-8 border-t border-gray-200 pt-6">
+                          <h4 className="mb-3 text-base font-semibold text-gray-800">
+                            Về hoạt động hội nhập
+                          </h4>
+
+                          <div className="space-y-4">
+                            <ReviewField
+                              label={STANDARD.INTEGRATION8.CONTENT}
+                              description={STANDARD.INTEGRATION8.DESC}
+                              value={data.integration8}
+                            />
+
+                            <ReviewField
+                              label={STANDARD.INTEGRATION9.CONTENT}
+                              description={STANDARD.INTEGRATION9.DESC}
+                              value={data.integration9}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          7. TIÊU CHUẨN ƯU TIÊN
+                      ====================================================== */}
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                          7. Tiêu chuẩn ưu tiên
+                        </h3>
+
+                        <div className="space-y-4">
+                          <ReviewField
+                            label={STANDARD.PRIORITY1.CONTENT}
+                            description={STANDARD.PRIORITY1.DESC}
+                            value={data.priority1}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY2.CONTENT}
+                            description={STANDARD.PRIORITY2.DESC}
+                            value={data.priority2}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY3.CONTENT}
+                            description={STANDARD.PRIORITY3.DESC}
+                            value={data.priority3}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY4.CONTENT}
+                            description={STANDARD.PRIORITY4.DESC}
+                            value={data.priority4}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY5.CONTENT}
+                            description={STANDARD.PRIORITY5.DESC}
+                            value={data.priority5}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY6.CONTENT}
+                            description={STANDARD.PRIORITY6.DESC}
+                            value={data.priority6}
+                          />
+                        </div>
+                      </div>
+
+                      {/* =====================================================
+                          NHẬN XÉT NGƯỜI DUYỆT
+                      ====================================================== */}
+                      <div className="border-t border-gray-200 pt-8">
+                        <ReviewField
+                          label="Nhận xét của người duyệt hồ sơ"
+                          value={data.review_note}
+                        />
+                      </div>
+                    </div>
 
                   </div>
 
