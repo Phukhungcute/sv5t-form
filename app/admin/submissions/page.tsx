@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { STANDARD } from "@/lib/constants";
+import { STANDARD , FACULTY_NAME_NORMAL } from "@/lib/constants";
 
 type Student = {
   id: number;
@@ -173,7 +173,7 @@ function ReviewField({
   let displayValue: string;
 
   if (value === null || value === undefined || value === "") {
-    displayValue = "Chưa có";
+    displayValue = "Không có";
   } else if (typeof value === "object") {
     displayValue = JSON.stringify(value, null, 2);
   } else {
@@ -1407,6 +1407,124 @@ function formatDateInput(
                     </p>
                   </div>
 
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Khoa
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {FACULTY_NAME_NORMAL}
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Dân tộc
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.ethnicity
+                      }
+                    </p>
+                  </div>
+                  
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Số điện thoại
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.phone
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Sinh viên năm thứ
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.studentYear
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Chức vụ
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.position
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Ngày vào Đoàn
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        formatDateInput(data.unionDate)
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Ngày vào Đảng (nếu có)
+                    </p>
+
+                    <div className="flex gap-8">
+                      <p className="mt-1 text-gray-500">
+                          a/ Dự bị:
+                      <span className="text-gray-800">
+                          {" "} {formatDateInput(data.probationDate)}
+                      </span>
+                      </p>
+                    </div>
+
+                    <div className="flex gap-8">
+                      <p className="mt-1 text-gray-500">
+                          b/ Chính thức:
+                      <span className="text-gray-800">
+                          {" "} {formatDateInput(data.officialDate)}
+                      </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Email
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.email
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Địa chỉ
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        data.address
+                      }
+                    </p>
+                  </div>
+
                 </div>
 
               </div>
@@ -1441,104 +1559,19 @@ function formatDateInput(
                       ====================================================== */}
                       <div>
                         <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                          1. Thông tin chung về sinh viên
+                          1. Nhận xét
                         </h3>
+                        
+                        {/* =====================================================
+                            NHẬN XÉT NGƯỜI DUYỆT
+                        ====================================================== */}
 
-                        <div className="space-y-4">
-                          <ReviewField
-                            label="Họ và tên"
-                            value={data.fullName}
-                          />
-
-                          <ReviewField
-                            label="Mã số sinh viên"
-                            value={data.studentId ?? data.mssv}
-                          />
-
-                          <ReviewField
-                            label="Giới tính"
-                            value={data.gender}
-                          />
-
-                          <ReviewField
-                            label="Ngày sinh"
-                            value={formatDateInput(data.birthDate)}
-                          />
-
-                          <ReviewField
-                            label="Dân tộc"
-                            value={data.ethnicity}
-                          />
-
-                          <ReviewField
-                            label="Chuyên ngành đào tạo"
-                            value={data.major}
-                          />
-
-                          <ReviewField
-                            label="Lớp"
-                            value={data.className}
-                          />
-
-                          <ReviewField
-                            label="Khoa"
-                            value={data.faculty}
-                          />
-
-                          <ReviewField
-                            label="Số điện thoại"
-                            value={data.phone}
-                          />
-
-                          <ReviewField
-                            label="Sinh viên năm thứ"
-                            value={data.studentYear}
-                          />
-
-                          <ReviewField
-                            label="Chức vụ (Đoàn - Hội)"
-                            value={data.position}
-                          />
-
-                          <ReviewField
-                            label="Ngày vào Hội"
-                            value={formatDateInput(data.unionDate)}
-                          />
-
-                          <ReviewField
-                            label="Ngày vào Đoàn"
-                            value={formatDateInput(data.unionDate)}
-                          />
-
-                          <ReviewField
-                            label="Ngày vào Đảng - Dự bị"
-                            value={
-                              data.probationHasDate === false
-                                ? "Không có"
-                                : formatDateInput(data.probationDate)
-                            }
-                          />
-
-                          <ReviewField
-                            label="Ngày vào Đảng - Chính thức"
-                            value={
-                              data.officialHasDate === false
-                                ? "Không có"
-                                : formatDateInput(data.officialDate)
-                            }
-                          />
-
-                          <ReviewField
-                            label="Email"
-                            value={data.email}
-                          />
-
-                          <ReviewField
-                            label="Địa chỉ liên lạc"
-                            value={data.address}
-                          />
+                        <div className="bg-yellow-100 rounded-xl border border-gray-200 p-4">
+                          <p className="whitespace-pre-wrap break-words text-gray-800">
+                            {data.review_note}
+                          </p>
                         </div>
-                      </div>
+                       </div>
 
                       {/* =====================================================
                           2. ĐẠO ĐỨC TỐT
@@ -1842,16 +1875,6 @@ function formatDateInput(
                             value={data.priority6}
                           />
                         </div>
-                      </div>
-
-                      {/* =====================================================
-                          NHẬN XÉT NGƯỜI DUYỆT
-                      ====================================================== */}
-                      <div className="border-t border-gray-200 pt-8">
-                        <ReviewField
-                          label="Nhận xét của người duyệt hồ sơ"
-                          value={data.review_note}
-                        />
                       </div>
                     </div>
 
