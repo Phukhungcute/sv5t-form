@@ -392,13 +392,13 @@ export default function EditProofReviewPage() {
       // =================================================
 
       const {
-        data: submission,
+        data: submissions,
         error: submissionError,
       } = await supabase
         .from("submissions")
         .select("id")
         .eq("mssv", studentData.mssv)
-        .maybeSingle();
+        .limit(1);
 
       if (submissionError) {
         console.error(
@@ -413,7 +413,10 @@ export default function EditProofReviewPage() {
         return;
       }
 
-      if (!submission) {
+      const hasSubmission =
+        (submissions?.length ?? 0) > 0;
+
+      if (!hasSubmission) {
         console.warn(
           "EDIT PROOF BLOCKED: Bạn chưa nộp hồ sơ..."
         );

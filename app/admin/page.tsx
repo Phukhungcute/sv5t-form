@@ -149,83 +149,78 @@ export default function AdminPage() {
   const [resetError, setResetError] =
     useState("");
 
-  async function handleResetPassword(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
+  async function handleResetPassword() {
+  setResetMessage("");
+  setResetError("");
 
-    setResetMessage("");
-    setResetError("");
+  const mssv = resetMssv.trim();
 
-    const mssv = resetMssv.trim();
+  if (!mssv) {
+    setResetError("Vui lòng nhập MSSV.");
+    return;
+  }
 
-    if (!mssv) {
-      setResetError("Vui lòng nhập MSSV.");
+  const confirmed = window.confirm(
+    `Bạn có chắc muốn reset mật khẩu của sinh viên ${mssv} về ngày tháng năm sinh không?`
+  );
+
+  if (!confirmed) return;
+
+  setResetLoading(true);
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      setResetError(
+        "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+      );
       return;
     }
 
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn reset mật khẩu của sinh viên ${mssv} về ngày tháng năm sinh không?`
+    const response = await fetch(
+      "/api/admin/reset-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ mssv }),
+      }
     );
 
-    if (!confirmed) return;
+    const result = await response.json();
 
-    setResetLoading(true);
-
-    try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError || !session?.access_token) {
-        setResetError(
-          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-        );
-        return;
-      }
-
-      const response = await fetch(
-        "/api/admin/reset-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ mssv }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setResetError(
-          result?.error ??
-            "Không thể reset mật khẩu."
-        );
-        return;
-      }
-
-      setResetMessage(
-        result?.message ??
-          `Đã reset mật khẩu cho ${mssv}.`
-      );
-
-      setResetMssv("");
-    } catch (error) {
-      console.error(
-        "ADMIN RESET PASSWORD ERROR:",
-        error
-      );
-
+    if (!response.ok) {
       setResetError(
-        "Không thể kết nối đến máy chủ."
+        result?.error ?? "Không thể reset mật khẩu."
       );
-    } finally {
-      setResetLoading(false);
+      return;
     }
+
+    setResetMessage(
+      result?.message ??
+        `Đã reset mật khẩu cho ${mssv}.`
+    );
+
+    setResetMssv("");
+  } catch (error) {
+    console.error(
+      "ADMIN RESET PASSWORD ERROR:",
+      error
+    );
+
+    setResetError(
+      "Không thể kết nối đến máy chủ."
+    );
+  } finally {
+    setResetLoading(false);
   }
+}
 
   const [schedule, setSchedule] =
     useState<ScheduleSettings | null>(null);
@@ -378,6 +373,140 @@ async function toggleSchedule(
 
   setSchedule(data);
 }
+
+  // Quyền cực hạn của admin
+    const [adminPassword, setAdminPassword] = useState("");
+    const [adminActionLoading, setAdminActionLoading] = useState(false);
+
+    const [accountMssv, setAccountMssv] = useState("");
+    const [deleteMssv, setDeleteMssv] = useState("");
+    const [cohortKey, setCohortKey] = useState(""); 
+
+    /* =====================================================
+      QUYỀN ADMIN CỰC HẠN
+    ===================================================== */
+
+  async function runAdminAction(
+  action:
+    | "create"
+    | "delete"
+    | "create_all"
+    | "delete_cohort"
+) {
+  if (!adminPassword.trim()) {
+    alert(
+      "Vui lòng nhập lại mật khẩu quản trị viên."
+    );
+    return;
+  }
+
+  if (action === "create" && !accountMssv.trim()) {
+    alert("Vui lòng nhập MSSV.");
+    return;
+  }
+
+  if (action === "delete" && !deleteMssv.trim()) {
+    alert("Vui lòng nhập MSSV.");
+    return;
+  }
+
+  if (
+    action === "delete_cohort" &&
+    !cohortKey.trim()
+  ) {
+    alert("Vui lòng nhập khóa.");
+    return;
+  }
+
+  setAdminActionLoading(true);
+
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      alert("Phiên đăng nhập đã hết hạn.");
+      router.push("/");
+      return;
+    }
+
+    const response = await fetch(
+      "/api/admin/account-actions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action,
+          mssv:
+            action === "create"
+              ? accountMssv.trim()
+              : action === "delete"
+              ? deleteMssv.trim()
+              : undefined,
+          cohortKey:
+            action === "delete_cohort"
+              ? cohortKey.trim()
+              : undefined,
+          adminPassword,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(
+        result.error ??
+          "Không thể thực hiện thao tác."
+      );
+      return;
+    }
+
+    alert(result.message);
+
+    // Sau khi thao tác xong:
+    // xóa mật khẩu khỏi ô để phải nhập lại
+    setAdminPassword("");
+
+    if (action === "create") {
+      setAccountMssv("");
+    }
+
+    if (action === "delete") {
+      setDeleteMssv("");
+    }
+
+    if (action === "delete_cohort") {
+      setCohortKey("");
+    }
+
+    // Nếu vừa xóa tài khoản, load lại danh sách
+    if (
+      action === "delete" ||
+      action === "delete_cohort" ||
+      action === "create" ||
+      action === "create_all"
+    ) {
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error(
+      "ADMIN ACTION ERROR:",
+      error
+    );
+
+    alert(
+      "Không thể kết nối tới máy chủ."
+    );
+  } finally {
+    setAdminActionLoading(false);
+  }
+}
+
 
   const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] =
@@ -671,7 +800,7 @@ async function toggleSchedule(
         </section>
 
         {/* =================================================
-           SECTION 2 - THỐNG KÊ
+            SECTION 2 - THỐNG KÊ
         ================================================= */}
 
         <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
@@ -684,36 +813,124 @@ async function toggleSchedule(
             Thống kê tình hình xét duyệt hồ sơ.
           </p>
 
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-5 flex flex-col items-center gap-8 md:flex-row">
 
-            <div className="rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500">
-                Đạt
-              </p>
+            {/* ==========================================
+                THỐNG KÊ ĐẠT / KHÔNG ĐẠT
+            ========================================== */}
 
-              <p className="mt-2 text-3xl font-bold text-green-600">
-                {stats.passed}
-              </p>
+            <div className="flex flex-1 gap-4">
+
+              <div className="flex-1 rounded-xl border border-gray-200 p-5">
+                <p className="text-sm text-gray-500">
+                  Đạt
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-green-600">
+                  {stats.passed}
+                </p>
+              </div>
+
+              <div className="flex-1 rounded-xl border border-gray-200 p-5">
+                <p className="text-sm text-gray-500">
+                  Không đạt
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-red-600">
+                  {stats.failed}
+                </p>
+              </div>
+
             </div>
 
-            <div className="rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500">
-                Không đạt
-              </p>
+            {/* ==========================================
+                BIỂU ĐỒ TRÒN
+            ========================================== */}
 
-              <p className="mt-2 text-3xl font-bold text-red-600">
-                {stats.failed}
-              </p>
-            </div>
+            <div className="flex w-full flex-1 items-center justify-center gap-8 md:w-auto">
 
-            <div className="rounded-xl border border-gray-200 p-5">
-              <p className="text-sm text-gray-500">
-                Xem xét
-              </p>
+              {(() => {
+                const passed = stats.passed;
+                const failed = stats.failed;
+                const total = passed + failed;
 
-              <p className="mt-2 text-3xl font-bold text-yellow-500">
-                {stats.consider}
-              </p>
+                const passedPercent =
+                  total > 0
+                    ? (passed / total) * 100
+                    : 0;
+
+                const failedPercent =
+                  total > 0
+                    ? (failed / total) * 100
+                    : 0;
+
+                return (
+                  <>
+                    {/* PIE CHART */}
+
+                    <div
+                      className="relative h-40 w-40 shrink-0 rounded-full"
+                      style={{
+                        background:
+                          total === 0
+                            ? "#e5e7eb"
+                            : `conic-gradient(
+                                #16a34a 0% ${passedPercent}%,
+                                #dc2626 ${passedPercent}% 100%
+                              )`,
+                      }}
+                    >
+                      {/* Lỗ tròn ở giữa → donut chart */}
+                      <div className="absolute inset-8 flex items-center justify-center rounded-full bg-white">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-gray-900">
+                            {total}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            hồ sơ
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CHÚ THÍCH */}
+
+                    <div className="space-y-3">
+
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-green-600" />
+
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            Đạt
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            {passedPercent.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-red-600" />
+
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            Không đạt
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            {failedPercent.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </>
+                );
+              })()}
+
             </div>
 
           </div>
@@ -912,54 +1129,304 @@ async function toggleSchedule(
             Sau khi reset, sinh viên sẽ được yêu cầu đổi mật khẩu.
           </p>
 
-          <form
-            onSubmit={handleResetPassword}
-            className="mt-5 max-w-xl"
+          <div className="mt-5 max-w-xl">
+          <label
+            htmlFor="reset-mssv"
+            className="mb-2 block text-sm font-medium text-gray-700"
           >
-            <label
-              htmlFor="reset-mssv"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Mã số sinh viên
-            </label>
+            Mã số sinh viên
+          </label>
 
-            <div className="flex gap-2">
+          <div className="flex gap-2">
+            <input
+              id="reset-mssv"
+              type="text"
+              value={resetMssv}
+              onChange={(e) =>
+                setResetMssv(e.target.value)
+              }
+              placeholder="Nhập MSSV cần reset"
+              disabled={resetLoading}
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+              required
+            />
+
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={resetLoading}
+              className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resetLoading
+                ? "Đang reset..."
+                : "Reset mật khẩu"}
+            </button>
+          </div>
+
+          {resetError && (
+            <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+              {resetError}
+            </div>
+          )}
+
+          {resetMessage && (
+            <div className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+              {resetMessage}
+            </div>
+          )}
+        </div>
+
+        </section>
+
+        {/* =====================================================
+            SECTION 5 — LỆNH QUẢN TRỊ ĐẶC BIỆT
+        ===================================================== */}
+
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+
+          <h2 className="text-2xl font-semibold text-gray-900">
+            5. Lệnh quản trị đặc biệt
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Các thao tác bên dưới có thể tạo hoặc xóa dữ liệu
+            tài khoản. Vui lòng xác thực lại mật khẩu quản trị
+            trước khi thực hiện.
+          </p>
+
+          {/* ================================================
+              XÁC THỰC ADMIN
+          ================================================ */}
+
+          <div className="mt-6 flex justify-center">
+            <div className="w-full max-w-md">
+              <label className="mb-2 block text-center font-medium text-gray-700">
+                Xác nhận mật khẩu quản trị viên
+              </label>
+
               <input
-                id="reset-mssv"
-                type="text"
-                value={resetMssv}
+                type="password"
+                value={adminPassword}
                 onChange={(e) =>
-                  setResetMssv(e.target.value)
+                  setAdminPassword(e.target.value)
                 }
-                placeholder="Nhập MSSV cần reset"
-                disabled={resetLoading}
-                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-                required
+                placeholder="Nhập lại mật khẩu quản trị viên"
+                autoComplete="current-password"
+                spellCheck={false}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+
+              <p className="mt-2 text-center text-xs text-gray-500">
+                Mật khẩu này phải được nhập lại mỗi lần thực hiện
+                một lệnh quản trị.
+              </p>
+            </div>
+          </div>
+
+          {/* ================================================
+              1. TẠO 1 TÀI KHOẢN
+          ================================================ */}
+
+          <div className="mt-8 rounded-xl border border-gray-200 p-5">
+
+            <h3 className="text-lg font-semibold text-gray-800">
+              5.1. Tạo tài khoản sinh viên
+            </h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Nhập MSSV để tạo tài khoản theo thông tin trong
+              bảng sinh viên.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+
+              <input
+                type="text"
+                value={accountMssv}
+                onChange={(e) =>
+                  setAccountMssv(e.target.value)
+                }
+                placeholder="Nhập MSSV"
+                spellCheck={false}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
 
               <button
-                type="submit"
-                disabled={resetLoading}
-                className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                disabled={adminActionLoading}
+                onClick={() =>
+                  runAdminAction("create")
+                }
+                className="cursor-pointer rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {resetLoading
-                  ? "Đang reset..."
-                  : "Reset mật khẩu"}
+                {adminActionLoading
+                  ? "Đang xử lý..."
+                  : "Tạo tài khoản"}
               </button>
+
+            </div>
+          </div>
+
+          {/* ================================================
+              2. XÓA 1 TÀI KHOẢN
+          ================================================ */}
+
+          <div className="mt-5 rounded-xl border border-gray-200 p-5">
+
+            <h3 className="text-lg font-semibold text-gray-800">
+              5.2. Xóa tài khoản sinh viên
+            </h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Xóa tài khoản Auth, profile, hồ sơ và minh chứng
+              của MSSV được nhập.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+
+              <input
+                type="text"
+                value={deleteMssv}
+                onChange={(e) =>
+                  setDeleteMssv(e.target.value)
+                }
+                placeholder="Nhập MSSV"
+                spellCheck={false}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
+              />
+
+              <button
+                type="button"
+                disabled={adminActionLoading}
+                onClick={() => {
+                  if (
+                    !confirm(
+                      `Bạn có chắc chắn muốn xóa toàn bộ dữ liệu của MSSV ${deleteMssv}?`
+                    )
+                  ) {
+                    return;
+                  }
+
+                  runAdminAction("delete");
+                }}
+                className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {adminActionLoading
+                  ? "Đang xử lý..."
+                  : "Xóa tài khoản"}
+              </button>
+
+            </div>
+          </div>
+
+          {/* ================================================
+              3. TẠO HÀNG LOẠT
+          ================================================ */}
+
+          <div className="mt-5 rounded-xl border border-gray-200 p-5">
+
+            <h3 className="text-lg font-semibold text-gray-800">
+              5.3. Tạo tài khoản hàng loạt
+            </h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Tạo tài khoản cho tất cả sinh viên trong database
+              có ngày sinh. Mật khẩu mặc định được tạo từ ngày sinh.
+            </p>
+
+            <button
+              type="button"
+              disabled={adminActionLoading}
+              onClick={() => {
+                if (
+                  !confirm(
+                    "Bạn có chắc chắn muốn tạo tài khoản hàng loạt cho tất cả sinh viên có ngày sinh?"
+                  )
+                ) {
+                  return;
+                }
+
+                runAdminAction("create_all");
+              }}
+              className="cursor-pointer mt-4 rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {adminActionLoading
+                ? "Đang xử lý..."
+                : "Tạo tài khoản hàng loạt"}
+            </button>
+
+          </div>
+
+          {/* ================================================
+              4. XÓA HÀNG LOẠT THEO KHÓA
+          ================================================ */}
+
+          <div className="mt-5 rounded-xl border-2 border-red-300 bg-red-50 p-5">
+
+            <h3 className="text-lg font-semibold text-red-700">
+              5.4. XÓA TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
+            </h3>
+
+            <p className="mt-1 text-sm text-red-600">
+              CẢNH BÁO: Thao tác này sẽ xóa tài khoản Auth,
+              profile, hồ sơ, minh chứng và các dữ liệu liên quan
+              của tất cả sinh viên thuộc khóa được chọn.
+            </p>
+
+            <p className="mt-2 text-sm text-gray-600">
+              Ví dụ:
+              <span className="font-medium">
+                {" "}DGT1234 → khóa 23
+              </span>,
+              <span className="font-medium">
+                {" "}DGT1213 → khóa 21
+              </span>,
+              <span className="font-medium">
+                {" "}DGT1252 → khóa 25
+              </span>.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                value={cohortKey}
+                onChange={(e) =>
+                  setCohortKey(
+                    e.target.value.replace(/\D/g, "")
+                  )
+                }
+                placeholder="Nhập khóa, VD: 23"
+                spellCheck={false}
+                className="flex-1 rounded-lg border border-red-300 bg-white px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
+              />
+
+              <button
+                type="button"
+                disabled={adminActionLoading}
+                onClick={() => {
+                  if (
+                    !confirm(
+                      `CẢNH BÁO NGUY HIỂM!\n\nTất cả tài khoản và dữ liệu của khóa ${cohortKey} sẽ bị xóa.\n\nBạn có chắc chắn muốn tiếp tục?`
+                    )
+                  ) {
+                    return;
+                  }
+
+                  runAdminAction("delete_cohort");
+                }}
+                className="cursor-pointer rounded-lg bg-red-700 px-5 py-3 font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {adminActionLoading
+                  ? "Đang xử lý..."
+                  : "XÓA TOÀN BỘ KHÓA"}
+              </button>
+
             </div>
 
-            {resetError && (
-              <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-                {resetError}
-              </div>
-            )}
-
-            {resetMessage && (
-              <div className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-                {resetMessage}
-              </div>
-            )}
-          </form>
+          </div>
 
         </section>
 

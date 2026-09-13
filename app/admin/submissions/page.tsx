@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { STANDARD , FACULTY_NAME_NORMAL } from "@/lib/constants";
+import { STANDARD , FACULTY_NAME_NORMAL , ACADEMIC_YEAR } from "@/lib/constants";
+import * as XLSX from "xlsx-js-style";
 
 type Student = {
   id: number;
@@ -992,6 +993,345 @@ function formatDateInput(
   return `${day}/${month}/${year}`;
 }
 
+function exportToExcel() {
+  const exportData = filteredStudents.map((item) => {
+    let status = "SUBMITTED";
+
+    switch (item.submission?.status) {
+      case "passed":
+        status = "ĐẠT";
+        break;
+
+      case "failed":
+        status = "KHÔNG ĐẠT";
+        break;
+
+      case "consider":
+        status = "XEM XÉT";
+        break;
+
+      default:
+        status = item.submission
+          ? "SUBMITTED"
+          : "CHƯA NỘP";
+    }
+
+    return {
+      "MSSV": item.student.mssv,
+      "Họ tên": item.student.full_name,
+      "Lớp": item.student.class_name,
+      "Kết quả": status,
+    };
+  });
+
+  // ==========================================
+  // TẠO WORKSHEET
+  // ==========================================
+
+  const worksheet = XLSX.utils.aoa_to_sheet([]);
+
+  // Đưa dữ liệu + header bắt đầu từ A2
+  XLSX.utils.sheet_add_json(
+    worksheet,
+    exportData,
+    {
+      origin: "A2",
+      skipHeader: false,
+    }
+  );
+
+  // ==========================================
+  // TẠO WORKBOOK
+  // ==========================================
+
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    "Kết quả SV5T"
+  );
+
+  // ==========================================
+  // TITLE
+  // ==========================================
+
+  XLSX.utils.sheet_add_aoa(
+    worksheet,
+    [[
+      `KẾT QUẢ XÉT SV5T NĂM HỌC ${ACADEMIC_YEAR}`,
+    ]],
+    {
+      origin: "A1",
+    }
+  );
+
+  // Merge A1:D1
+  worksheet["!merges"] = [
+    {
+      s: { r: 0, c: 0 },
+      e: { r: 0, c: 3 },
+    },
+  ];
+
+  // Style title
+  worksheet["A1"].s = {
+    font: {
+      bold: true,
+      sz: 16,
+    },
+    alignment: {
+      horizontal: "center",
+      vertical: "center",
+    },
+  };
+
+  // ==========================================
+  // HEADER
+  // ==========================================
+
+  const headerRow = 2;
+
+  const headers = [
+    "MSSV",
+    "Họ tên",
+    "Lớp",
+    "Kết quả",
+  ];
+
+  headers.forEach((header, columnIndex) => {
+    const cellAddress =
+      XLSX.utils.encode_cell({
+        r: headerRow - 1,
+        c: columnIndex,
+      });
+
+    worksheet[cellAddress].s = {
+      font: {
+        bold: true,
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+      border: {
+        top: {
+          style: "thin",
+          color: {
+            rgb: "000000",
+          },
+        },
+        bottom: {
+          style: "thin",
+          color: {
+            rgb: "000000",
+          },
+        },
+        left: {
+          style: "thin",
+          color: {
+            rgb: "000000",
+          },
+        },
+        right: {
+          style: "thin",
+          color: {
+            rgb: "000000",
+          },
+        },
+      },
+    };
+  });
+
+  // ==========================================
+  // BORDER + CĂN GIỮA + MÀU TRẠNG THÁI
+  // ==========================================
+
+  for (
+    let rowIndex = 0;
+    rowIndex < exportData.length;
+    rowIndex++
+  ) {
+    const excelRow = headerRow + 1 + rowIndex;
+
+    // ------------------------------------------
+    // BORDER CHO TẤT CẢ Ô DỮ LIỆU
+    // ------------------------------------------
+
+    ["A", "B", "C", "D"].forEach((column) => {
+      const cell =
+        worksheet[`${column}${excelRow}`];
+
+      if (!cell) return;
+
+      cell.s = {
+        ...(cell.s ?? {}),
+
+        border: {
+          top: {
+            style: "thin",
+            color: {
+              rgb: "000000",
+            },
+          },
+          bottom: {
+            style: "thin",
+            color: {
+              rgb: "000000",
+            },
+          },
+          left: {
+            style: "thin",
+            color: {
+              rgb: "000000",
+            },
+          },
+          right: {
+            style: "thin",
+            color: {
+              rgb: "000000",
+            },
+          },
+        },
+      };
+    });
+
+    // ------------------------------------------
+    // CĂN GIỮA MSSV + LỚP + TRẠNG THÁI
+    // ------------------------------------------
+
+    ["A", "C", "D"].forEach((column) => {
+      const cell =
+        worksheet[`${column}${excelRow}`];
+
+      if (!cell) return;
+
+      cell.s = {
+        ...(cell.s ?? {}),
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    });
+
+    // ------------------------------------------
+    // MÀU TRẠNG THÁI
+    // ------------------------------------------
+
+    const statusCell =
+      `D${excelRow}`;
+
+    const status =
+      exportData[rowIndex]["Kết quả"];
+
+    if (status === "ĐẠT") {
+      worksheet[statusCell].s = {
+        ...(worksheet[statusCell].s ?? {}),
+        font: {
+          bold: true,
+        },
+        fill: {
+          patternType: "solid",
+          fgColor: {
+            rgb: "C6EFCE",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+
+    else if (status === "KHÔNG ĐẠT") {
+      worksheet[statusCell].s = {
+        ...(worksheet[statusCell].s ?? {}),
+        font: {
+          bold: true,
+        },
+        fill: {
+          patternType: "solid",
+          fgColor: {
+            rgb: "FFC7CE",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+
+    else if (status === "XEM XÉT") {
+      worksheet[statusCell].s = {
+        ...(worksheet[statusCell].s ?? {}),
+        font: {
+          bold: true,
+        },
+        fill: {
+          patternType: "solid",
+          fgColor: {
+            rgb: "FFEB9C",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+
+    else if (status === "SUBMITTED") {
+      worksheet[statusCell].s = {
+        ...(worksheet[statusCell].s ?? {}),
+        font: {
+          bold: true,
+        },
+        fill: {
+          patternType: "solid",
+          fgColor: {
+            rgb: "BDD7EE",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+  }
+
+  // ==========================================
+  // ĐỘ RỘNG CỘT
+  // ==========================================
+
+  worksheet["!cols"] = [
+    { wch: 18 }, // MSSV
+    { wch: 30 }, // Họ tên
+    { wch: 18 }, // Lớp
+    { wch: 18 }, // Trạng thái
+  ];
+
+  // ==========================================
+  // CHIỀU CAO
+  // ==========================================
+
+  worksheet["!rows"] = [
+    { hpt: 28 }, // Title
+    { hpt: 22 }, // Header
+  ];
+
+  // ==========================================
+  // XUẤT FILE
+  // ==========================================
+
+  XLSX.writeFile(
+    workbook,
+    `Ket-qua-SV5T-${ACADEMIC_YEAR}.xlsx`
+  );
+}
+
   /* =====================================================
      LOADING
   ===================================================== */
@@ -1113,6 +1453,14 @@ function formatDateInput(
             }`}
           >
             XEM XÉT
+          </button>
+
+          <button
+            type="button"
+            onClick={exportToExcel}
+            className="ml-2 cursor-pointer rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900"
+          >
+            📊 Tải Excel
           </button>
         </div>
 
