@@ -1362,13 +1362,11 @@ function exportToExcel() {
 
           <div>
             <button
-              onClick={() =>
-                router.push("/admin")
-              }
-              className="mb-5 cursor-pointer text-sm text-blue-600 hover:underline"
-            >
-              ← Quay lại trang quản trị
-            </button>
+          onClick={() => router.push("/admin")}
+          className="cursor-pointer mb-6 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+        >
+          ← Quay lại trang quản trị
+        </button>
 
             <h1 className="text-3xl font-bold text-gray-900">
               Duyệt hồ sơ

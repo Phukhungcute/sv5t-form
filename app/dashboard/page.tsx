@@ -12,6 +12,7 @@ import {
     isWithinPeriod,
     getDateAfter,
 } from "@/lib/constants";
+import { APP_VERSION } from "@/lib/version"
 
 type Student = {
   mssv: string;
@@ -230,7 +231,7 @@ export default function Dashboard() {
 
           <button
             onClick={() => router.push("/")}
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="cursor-pointer mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             Quay lại đăng nhập
           </button>
@@ -675,6 +676,92 @@ export default function Dashboard() {
           </div>     
 
         </section>
+        
+        {/* Help Center */}
+        <section className="mt-10 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Cần trợ giúp?
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Tìm câu trả lời, hướng dẫn và các quy định liên quan đến hồ sơ SV5T.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <button
+              onClick={() => router.push("/dashboard/qa")}
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">
+                  ❓
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Câu hỏi thường gặp</h3>
+                  <p className="mt-1 text-sm text-gray-500">Q&A về hệ thống và hồ sơ</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push("/dashboard/guide")}
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">
+                  📖
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Hướng dẫn sử dụng</h3>
+                  <p className="mt-1 text-sm text-gray-500">Các bước sử dụng hệ thống</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push("/dashboard/regulations")}
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">
+                  📄
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Quy định</h3>
+                  <p className="mt-1 text-sm text-gray-500">Quy định và tiêu chí SV5T</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Liên hệ hỗ trợ */}
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Liên hệ hỗ trợ</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ Ban phụ trách SV5T.
+                </p>
+              </div>
+              <div className="shrink-0 text-sm text-gray-600 md:text-right">
+                <p>Email: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
+                <p className="mt-1">SĐT: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-8 border-t border-gray-200 py-6 text-center">
+          <p className="text-sm font-medium text-gray-700">
+            SV5T Form • Năm học {ACADEMIC_YEAR}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            © 2026 • Đơn vị phụ trách • Phiên bản {APP_VERSION}
+          </p>
+        </footer>
+
       </div>
     </main>
   );

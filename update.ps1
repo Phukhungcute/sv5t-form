@@ -1,5 +1,4 @@
-﻿```powershell
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 # ============================================
 # FUNCTIONS
@@ -17,7 +16,6 @@ function Abort-Update {
     Write-Host ""
     Write-Host $Message -ForegroundColor Yellow
     Write-Host ""
-
     exit 1
 }
 
@@ -136,6 +134,34 @@ $ExistingTag = git tag -l $Version
 if (-not [string]::IsNullOrWhiteSpace($ExistingTag)) {
     Abort-Update "Version $Version đã tồn tại. Hãy chọn version khác."
 }
+
+# ============================================
+# UPDATE VERSION.TS
+# ============================================
+
+$VersionPath = Join-Path (Get-Location) "lib/version.ts"
+$VersionDirectory = Split-Path $VersionPath -Parent
+
+if (-not (Test-Path $VersionDirectory)) {
+    New-Item -ItemType Directory -Path $VersionDirectory -Force | Out-Null
+}
+
+$VersionContent = @"
+/**
+ * Phiên bản hiện tại của SV5T Form.
+ *
+ * File này được tự động cập nhật bởi release script.
+ */
+export const APP_VERSION = "$Version";
+"@
+
+Set-Content `
+    -Path $VersionPath `
+    -Value $VersionContent `
+    -Encoding UTF8
+
+Write-Host ""
+Write-Host "✓ lib/version.ts updated → $Version" -ForegroundColor Green
 
 # ============================================
 # CHANGELOG INPUT
@@ -298,17 +324,6 @@ Run-Git @(
 )
 
 # ============================================
-# GIT PUSH
-# ============================================
-
-Write-Host ""
-Write-Host "→ git push" -ForegroundColor Cyan
-
-Run-Git @(
-    "push"
-)
-
-# ============================================
 # CREATE TAG
 # ============================================
 
@@ -321,6 +336,17 @@ Run-Git @(
     $Version,
     "-m",
     $Version
+)
+
+# ============================================
+# PUSH COMMIT
+# ============================================
+
+Write-Host ""
+Write-Host "→ git push" -ForegroundColor Cyan
+
+Run-Git @(
+    "push"
 )
 
 # ============================================
@@ -348,4 +374,3 @@ Write-Host ""
 Write-Host "Version: $Version" -ForegroundColor Green
 Write-Host "GitHub đã được cập nhật." -ForegroundColor Green
 Write-Host ""
-```
