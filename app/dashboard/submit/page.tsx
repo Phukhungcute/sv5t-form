@@ -29,6 +29,8 @@ type SubmissionData = {
   email: string;
   address: string;
 
+  youthunionHasDate: boolean | null;
+  youthunion: string;
   probationHasDate: boolean | null;
   probationDate: string;
   officialHasDate: boolean | null;
@@ -281,6 +283,8 @@ useEffect(() => {
   const [showWarning, setShowWarning] = useState(false);
 
   const [unionHasDate, setUnionHasDate] = useState<boolean | null>(null);
+  const [youthunionHasDate, setYouthunionHasDate] = useState<boolean | null>(null);
+  const [youthunionDate, setYouthunionDate] = useState("");
   const [probationHasDate, setProbationHasDate] = useState<boolean | null>(null);
   const [probationDate, setProbationDate] = useState("");
   const [officialHasDate, setOfficialHasDate] = useState<boolean | null>(null);
@@ -310,6 +314,8 @@ useEffect(() => {
   email,
   address,
 
+  youthunionHasDate,
+  youthunionDate,
   probationHasDate,
   probationDate,
   officialHasDate,
@@ -328,6 +334,9 @@ function getSubmissionData() {
     unionDate,
     email,
     address,
+
+    youthunionHasDate,
+    youthunionDate,
 
     probationHasDate,
     probationDate,
@@ -357,6 +366,13 @@ useEffect(() => {
       setUnionDate(draft.unionDate ?? "");
       setEmail(draft.email ?? "");
       setAddress(draft.address ?? "");
+      
+      setYouthunionHasDate(
+        draft.youthunionHasDate ?? null
+      );
+      setYouthunionDate(
+        draft.youthunionDate ?? ""
+      );
 
       setProbationHasDate(
         draft.probationHasDate ?? null
@@ -399,6 +415,9 @@ useEffect(() => {
     email,
     address,
 
+    youthunionHasDate,
+    youthunionDate,
+    
     probationHasDate,
     probationDate,
 
@@ -428,6 +447,8 @@ useEffect(() => {
   unionDate,
   email,
   address,
+  youthunionDate,
+  youthunionHasDate,
   probationHasDate,
   probationDate,
   officialHasDate,
@@ -516,13 +537,15 @@ function isStep1Complete() {
       </div>
 
       {/* Bên phải */}
+      <div className="menu-btn-wrapper menu-btn-wrapper-header">
       <button
         type="button"
         onClick={() => router.push("/dashboard")}
-        className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+        className="menu-btn menu-btn-blue"
       >
         ← Quay về trang chủ
       </button>
+      </div>
     </div>
 
         {/* Progress */}
@@ -790,10 +813,10 @@ function isStep1Complete() {
 
               <DateOption
                 title="Ngày vào Đoàn"
-                hasDate={unionHasDate}
-                setHasDate={setUnionHasDate}
-                date={unionDate}
-                setDate={setUnionDate}
+                hasDate={youthunionHasDate}
+                setHasDate={setYouthunionHasDate}
+                date={youthunionDate}
+                setDate={setYouthunionDate}
               />
               
               <div>
@@ -1519,37 +1542,43 @@ function isStep1Complete() {
         </p>
       )}
         
-        <div className="mt-8 flex items-center justify-between">
+        <div className="flex items-center justify-between">
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={previousStep}
             disabled={currentStep === 1}
-            className={`cursor-pointer rounded-lg px-6 py-3 font-medium transition ${
+            className={`menu-btn menu-btn-white ${
               currentStep === 1
-                ? "cursor-not-allowed bg-gray-200 text-gray-400"
-                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                ? "menu-btn-disabled"
+                : "menu-btn-white"
             }`}
           >
             ← Quay lại
           </button>
+          </div>
 
           {currentStep < totalSteps ? (
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               onClick={nextStep}
-              className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+              className="menu-btn menu-btn-blue"
             >
               Tiếp tục →
             </button>
+            </div>
           ) : (
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               onClick={finishForm}
-              className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
+              className="menu-btn menu-btn-green"
             >
               Hoàn tất
             </button>
+            </div>
           )}
 
         </div>

@@ -388,17 +388,19 @@ export default function ResultPage() {
 
           {/* BACK */}
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 flex items-center justify-center">
 
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               onClick={() =>
                 router.push("/dashboard")
               }
-              className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700"
+              className="menu-btn menu-btn-blue"
             >
-              Quay lại Dashboard
+              Quay lại trang chủ
             </button>
+            </div>
 
           </div>
 

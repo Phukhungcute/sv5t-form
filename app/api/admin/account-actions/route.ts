@@ -455,13 +455,10 @@ export async function POST(request: Request) {
       const {
         data: students,
         error: studentsError,
-      } =
-        await supabaseAdmin
-          .from("students")
-          .select(
-            "id, mssv, birth_date"
-          )
-          .not("birth_date", "is", null);
+      } = await supabaseAdmin
+        .from("students")
+        .select("id, mssv, birth_date")
+        .not("birth_date", "is", null);
 
       if (studentsError) {
         throw studentsError;
@@ -471,15 +468,25 @@ export async function POST(request: Request) {
       let skipped = 0;
       let failed = 0;
 
-      for (const student of students ?? []) {
+      const total = students?.length ?? 0;
+
+      console.log(
+        `[CREATE_ALL] Bắt đầu tạo tài khoản. Tổng số: ${total}`
+      );
+
+      for (let i = 0; i < total; i++) {
+        const student = students![i];
+
+        console.log(
+          `[CREATE_ALL] [${i + 1}/${total}] Đang xử lý: ${student.mssv}`
+        );
+
         try {
           const email =
             `${student.mssv}@sv5t.local`;
 
           const password =
-            formatPassword(
-              student.birth_date
-            );
+            formatPassword(student.birth_date);
 
           const {
             data: authData,
@@ -493,20 +500,46 @@ export async function POST(request: Request) {
               }
             );
 
+          // ==========================================
+          // AUTH ERROR
+          // ==========================================
+
           if (authError) {
-            // Tài khoản đã tồn tại thì bỏ qua
             if (
               authError.message
                 .toLowerCase()
                 .includes("already")
             ) {
               skipped++;
+
+              console.log(
+                `[CREATE_ALL] [${i + 1}/${total}] Bỏ qua: ${student.mssv} — tài khoản đã tồn tại.`
+              );
+
               continue;
             }
 
             failed++;
+
+            console.error(
+              `[CREATE_ALL] [${i + 1}/${total}] LỖI AUTH: ${student.mssv}`,
+              {
+                studentId: student.id,
+                mssv: student.mssv,
+                email,
+                message: authError.message,
+                name: authError.name,
+                status: authError.status,
+                code: authError.code,
+              }
+            );
+
             continue;
           }
+
+          // ==========================================
+          // PROFILE
+          // ==========================================
 
           const {
             error: profileError,
@@ -520,7 +553,26 @@ export async function POST(request: Request) {
                 must_change_password: true,
               });
 
+          // ==========================================
+          // PROFILE ERROR
+          // ==========================================
+
           if (profileError) {
+            console.error(
+              `[CREATE_ALL] [${i + 1}/${total}] LỖI PROFILE: ${student.mssv}`,
+              {
+                studentId: student.id,
+                mssv: student.mssv,
+                authUserId: authData.user.id,
+                email,
+                message: profileError.message,
+                details: profileError.details,
+                hint: profileError.hint,
+                code: profileError.code,
+              }
+            );
+
+            // Rollback Auth user
             await supabaseAdmin.auth.admin.deleteUser(
               authData.user.id
             );
@@ -529,11 +581,31 @@ export async function POST(request: Request) {
             continue;
           }
 
+          // ==========================================
+          // SUCCESS
+          // ==========================================
+
           created++;
-        } catch {
+
+          console.log(
+            `[CREATE_ALL] [${i + 1}/${total}] Đã tạo: ${student.mssv}`
+          );
+
+        } catch (error) {
           failed++;
+
+          console.error(
+            `[CREATE_ALL] [${i + 1}/${total}] LỖI KHÔNG XÁC ĐỊNH: ${student.mssv}`,
+            error
+          );
+
+          continue;
         }
       }
+
+      console.log(
+        `[CREATE_ALL] HOÀN TẤT — Tạo: ${created}, bỏ qua: ${skipped}, lỗi: ${failed}.`
+      );
 
       return NextResponse.json({
         success: true,

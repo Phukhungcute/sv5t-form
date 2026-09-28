@@ -42,3 +42,328 @@ body {
     font-size: 10px;
   }
 }
+
+.menu-btn-wrapper {
+  position: relative;
+  width: 100%;
+  margin-top: 20px;
+  padding-bottom: 6px;
+}
+
+/* =========================
+   ĐÁY 3D — ĐỨNG YÊN
+   ========================= */
+
+.menu-btn-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% - 6px);
+
+  border-radius: 8px;
+  z-index: 0;
+}
+
+.menu-btn-base-blue {
+  background: rgb(29, 78, 216);
+}
+
+.menu-btn-base-yellow {
+  background: rgb(202, 138, 4);
+}
+
+.menu-btn-base-green {
+  background: rgb(21, 128, 61);
+}
+
+
+/* =========================
+   BUTTON
+   ========================= */
+
+.menu-btn {
+  width: 100%;
+  padding: 12px 16px;
+
+  border: 2px solid white;
+  border-radius: 8px;
+
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: 0.15s ease-in-out;
+}
+
+
+/* =========================
+   BLUE
+   ========================= */
+
+.menu-btn-blue {
+  background: linear-gradient(
+    rgb(59, 130, 246),
+    rgb(37, 99, 235)
+  );
+
+  box-shadow:
+    rgb(29, 78, 216) 0px 6px,
+    rgba(37, 99, 235, 0.35) 0px 10px 15px;
+}
+
+.menu-btn-blue:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(96, 165, 250),
+    rgb(59, 130, 246)
+  );
+
+  box-shadow:
+    rgb(29, 78, 216) 0px 8px,
+    rgba(37, 99, 235, 0.45) 0px 14px 20px;
+}
+
+.menu-btn-blue:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(29, 78, 216) 0px 2px,
+    rgba(37, 99, 235, 0.2) 0px 4px 6px;
+}
+
+
+/* =========================
+   YELLOW
+   ========================= */
+
+.menu-btn-yellow {
+  background: linear-gradient(
+    rgb(250, 204, 21),
+    rgb(234, 179, 8)
+  );
+
+  box-shadow:
+    rgb(161, 98, 7) 0px 6px,
+    rgba(234, 179, 8, 0.35) 0px 10px 15px;
+}
+
+.menu-btn-yellow:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(253, 224, 71),
+    rgb(250, 204, 21)
+  );
+
+  box-shadow:
+    rgb(161, 98, 7) 0px 8px,
+    rgba(234, 179, 8, 0.45) 0px 14px 20px;
+}
+
+.menu-btn-yellow:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(161, 98, 7) 0px 2px,
+    rgba(234, 179, 8, 0.2) 0px 4px 6px;
+}
+
+
+/* =========================
+   GREEN
+   ========================= */
+
+.menu-btn-green {
+  background: linear-gradient(
+    rgb(34, 197, 94),
+    rgb(22, 163, 74)
+  );
+
+  box-shadow:
+    rgb(21, 128, 61) 0px 6px,
+    rgba(22, 163, 74, 0.35) 0px 10px 15px;
+}
+
+.menu-btn-green:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(74, 222, 128),
+    rgb(34, 197, 94)
+  );
+
+  box-shadow:
+    rgb(21, 128, 61) 0px 8px,
+    rgba(22, 163, 74, 0.45) 0px 14px 20px;
+}
+
+.menu-btn-green:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(21, 128, 61) 0px 2px,
+    rgba(22, 163, 74, 0.2) 0px 4px 6px;
+}
+
+/* =========================
+   WHITE
+   ========================= */
+
+.menu-btn-white {
+  background: linear-gradient(
+    rgb(255, 255, 255),
+    rgb(243, 244, 246)
+  );
+
+  color: rgb(31, 41, 55);
+
+  box-shadow:
+    rgb(156, 163, 175) 0px 6px,
+    rgba(107, 114, 128, 0.2) 0px 10px 15px;
+}
+
+.menu-btn-white:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(255, 255, 255),
+    rgb(249, 250, 251)
+  );
+
+  box-shadow:
+    rgb(156, 163, 175) 0px 8px,
+    rgba(107, 114, 128, 0.3) 0px 14px 20px;
+}
+
+.menu-btn-white:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(156, 163, 175) 0px 2px,
+    rgba(107, 114, 128, 0.15) 0px 4px 6px;
+}
+
+/* =========================
+   RED
+   ========================= */
+
+.menu-btn-red {
+  background: linear-gradient(
+    rgb(239, 68, 68),
+    rgb(220, 38, 38)
+  );
+
+  box-shadow:
+    rgb(185, 28, 28) 0px 6px,
+    rgba(220, 38, 38, 0.35) 0px 10px 15px;
+}
+
+.menu-btn-red:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(248, 113, 113),
+    rgb(239, 68, 68)
+  );
+
+  box-shadow:
+    rgb(185, 28, 28) 0px 8px,
+    rgba(220, 38, 38, 0.45) 0px 14px 20px;
+}
+
+.menu-btn-red:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(185, 28, 28) 0px 2px,
+    rgba(220, 38, 38, 0.2) 0px 4px 6px;
+}
+
+/* =========================
+   GRAY (Xám đen)
+   ========================= */
+
+.menu-btn-gray {
+  background: linear-gradient(
+    rgb(55, 65, 81),
+    rgb(31, 41, 55)
+  );
+
+  box-shadow:
+    rgb(17, 24, 39) 0px 6px,
+    rgba(17, 24, 39, 0.35) 0px 10px 15px;
+}
+
+.menu-btn-gray:hover {
+  transform: translateY(-2px);
+
+  background: linear-gradient(
+    rgb(75, 85, 99),
+    rgb(55, 65, 81)
+  );
+
+  box-shadow:
+    rgb(17, 24, 39) 0px 8px,
+    rgba(17, 24, 39, 0.45) 0px 14px 20px;
+}
+
+.menu-btn-gray:active {
+  transform: translateY(4px);
+
+  box-shadow:
+    rgb(17, 24, 39) 0px 2px,
+    rgba(17, 24, 39, 0.2) 0px 4px 6px;
+}
+
+.menu-btn-wrapper-header {
+  width: auto;
+  margin-top: 10;
+}
+
+.menu-btn-header {
+  width: auto;
+}
+
+.menu-btn-wrapper-footer {
+  width: auto;
+  margin-bottom: 10;
+}
+
+.menu-btn-footer {
+  width: auto;
+}
+
+.menu-btn-disabled {
+  background: linear-gradient(
+    rgb(229, 231, 235),
+    rgb(209, 213, 219)
+  );
+
+  color: rgb(156, 163, 175);
+
+  box-shadow:
+    rgb(156, 163, 175) 0px 6px,
+    rgba(107, 114, 128, 0.2) 0px 10px 15px;
+
+  cursor: not-allowed;
+}
+
+.menu-btn:disabled {
+  cursor: not-allowed;
+}
+
+.menu-btn-wrapper-inline {
+  position: relative;
+  width: auto;
+  margin-top: 0;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.menu-btn-inline {
+  width: auto;
+  height: 100%;
+  white-space: nowrap;
+}

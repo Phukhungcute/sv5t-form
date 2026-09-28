@@ -11,6 +11,7 @@ import {
     ACADEMIC_YEAR
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { hasUsableReviewNote } from "@/lib/edit-permission";
 
 type Student = {
   mssv: string;
@@ -29,6 +30,8 @@ type SubmissionData = {
   email: string;
   address: string;
 
+  youthunionHasDate: boolean | null;
+  youthunionDate: boolean | null;
   probationHasDate: boolean | null;
   probationDate: string;
   officialHasDate: boolean | null;
@@ -289,6 +292,24 @@ export default function EditSubmitPage() {
 
         setStudent(studentData);
 
+        // ==========================================
+        // KIỂM TRA QUYỀN CHỈNH SỬA
+        // ==========================================
+        const reviewNote = latestSubmission.data?.review_note;
+
+        if (!hasUsableReviewNote(reviewNote)) {
+          console.warn(
+            "EDIT SUBMISSION BLOCKED: KHÔNG CÓ REVIEW NOTE"
+          );
+
+          alert(
+            "Hồ sơ hiện chưa có nhận xét bổ sung từ quản trị viên nên bạn chưa thể chỉnh sửa."
+          );
+
+          router.replace("/dashboard");
+          return;
+        }
+
         // =====================================================
         // LOAD DATA CỦA HỒ SƠ MỚI NHẤT VÀO FORM
         // =====================================================
@@ -303,6 +324,13 @@ export default function EditSubmitPage() {
         setEmail(String(data.email ?? ""));
         setAddress(String(data.address ?? ""));
 
+        setYouthunionHasDate(
+          typeof data.youthunionHasDate === "boolean"
+            ? data.youthunionHasDate
+            : null
+        );
+        setYouthunionDate(String(data.youthunionDate ?? ""));
+        
         setProbationHasDate(
           typeof data.probationHasDate === "boolean"
             ? data.probationHasDate
@@ -447,7 +475,8 @@ useEffect(() => {
   const [address, setAddress] = useState("");
   const [showWarning, setShowWarning] = useState(false);
 
-  const [unionHasDate, setUnionHasDate] = useState<boolean | null>(null);
+  const [youthunionHasDate, setYouthunionHasDate] = useState<boolean | null>(null);
+  const [youthunionDate, setYouthunionDate] = useState("");
   const [probationHasDate, setProbationHasDate] = useState<boolean | null>(null);
   const [probationDate, setProbationDate] = useState("");
   const [officialHasDate, setOfficialHasDate] = useState<boolean | null>(null);
@@ -475,6 +504,8 @@ useEffect(() => {
   email,
   address,
 
+  youthunionHasDate,
+  youthunionDate,
   probationHasDate,
   probationDate,
   officialHasDate,
@@ -590,13 +621,15 @@ function isStep1Complete() {
       </div>
 
       {/* Bên phải */}
+      <div className="menu-btn-wrapper menu-btn-wrapper-header">
       <button
         type="button"
         onClick={() => router.push("/dashboard")}
-        className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+        className="menu-btn menu-btn-blue"
       >
         ← Quay về trang chủ
       </button>
+      </div>
     </div>
 
         {/* Progress */}
@@ -864,9 +897,9 @@ function isStep1Complete() {
 
               <DateOption
                 title="Ngày vào Đoàn"
-                hasDate={unionHasDate}
-                setHasDate={setUnionHasDate}
-                date={unionDate}
+                hasDate={youthunionHasDate}
+                setHasDate={setYouthunionHasDate}
+                date={youthunionDate}
                 setDate={setUnionDate}
               />
               
@@ -1593,37 +1626,42 @@ function isStep1Complete() {
         </p>
       )}
         
-        <div className="mt-8 flex items-center justify-between">
-
+        <div className="flex items-center justify-between">
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={previousStep}
             disabled={currentStep === 1}
-            className={`cursor-pointer rounded-lg px-6 py-3 font-medium transition ${
+            className={`menu-btn menu-btn-footer ${
               currentStep === 1
-                ? "cursor-not-allowed bg-gray-200 text-gray-400"
-                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                ? "menu-btn-disabled"
+                : "menu-btn-white"
             }`}
           >
             ← Quay lại
           </button>
+          </div>
 
           {currentStep < totalSteps ? (
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               onClick={nextStep}
-              className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+              className="menu-btn menu-btn-blue"
             >
               Tiếp tục →
             </button>
+            </div>
           ) : (
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               onClick={finishForm}
-              className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
+              className="menu-btn menu-btn-green"
             >
               Hoàn tất
             </button>
+            </div>
           )}
 
         </div>

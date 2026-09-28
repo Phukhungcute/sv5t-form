@@ -104,7 +104,7 @@ function ScheduleDaysRow({
           onClick={() =>
             onSave(Number(inputValue))
           }
-          className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50"
+          className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600  transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
         >
           Xác nhận
         </button>
@@ -119,6 +119,13 @@ function formatDateDisplay(dateString: string) {
 
   return `${day}/${month}/${year}`;
 }
+
+type QA = {
+  id: number;
+  question: string;
+  answer: string;
+  created_at: string;
+};
 
 export default function AdminPage() {
   const router = useRouter();
@@ -469,7 +476,7 @@ async function toggleSchedule(
     alert(result.message);
 
     // Sau khi thao tác xong:
-    // xóa mật khẩu khỏi ô để phải nhập lại
+    // xoá mật khẩu khỏi ô để phải nhập lại
     setAdminPassword("");
 
     if (action === "create") {
@@ -484,7 +491,7 @@ async function toggleSchedule(
       setCohortKey("");
     }
 
-    // Nếu vừa xóa tài khoản, load lại danh sách
+    // Nếu vừa xoá tài khoản, load lại danh sách
     if (
       action === "delete" ||
       action === "delete_cohort" ||
@@ -507,6 +514,106 @@ async function toggleSchedule(
   }
 }
 
+      const [qaList, setQaList] = useState<QA[]>([]);
+      const [qaQuestion, setQaQuestion] = useState("");
+      const [qaAnswer, setQaAnswer] = useState("");
+      const [qaLoading, setQaLoading] = useState(false);
+
+      async function loadQA() {
+        const { data, error } = await supabase
+          .from("qa")
+          .select("id, question, answer, created_at")
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.error("LOAD ADMIN QA ERROR:", error);
+          return;
+        }
+
+        setQaList(data ?? []);
+      }
+
+      /* =================================================
+         THÊM Q&A
+      ================================================= */
+
+      async function handleAddQA() {
+        const question = qaQuestion.trim();
+        const answer = qaAnswer.trim();
+
+        if (!question) {
+          alert("Vui lòng nhập Question.");
+          return;
+        }
+
+        if (!answer) {
+          alert("Vui lòng nhập Answer.");
+          return;
+        }
+
+        setQaLoading(true);
+
+        try {
+          const { data, error } = await supabase
+            .from("qa")
+            .insert({
+              question,
+              answer,
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error("ADD QA ERROR:", error);
+            alert("Không thể thêm Q&A.");
+            return;
+          }
+
+          setQaList((prev) => [...prev, data]);
+
+          setQaQuestion("");
+          setQaAnswer("");
+
+          alert("Đã thêm Q&A.");
+        } finally {
+          setQaLoading(false);
+        }
+      }
+
+      /* =================================================
+         XOÁ Q&A
+      ================================================= */
+
+      async function handleDeleteQA(id: number) {
+        const confirmed = window.confirm(
+          "Bạn có chắc muốn xoá câu hỏi này không?"
+        );
+
+        if (!confirmed) return;
+
+        setQaLoading(true);
+
+        try {
+          const { error } = await supabase
+            .from("qa")
+            .delete()
+            .eq("id", id);
+
+          if (error) {
+            console.error("DELETE QA ERROR:", error);
+            alert("Không thể xoá Q&A.");
+            return;
+          }
+
+          setQaList((prev) =>
+            prev.filter((qa) => qa.id !== id)
+          );
+
+          alert("Đã xoá Q&A.");
+        } finally {
+          setQaLoading(false);
+        }
+      }
 
   const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] =
@@ -554,6 +661,7 @@ async function toggleSchedule(
 
       if (profile.role === "admin") {
         await loadSchedule();
+        await loadQA();
 
       /* =================================================
          LOAD STUDENTS
@@ -703,7 +811,7 @@ async function toggleSchedule(
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-orange-50 px-6 py-10">
       <div className="mx-auto max-w-6xl">
 
         {/* =================================================
@@ -727,7 +835,7 @@ async function toggleSchedule(
 
           <button
             onClick={handleLogout}
-            className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            className="cursor-pointer rounded-lg border-4 border-red-200 px-4 py-2 text-xl font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
           >
             Đăng xuất
           </button>
@@ -743,7 +851,7 @@ async function toggleSchedule(
               "/admin/submissions"
             )
           }
-          className="mb-6 cursor-pointer rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="mb-6 cursor-pointer rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-0.5 active:translate-y-0.5 hover:shadow-md"
         >
           <div className="flex items-center justify-between">
 
@@ -982,13 +1090,13 @@ async function toggleSchedule(
                     }
                     className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
-
+                  
                   <button
                     type="button"
                     onClick={() =>
                       updateStartDate(startDateInput)
                     }
-                    className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50"
+                    className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600  transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
                   >
                     Xác nhận
                   </button>
@@ -1115,13 +1223,157 @@ async function toggleSchedule(
         </section>
 
         {/* =================================================
-           SECTION 4 - RESET MẬT KHẨU SINH VIÊN
+            SECTION 4 - QUẢN LÝ Q&A
+        ================================================= */}
+
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+
+          <h2 className="text-xl font-bold text-gray-900">
+            4. Quản lý câu hỏi thường gặp
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Thêm hoặc xoá các câu hỏi và câu trả lời hiển thị
+            trên trang Q&A của sinh viên.
+          </p>
+
+          {/* ==========================================
+              THÊM Q&A
+          ========================================== */}
+
+          <div className="mt-6 rounded-xl border border-gray-200 p-5">
+
+            <h3 className="text-lg font-semibold text-gray-800">
+              Thêm câu hỏi
+            </h3>
+
+            {/* QUESTION */}
+
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Question
+              </label>
+
+              <input
+                type="text"
+                value={qaQuestion}
+                onChange={(e) =>
+                  setQaQuestion(e.target.value)
+                }
+                placeholder="Nhập câu hỏi..."
+                disabled={qaLoading}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+              />
+            </div>
+
+            {/* ANSWER */}
+
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Answer
+              </label>
+
+              <textarea
+                value={qaAnswer}
+                onChange={(e) =>
+                  setQaAnswer(e.target.value)
+                }
+                placeholder="Nhập câu trả lời..."
+                rows={6}
+                disabled={qaLoading}
+                className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <div className="menu-btn-wrapper menu-btn-wrapper-footer">
+              <button
+                type="button"
+                onClick={handleAddQA}
+                disabled={qaLoading}
+                className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {qaLoading
+                  ? "Đang xử lý..."
+                  : "Thêm Q&A"}
+              </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ==========================================
+              DANH SÁCH Q&A
+          ========================================== */}
+
+          <div className="mt-6">
+
+            <h3 className="text-lg font-semibold text-gray-800">
+              Danh sách Q&A
+            </h3>
+
+            {qaList.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                Chưa có câu hỏi nào.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+
+                {qaList.map((qa, index) => (
+                  <div
+                    key={qa.id}
+                    className="rounded-xl border border-gray-200 p-5"
+                  >
+
+                    <div className="flex items-start justify-between gap-4">
+
+                      <div className="min-w-0 flex-1">
+
+                        <p className="text-xs font-medium text-gray-400">
+                          Câu hỏi #{index + 1}
+                        </p>
+
+                        <p className="mt-1 font-semibold text-gray-800">
+                          {qa.question}
+                        </p>
+
+                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-gray-500">
+                          {qa.answer}
+                        </p>
+
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDeleteQA(qa.id)
+                        }
+                        disabled={qaLoading}
+                        className="cursor-pointer rounded-lg border-4 border-red-200 px-4 py-2 text-xl font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                      >
+                        xoá
+                      </button>
+
+                    </div>
+
+                  </div>
+                ))}
+
+              </div>
+            )}
+
+          </div>
+
+        </section>
+
+        {/* =================================================
+           SECTION 5 - RESET MẬT KHẨU SINH VIÊN
         ================================================= */}
 
         <section className="mt-8 rounded-2xl bg-red-100 p-6 shadow-sm">
 
           <h2 className="text-xl font-bold text-gray-900">
-            4. Reset mật khẩu sinh viên
+            5. Reset mật khẩu sinh viên
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
@@ -1151,16 +1403,18 @@ async function toggleSchedule(
               required
             />
 
+            <div className="menu-btn-wrapper-inline">
             <button
               type="button"
               onClick={handleResetPassword}
               disabled={resetLoading}
-              className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
             >
               {resetLoading
                 ? "Đang reset..."
                 : "Reset mật khẩu"}
             </button>
+            </div>
           </div>
 
           {resetError && (
@@ -1179,17 +1433,17 @@ async function toggleSchedule(
         </section>
 
         {/* =====================================================
-            SECTION 5 — LỆNH QUẢN TRỊ ĐẶC BIỆT
+            SECTION 6 — LỆNH QUẢN TRỊ ĐẶC BIỆT
         ===================================================== */}
 
         <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
 
           <h2 className="text-2xl font-semibold text-gray-900">
-            5. Lệnh quản trị đặc biệt
+            6. Lệnh quản trị đặc biệt
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
-            Các thao tác bên dưới có thể tạo hoặc xóa dữ liệu
+            Các thao tác bên dưới có thể tạo hoặc xoá dữ liệu
             tài khoản. Vui lòng xác thực lại mật khẩu quản trị
             trước khi thực hiện.
           </p>
@@ -1251,34 +1505,36 @@ async function toggleSchedule(
                 className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
 
+              <div className="menu-btn-wrapper-inline">
               <button
                 type="button"
                 disabled={adminActionLoading}
                 onClick={() =>
                   runAdminAction("create")
                 }
-                className="cursor-pointer rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {adminActionLoading
                   ? "Đang xử lý..."
                   : "Tạo tài khoản"}
               </button>
+              </div>
 
             </div>
           </div>
 
           {/* ================================================
-              2. XÓA 1 TÀI KHOẢN
+              2. xoá 1 TÀI KHOẢN
           ================================================ */}
 
           <div className="mt-5 rounded-xl border border-gray-200 p-5">
 
             <h3 className="text-lg font-semibold text-gray-800">
-              5.2. Xóa tài khoản sinh viên
+              5.2. Xoá tài khoản sinh viên
             </h3>
 
             <p className="mt-1 text-sm text-gray-500">
-              Xóa tài khoản Auth, profile, hồ sơ và minh chứng
+              Xoá tài khoản Auth, profile, hồ sơ và minh chứng
               của MSSV được nhập.
             </p>
 
@@ -1295,13 +1551,14 @@ async function toggleSchedule(
                 className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
               />
 
+              <div className="menu-btn-wrapper-inline">
               <button
                 type="button"
                 disabled={adminActionLoading}
                 onClick={() => {
                   if (
                     !confirm(
-                      `Bạn có chắc chắn muốn xóa toàn bộ dữ liệu của MSSV ${deleteMssv}?`
+                      `Bạn có chắc chắn muốn xoá toàn bộ dữ liệu của MSSV ${deleteMssv}?`
                     )
                   ) {
                     return;
@@ -1309,12 +1566,13 @@ async function toggleSchedule(
 
                   runAdminAction("delete");
                 }}
-                className="cursor-pointer rounded-lg bg-red-600 px-5 py-3 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {adminActionLoading
                   ? "Đang xử lý..."
-                  : "Xóa tài khoản"}
+                  : "Xoá tài khoản"}
               </button>
+              </div>
 
             </div>
           </div>
@@ -1334,6 +1592,8 @@ async function toggleSchedule(
               có ngày sinh. Mật khẩu mặc định được tạo từ ngày sinh.
             </p>
 
+            <div className="flex justify-start">
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
             <button
               type="button"
               disabled={adminActionLoading}
@@ -1348,27 +1608,36 @@ async function toggleSchedule(
 
                 runAdminAction("create_all");
               }}
-              className="cursor-pointer mt-4 rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
             >
               {adminActionLoading
                 ? "Đang xử lý..."
                 : "Tạo tài khoản hàng loạt"}
             </button>
+            </div>
+            </div>
+
+            <p className="mt-1 text-sl text-red-500">
+              Lưu ý: Với số lượng sinh viên đông, việc tạo tài khoản hàng loạt
+              có thể diễn ra lâu hơn các thao tác khác (khoảng 2 → 5 phút)
+              Trong thời gian đó, vui lòng không reload hay thoát trang cho
+              đến khi hộp thoại xuất hiện.
+            </p>
 
           </div>
 
           {/* ================================================
-              4. XÓA HÀNG LOẠT THEO KHÓA
+              4. XOÁ HÀNG LOẠT THEO KHÓA
           ================================================ */}
 
           <div className="mt-5 rounded-xl border-2 border-red-300 bg-red-50 p-5">
 
             <h3 className="text-lg font-semibold text-red-700">
-              5.4. XÓA TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
+              5.4. XOÁ TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
             </h3>
 
             <p className="mt-1 text-sm text-red-600">
-              CẢNH BÁO: Thao tác này sẽ xóa tài khoản Auth,
+              CẢNH BÁO: Thao tác này sẽ xoá tài khoản Auth,
               profile, hồ sơ, minh chứng và các dữ liệu liên quan
               của tất cả sinh viên thuộc khóa được chọn.
             </p>
@@ -1403,13 +1672,14 @@ async function toggleSchedule(
                 className="flex-1 rounded-lg border border-red-300 bg-white px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
               />
 
+              <div className="menu-btn-wrapper-inline">
               <button
                 type="button"
                 disabled={adminActionLoading}
                 onClick={() => {
                   if (
                     !confirm(
-                      `CẢNH BÁO NGUY HIỂM!\n\nTất cả tài khoản và dữ liệu của khóa ${cohortKey} sẽ bị xóa.\n\nBạn có chắc chắn muốn tiếp tục?`
+                      `CẢNH BÁO NGUY HIỂM!\n\nTất cả tài khoản và dữ liệu của khóa ${cohortKey} sẽ bị xoá.\n\nBạn có chắc chắn muốn tiếp tục?`
                     )
                   ) {
                     return;
@@ -1417,12 +1687,13 @@ async function toggleSchedule(
 
                   runAdminAction("delete_cohort");
                 }}
-                className="cursor-pointer rounded-lg bg-red-700 px-5 py-3 font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {adminActionLoading
                   ? "Đang xử lý..."
-                  : "XÓA TOÀN BỘ KHÓA"}
+                  : "XOÁ TOÀN BỘ KHÓA"}
               </button>
+              </div>
 
             </div>
 

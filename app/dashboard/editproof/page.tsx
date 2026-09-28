@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { hasUsableReviewNote } from "@/lib/edit-permission";
 
 type ProofItem = {
   id: string;
@@ -267,12 +268,16 @@ export default function ProofPage() {
   ======================================================= */
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadStudent() {
       try {
         const {
           data: { user },
           error: userError,
         } = await supabase.auth.getUser();
+
+        if (!mounted) return;
 
         if (userError || !user) {
           router.push("/");
@@ -287,6 +292,8 @@ export default function ProofPage() {
           .select("mssv, role")
           .eq("id", user.id)
           .single();
+
+        if (!mounted) return;
 
         if (profileError || !profile) {
           console.error(
@@ -303,6 +310,46 @@ export default function ProofPage() {
         }
 
         const {
+          data: submission,
+          error: submissionError,
+        } = await supabase
+          .from("submissions")
+          .select("data")
+          .eq("mssv", profile.mssv)
+          .order("version", {
+            ascending: false,
+          })
+          .limit(1)
+          .maybeSingle();
+
+        if (!mounted) return;
+
+        if (submissionError) {
+          console.error(
+            "SUBMISSION ERROR:",
+            submissionError
+          );
+          return;
+        }
+
+        const reviewNote =
+          submission?.data?.review_note;
+
+        if (!hasUsableReviewNote(reviewNote)) {
+          
+          alert(
+            "Hồ sơ chưa có nhận xét bổ sung từ quản trị viên nên bạn chưa thể chỉnh sửa."
+          );
+          
+          console.log(
+            "REDIRECT: NO REVIEW NOTE"
+          );
+
+          router.replace("/dashboard");
+          return;
+        }
+
+        const {
           data: studentData,
           error: studentError,
         } = await supabase
@@ -310,6 +357,8 @@ export default function ProofPage() {
           .select("mssv, full_name")
           .eq("mssv", profile.mssv)
           .single();
+
+        if (!mounted) return;
 
         if (studentError || !studentData) {
           console.error(
@@ -321,16 +370,24 @@ export default function ProofPage() {
 
         setStudent(studentData);
       } catch (error) {
+        if (!mounted) return;
+
         console.error(
           "LOAD STUDENT ERROR:",
           error
         );
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     loadStudent();
+
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
   /* =======================================================
@@ -684,15 +741,17 @@ console.log(
             </p>
           </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-header">
           <button
             type="button"
             onClick={() =>
               router.push("/dashboard")
             }
-            className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+            className="menu-btn menu-btn-blue"
           >
             ← Quay về trang chủ
           </button>
+          </div>
         </div>
 
         {/* THANH DUNG LƯỢNG */}
@@ -882,27 +941,32 @@ console.log(
         {/* HOÀN TẤT */}
 
         <div className="mt-8 flex items-center justify-between">
-
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={() =>
               router.push("/dashboard")
             }
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+            className="menu-btn menu-btn-white
+            "
           >
             ← Quay lại
           </button>
-
+          </div>
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={finishProof}
             disabled={saving}
-            className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-green"
           >
             {saving
               ? "Đang lưu..."
               : "Hoàn tất"}
           </button>
+          </div>
 
         </div>
 

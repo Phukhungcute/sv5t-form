@@ -11,6 +11,7 @@ import {
     isSubmissionPeriod,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { hasUsableReviewNote } from "@/lib/edit-permission";
 
 type SubmissionData = {
   ethnicity: string;
@@ -90,7 +91,7 @@ export default function EditSubmitReviewPage() {
         }
 
         // ==========================================
-        // 3. KIỂM TRA SV ĐÃ CÓ HỒ SƠ TRÊN DB
+        // 3.1. KIỂM TRA SV ĐÃ CÓ HỒ SƠ TRÊN DB
         // ==========================================
         const { data: latestSubmission, error: submissionError } =
           await supabase
@@ -117,6 +118,24 @@ export default function EditSubmitReviewPage() {
           );
 
           alert("Bạn chưa nộp hồ sơ nên không thể chỉnh sửa.");
+          router.replace("/dashboard");
+          return;
+        }
+
+        // ==========================================
+        // 3.2. KIỂM TRA QUYỀN CHỈNH SỬA
+        // ==========================================
+        const reviewNote = latestSubmission.data?.review_note;
+
+        if (!hasUsableReviewNote(reviewNote)) {
+          console.warn(
+            "EDIT SUBMISSION BLOCKED: KHÔNG CÓ REVIEW NOTE"
+          );
+
+          alert(
+            "Hồ sơ hiện chưa có nhận xét bổ sung từ quản trị viên nên bạn chưa thể chỉnh sửa."
+          );
+
           router.replace("/dashboard");
           return;
         }
@@ -407,13 +426,15 @@ async function cleanupOldSubmissions(
             </p>
           </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-header">
           <button
             type="button"
             onClick={() => router.push("/dashboard/editsubmit")}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+            className="menu-btn menu-btn-white"
           >
             ← Chỉnh sửa
           </button>
+          </div>
         </div>
 
         {/* =====================================================
@@ -497,6 +518,11 @@ async function cleanupOldSubmissions(
 
             <ReviewItem
               label="Ngày vào Đoàn"
+              value={display(submission.youthunionDate)}
+            />
+
+            <ReviewItem
+              label="Ngày vào Hội"
               value={display(submission.unionDate)}
             />
 
@@ -823,16 +849,18 @@ async function cleanupOldSubmissions(
             và chịu trách nhiệm về nội dung hồ sơ đã gửi.
           </p>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-blue"
             >
             {submitting
                 ? "Đang gửi hồ sơ..."
                 : "✓ Xác nhận và lưu chỉnh sửa"}
           </button>
+          </div>
 
         </section>
 

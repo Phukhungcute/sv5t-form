@@ -8,7 +8,6 @@ import {
     FACULTY_NAME,
     FACULTY_NAME_NORMAL,
     ACADEMIC_YEAR,
-    isSubmissionPeriod,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
 
@@ -1474,6 +1473,7 @@ async function cleanupOldProofs(
             </p>
           </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-header">
           <button
             type="button"
             onClick={() =>
@@ -1481,10 +1481,11 @@ async function cleanupOldProofs(
                 "/dashboard/proof"
               )
             }
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+            className="menu-btn menu-btn-white"
           >
             ← Chỉnh sửa
           </button>
+          </div>
 
         </div>
 
@@ -1661,16 +1662,18 @@ async function cleanupOldProofs(
             nhiệm về nội dung đã cung cấp.
           </p>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting
               ? "Đang tạo và gửi PDF..."
               : "✓ Xác nhận và gửi minh chứng"}
           </button>
+          </div>
 
         </section>
 

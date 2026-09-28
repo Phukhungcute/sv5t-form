@@ -123,10 +123,7 @@ export default function RequestPage() {
           submission?.data?.review_note
         );
 
-        const note =
-          submission?.status === "consider"
-            ? submission?.data?.review_note
-            : null;
+        const note = submission?.data?.review_note
 
         if (
           typeof note === "string" &&
@@ -226,15 +223,19 @@ export default function RequestPage() {
         </section>
 
         {/* QUAY LẠI */}
+        <div className="flex items-center justify-between">
+        <div className="menu-btn-wrapper menu-btn-wrapper-footer">
         <button
           type="button"
           onClick={() =>
             router.push("/dashboard")
           }
-          className="mt-5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          className="menu-btn menu-btn-white"
         >
-          ← Quay lại Trang chủ
+          ← Quay lại trang chủ
         </button>
+        </div>
+        </div>
 
       </div>
     </main>

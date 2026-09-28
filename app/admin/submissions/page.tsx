@@ -651,16 +651,6 @@ export default function SubmissionsPage() {
     if (!selected?.submission) {
       return;
     }
-    
-    if (
-      reviewStatus === "consider" &&
-      !reviewNote.trim()
-    ) {
-      alert(
-        "Vui lòng nhập nội dung cần sinh viên bổ sung."
-      );
-      return;
-    }
 
     setSaving(true);
 
@@ -1351,7 +1341,7 @@ function exportToExcel() {
   ===================================================== */
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
+    <main className="min-h-screen bg-orange-50 px-6 py-10">
       <div className="mx-auto max-w-7xl">
 
         {/* ============================================
@@ -1361,14 +1351,16 @@ function exportToExcel() {
         <header className="mb-8 flex items-center justify-between">
 
           <div>
+            <div className="menu-btn-wrapper menu-btn-wrapper-header">
             <button
-          onClick={() => router.push("/admin")}
-          className="cursor-pointer mb-6 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-        >
-          ← Quay lại trang quản trị
-        </button>
+            onClick={() => router.push("/admin")}
+            className="menu-btn menu-btn-white"
+          >
+            ← Quay lại trang quản trị
+          </button>
+          </div>
 
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="mt-4 text-3xl font-bold text-gray-900">
               Duyệt hồ sơ
             </h1>
 
@@ -1391,7 +1383,7 @@ function exportToExcel() {
 
             <button
               onClick={handleLogout}
-              className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              className="cursor-pointer rounded-lg border-4 border-red-200 px-4 py-2 text-xl font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
             >
               Đăng xuất
             </button>
@@ -1401,65 +1393,69 @@ function exportToExcel() {
         </header>
 
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <span className="text-2xl font-bold text-gray-900">
-            Lọc:
-          </span>
-          
-          <button
-            type="button"
-            onClick={() => setStatusFilter("all")}
-            className={`w-[120px] cursor-pointer rounded-lg px-4 py-2 ml-2 text-sm font-medium transition ${
-              statusFilter === "all"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            TẤT CẢ
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-gray-900">
+              Lọc:
+            </span>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter("passed")}
-            className={`w-[120px] cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
-              statusFilter === "passed"
-                ? "bg-green-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            ĐẠT
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+                statusFilter === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              TẤT CẢ
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter("failed")}
-            className={`w-[120px] cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
-              statusFilter === "failed"
-                ? "bg-red-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            KHÔNG ĐẠT
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("passed")}
+              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+                statusFilter === "passed"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              ĐẠT
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter("consider")}
-            className={`w-[120px] cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
-              statusFilter === "consider"
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            XEM XÉT
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("failed")}
+              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+                statusFilter === "failed"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              KHÔNG ĐẠT
+            </button>
 
-          <button
-            type="button"
-            onClick={exportToExcel}
-            className="ml-2 cursor-pointer rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900"
-          >
-            📊 Tải Excel
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("consider")}
+              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+                statusFilter === "consider"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              XEM XÉT
+            </button>
+
+            <div className="ml-4 menu-btn-wrapper-inline">
+              <button
+                type="button"
+                onClick={exportToExcel}
+                className="menu-btn menu-btn-gray"
+              >
+                📊 Tải Excel
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ============================================
@@ -1814,6 +1810,18 @@ function exportToExcel() {
                   <div>
                   <p className="text-sm text-gray-500">
                       Ngày vào Đoàn
+                    </p>
+
+                    <p className="mt-1 text-gray-800">
+                      {
+                        formatDateInput(data.youthunionDate)
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                  <p className="text-sm text-gray-500">
+                      Ngày vào Hội
                     </p>
 
                     <p className="mt-1 text-gray-800">

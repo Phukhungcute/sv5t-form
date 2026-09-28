@@ -375,13 +375,15 @@ async function cleanupOldSubmissions(
             </p>
           </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-header">
           <button
             type="button"
             onClick={() => router.push("/dashboard/submit")}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+            className="menu-btn menu-btn-white"
           >
             ← Chỉnh sửa
           </button>
+          </div>
         </div>
 
         {/* =====================================================
@@ -465,6 +467,11 @@ async function cleanupOldSubmissions(
 
             <ReviewItem
               label="Ngày vào Đoàn"
+              value={display(submission.youthunionDate)}
+            />
+
+            <ReviewItem
+              label="Ngày vào Hội"
               value={display(submission.unionDate)}
             />
 
@@ -790,17 +797,19 @@ async function cleanupOldSubmissions(
             Tôi xác nhận rằng các thông tin trên là chính xác
             và chịu trách nhiệm về nội dung hồ sơ đã gửi.
           </p>
-
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="mt-6 w-full cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-blue"
             >
             {submitting
                 ? "Đang gửi hồ sơ..."
                 : "✓ Xác nhận và gửi hồ sơ"}
           </button>
+          </div>
 
         </section>
 

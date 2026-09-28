@@ -241,7 +241,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-red-50 p-6">
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
@@ -268,7 +268,7 @@ export default function Dashboard() {
 
           <button
             onClick={handleLogout}
-            className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
           >
             Đăng xuất
           </button>
@@ -406,6 +406,7 @@ export default function Dashboard() {
                 </p>
               )}
 
+            <div className="menu-btn-wrapper">
             <button
               onClick={() => {
                 if (!submissionOpen) {
@@ -415,7 +416,7 @@ export default function Dashboard() {
 
                 router.push("/dashboard/submit");
               }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+              className={`menu-btn menu-btn-blue ${
                 !submissionOpen
                   ? "cursor-not-allowed opacity-50"
                   : ""
@@ -423,6 +424,7 @@ export default function Dashboard() {
             >
               Gửi hồ sơ
             </button>
+            </div>
           </div>
 
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
@@ -455,7 +457,8 @@ export default function Dashboard() {
                   Coming soon
                 </p>
               )}
-
+            
+            <div className="menu-btn-wrapper">
             <button
               onClick={() => {
                 if (!submissionOpen) {
@@ -465,7 +468,7 @@ export default function Dashboard() {
 
                 router.push("/dashboard/proof");
               }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+              className={`menu-btn menu-btn-blue ${
                 !submissionOpen
                   ? "cursor-not-allowed opacity-50"
                   : ""
@@ -473,6 +476,7 @@ export default function Dashboard() {
             >
               Tạo minh chứng
             </button>
+            </div>
           </div>
 
           {/* Chỉnh sửa */}
@@ -506,23 +510,25 @@ export default function Dashboard() {
                 </p>
               )}
 
-            <button
-              onClick={() => {
-                if (!additionOpen) {
-                  alert("Đang ngoài thời gian xem yêu cầu.");
-                  return;
-                }
+            <div className="menu-btn-wrapper">
+              <button
+                onClick={() => {
+                  if (!additionOpen) {
+                    alert("Đang ngoài thời gian xem yêu cầu.");
+                    return;
+                  }
 
-                router.push("/dashboard/request");
-              }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-orange-400 px-4 py-3 font-medium text-white transition hover:bg-orange-300 ${
-                !additionOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Xem yêu cầu
-            </button>
+                  router.push("/dashboard/request");
+                }}
+                className={`menu-btn menu-btn-yellow ${
+                  !additionOpen
+                    ? "cursor-not-allowed opacity-50"
+                    : ""
+                }`}
+              >
+                Xem yêu cầu
+              </button>
+            </div>
           </div>
 
           {/* Chỉnh sửa hồ sơ */}
@@ -555,7 +561,8 @@ export default function Dashboard() {
                   Coming soon
                 </p>
               )}
-
+            
+            <div className="menu-btn-wrapper">
             <button
               onClick={() => {
                 if (!additionOpen) {
@@ -565,7 +572,7 @@ export default function Dashboard() {
 
                 router.push("/dashboard/editsubmit");
               }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+              className={`menu-btn menu-btn-blue ${
                 !additionOpen
                   ? "cursor-not-allowed opacity-50"
                   : ""
@@ -573,6 +580,7 @@ export default function Dashboard() {
             >
               Chỉnh sửa
             </button>
+            </div>
           </div>
 
           {/* Chỉnh sửa hồ sơ */}
@@ -606,6 +614,7 @@ export default function Dashboard() {
                 </p>
               )}
 
+            <div className="menu-btn-wrapper">
             <button
               onClick={() => {
                 if (!additionOpen) {
@@ -615,7 +624,7 @@ export default function Dashboard() {
 
                 router.push("/dashboard/editproof");
               }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+              className={`menu-btn menu-btn-blue ${
                 !additionOpen
                   ? "cursor-not-allowed opacity-50"
                   : ""
@@ -623,6 +632,7 @@ export default function Dashboard() {
             >
               Chỉnh sửa
             </button>
+            </div>
           </div>
 
           {/* Kết quả */}
@@ -656,6 +666,7 @@ export default function Dashboard() {
                 </p>
               )}
 
+            <div className="menu-btn-wrapper">
             <button
               onClick={() => {
                 if (!resultOpen) {
@@ -665,7 +676,7 @@ export default function Dashboard() {
 
                 router.push("/dashboard/result");
               }}
-              className={`cursor-pointer mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 ${
+              className={`menu-btn menu-btn-green ${
                 !resultOpen
                   ? "cursor-not-allowed opacity-50"
                   : ""
@@ -673,6 +684,7 @@ export default function Dashboard() {
             >
               Xem kết quả
             </button>
+            </div>
           </div>     
 
         </section>
@@ -691,7 +703,7 @@ export default function Dashboard() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <button
               onClick={() => router.push("/dashboard/qa")}
-              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">
@@ -706,7 +718,7 @@ export default function Dashboard() {
 
             <button
               onClick={() => router.push("/dashboard/guide")}
-              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">
@@ -721,7 +733,7 @@ export default function Dashboard() {
 
             <button
               onClick={() => router.push("/dashboard/regulations")}
-              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+              className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-xl">

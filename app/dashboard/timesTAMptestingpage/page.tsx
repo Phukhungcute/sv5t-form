@@ -48,8 +48,58 @@ export default function ServerTimePage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-6">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-blue-100 p-6">
+      
+      <div className="relative rounded-2xl bg-green-100 p-6">
+      <img
+              src="/images/Chim.png"
+              alt="Chim"
+              className="absolute left-1/2 top-0 h-50 w-auto translate-x-10 -translate-y-40 object-contain"
+            />
+      
+      <img
+              src="/images/Chicken1.png"
+              alt="Gà mái"
+              className="absolute left-1/2 top-0 h-50 w-auto -translate-x-50 -translate-y-45 object-contain"
+            />
+
+      <img
+              src="/images/Dog.png"
+              alt="Mi mượt"
+              className="absolute left-1/2 top-0 h-50 w-auto translate-x-45 -translate-y-10 object-contain"
+            />
+      
+      <img
+              src="/images/Cat1.png"
+              alt="Bà già"
+              className="absolute left-1/2 top-0 h-50 w-auto translate-x-60 translate-y-45 object-contain"
+            />
+
+      <img
+              src="/images/Cat2.png"
+              alt="Mèo net"
+              className="absolute left-1/2 top-0 h-50 w-auto translate-x-55 translate-y-90 object-contain"
+            />
+
+      <img
+              src="/images/Mina.png"
+              alt="Mina"
+              className="absolute left-1/2 top-0 h-50 w-auto -translate-x-90 translate-y-0 object-contain"
+            />
+
+      <img
+              src="/images/Cat3.png"
+              alt="Chuột"
+              className="absolute left-1/2 top-0 h-50 w-auto -translate-x-110 translate-y-40 object-contain"
+            />
+
+      <img
+              src="/images/Chicken2.png"
+              alt="Gà không lông"
+              className="absolute left-1/2 top-0 h-50 w-auto -translate-x-100 translate-y-90 object-contain"
+            />
+
+      <div className="w-full max-w-lg rounded-2xl bg-green-50 p-8 shadow-lg">
 
         <h1 className="text-2xl font-bold text-gray-900">
           Test Server Time
@@ -118,6 +168,7 @@ export default function ServerTimePage() {
           </p>
         )}
 
+      </div>
       </div>
     </main>
   );

@@ -673,16 +673,18 @@ export default function ProofPage() {
               tương ứng với từng nội dung.
             </p>
           </div>
-
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-header">
           <button
             type="button"
             onClick={() =>
               router.push("/dashboard")
             }
-            className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+            className="menu-btn menu-btn-blue"
           >
             ← Quay về trang chủ
           </button>
+          </div>
         </div>
 
         {/* THANH DUNG LƯỢNG */}
@@ -872,27 +874,31 @@ export default function ProofPage() {
         {/* HOÀN TẤT */}
 
         <div className="mt-8 flex items-center justify-between">
-
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={() =>
               router.push("/dashboard")
             }
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+            className="menu-btn menu-btn-white"
           >
             ← Quay lại
           </button>
+          </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={finishProof}
             disabled={saving}
-            className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-green"
           >
             {saving
               ? "Đang lưu..."
               : "Hoàn tất"}
           </button>
+          </div>
 
         </div>
 

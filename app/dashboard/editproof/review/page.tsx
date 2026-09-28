@@ -10,6 +10,7 @@ import {
     ACADEMIC_YEAR,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { hasUsableReviewNote } from "@/lib/edit-permission";
 
 type ProofItem = {
   id: string;
@@ -314,210 +315,281 @@ export default function EditProofReviewPage() {
   ======================================================= */
 
   useEffect(() => {
-  initializeStudentPage(router, "addition");
-}, [router]);
+    initializeStudentPage(router, "addition");
+  }, [router]);
 
-  useEffect(() => {
-  async function loadData() {
-    try {
-      // =================================================
-      // 1. CHECK USER
-      // =================================================
+    useEffect(() => {
+    let mounted = true;
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+    async function loadData() {
+      try {
+        // =================================================
+        // 1. CHECK USER
+        // =================================================
 
-      if (userError || !user) {
-        router.push("/");
-        return;
-      }
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-      // =================================================
-      // 2. CHECK PROFILE
-      // =================================================
+        if (!mounted) return;
 
-      const {
-        data: profile,
-        error: profileError,
-      } = await supabase
-        .from("profiles")
-        .select("mssv, role")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError || !profile) {
-        console.error(
-          "PROFILE ERROR:",
-          profileError
-        );
-
-        router.push("/");
-        return;
-      }
-
-      if (profile.role !== "student") {
-        router.push("/admin");
-        return;
-      }
-
-      // =================================================
-      // 3. LOAD STUDENT
-      // =================================================
-
-      const {
-        data: studentData,
-        error: studentError,
-      } = await supabase
-        .from("students")
-        .select(
-          "mssv, full_name, class_name"
-        )
-        .eq("mssv", profile.mssv)
-        .single();
-
-      if (studentError || !studentData) {
-        console.error(
-          "STUDENT ERROR:",
-          studentError
-        );
-        return;
-      }
-
-      setStudent(studentData);
-
-      // =================================================
-      // 4. CHECK SUBMISSION
-      // =================================================
-
-      const {
-        data: submissions,
-        error: submissionError,
-      } = await supabase
-        .from("submissions")
-        .select("id")
-        .eq("mssv", studentData.mssv)
-        .limit(1);
-
-      if (submissionError) {
-        console.error(
-          "SUBMISSION CHECK ERROR:",
-          submissionError
-        );
-
-        alert(
-          "Không thể kiểm tra trạng thái hồ sơ. Vui lòng thử lại."
-        );
-
-        return;
-      }
-
-      const hasSubmission =
-        (submissions?.length ?? 0) > 0;
-
-      if (!hasSubmission) {
-        console.warn(
-          "EDIT PROOF BLOCKED: Bạn chưa nộp hồ sơ..."
-        );
-
-        alert(
-          "Bạn chưa nộp hồ sơ. Vui lòng nộp hồ sơ trước khi chỉnh sửa minh chứng."
-        );
-
-        router.replace("/dashboard");
-
-        return;
-      }
-
-      // =================================================
-      // 4. LOAD EDIT REVIEW DATA
-      // =================================================
-
-      const key =
-        `${EDIT_REVIEW_PREFIX}${studentData.mssv}`;
-
-      console.log(
-        "EDIT PROOF REVIEW KEY:",
-        key
-      );
-
-      /*
-        1. Kiểm tra localStorage
-      */
-
-      const local =
-        localStorage.getItem(key);
-
-      console.log(
-        "EDIT PROOF LOCALSTORAGE:",
-        local
-      );
-
-      if (local) {
-        try {
-          const parsed =
-            JSON.parse(local);
-
-          console.log(
-            "EDIT PROOF REVIEW DATA FROM LOCAL:",
-            parsed
-          );
-
-          setProofData(parsed);
+        if (userError || !user) {
+          router.push("/");
           return;
-        } catch (error) {
-          console.error(
-            "EDIT PROOF LOCALSTORAGE PARSE ERROR:",
-            error
-          );
         }
-      }
 
-      /*
-        2. Kiểm tra IndexedDB
-      */
+        // =================================================
+        // 2. CHECK PROFILE
+        // =================================================
 
-      console.log(
-        "EDIT PROOF: Đang tìm trong IndexedDB..."
-      );
+        const {
+          data: profile,
+          error: profileError,
+        } = await supabase
+          .from("profiles")
+          .select("mssv, role")
+          .eq("id", user.id)
+          .single();
 
-      const saved =
-        await loadEditProofData(key);
+        if (!mounted) return;
 
-      console.log(
-        "EDIT PROOF INDEXEDDB DATA:",
-        saved
-      );
+        if (profileError || !profile) {
+          console.error(
+            "PROFILE ERROR:",
+            profileError
+          );
 
-      if (saved) {
-        setProofData(saved);
+          router.push("/");
+          return;
+        }
+
+        if (profile.role !== "student") {
+          router.push("/admin");
+          return;
+        }
+
+        // =================================================
+        // 3. LOAD STUDENT
+        // =================================================
+
+        const {
+          data: studentData,
+          error: studentError,
+        } = await supabase
+          .from("students")
+          .select(
+            "mssv, full_name, class_name"
+          )
+          .eq("mssv", profile.mssv)
+          .single();
+
+        if (!mounted) return;
+
+        if (studentError || !studentData) {
+          console.error(
+            "STUDENT ERROR:",
+            studentError
+          );
+          return;
+        }
+
+        setStudent(studentData);
+
+        // =================================================
+        // 4. CHECK SUBMISSION
+        // =================================================
+
+        const {
+          data: submissions,
+          error: submissionError,
+        } = await supabase
+          .from("submissions")
+          .select("id")
+          .eq("mssv", studentData.mssv)
+          .limit(1);
+
+        if (!mounted) return;
+
+        if (submissionError) {
+          console.error(
+            "SUBMISSION CHECK ERROR:",
+            submissionError
+          );
+
+          alert(
+            "Không thể kiểm tra trạng thái hồ sơ. Vui lòng thử lại."
+          );
+
+          return;
+        }
+
+        const hasSubmission =
+          (submissions?.length ?? 0) > 0;
+
+        if (!hasSubmission) {
+          console.warn(
+            "EDIT PROOF BLOCKED: Bạn chưa nộp hồ sơ..."
+          );
+
+          alert(
+            "Bạn chưa nộp hồ sơ. Vui lòng nộp hồ sơ trước khi chỉnh sửa minh chứng."
+          );
+
+          router.replace("/dashboard");
+
+          return;
+        }
+
+        // =================================================
+        // 5. CHECK REVIEW NOTE
+        // =================================================
+
+        const {
+          data: latestSubmission,
+          error: latestSubmissionError,
+        } = await supabase
+          .from("submissions")
+          .select("data")
+          .eq("mssv", studentData.mssv)
+          .order("version", {
+            ascending: false,
+          })
+          .limit(1)
+          .maybeSingle();
+
+        if (!mounted) return;
+
+        if (latestSubmissionError) {
+          console.error(
+            "LATEST SUBMISSION ERROR:",
+            latestSubmissionError
+          );
+
+          alert(
+            "Không thể kiểm tra nhận xét của quản trị viên. Vui lòng thử lại."
+          );
+
+          return;
+        }
+
+        const reviewNote =
+          latestSubmission?.data?.review_note;
+
+        if (!hasUsableReviewNote(reviewNote)) {
+          console.warn(
+            "EDIT PROOF REVIEW BLOCKED: KHÔNG CÓ REVIEW NOTE"
+          );
+
+          alert(
+            "Hồ sơ chưa có nhận xét bổ sung từ quản trị viên nên bạn chưa thể chỉnh sửa minh chứng."
+          );
+
+          router.replace("/dashboard");
+
+          return;
+        }
+
+        // =================================================
+        // 6. LOAD EDIT REVIEW DATA
+        // =================================================
+
+        const key =
+          `${EDIT_REVIEW_PREFIX}${studentData.mssv}`;
 
         console.log(
-          "EDIT PROOF REVIEW LOAD SUCCESS"
-        );
-      } else {
-        console.warn(
-          "EDIT PROOF REVIEW: KHÔNG TÌM THẤY DATA → QUAY VỀ EDITPROOF"
+          "EDIT PROOF REVIEW KEY:",
+          key
         );
 
-        router.push(
-          "/dashboard/editproof"
+        /*
+          1. Kiểm tra localStorage
+        */
+
+        const local =
+          localStorage.getItem(key);
+
+        console.log(
+          "EDIT PROOF LOCALSTORAGE:",
+          local
         );
+
+        if (local) {
+          try {
+            const parsed =
+              JSON.parse(local);
+
+            console.log(
+              "EDIT PROOF REVIEW DATA FROM LOCAL:",
+              parsed
+            );
+
+            if (!mounted) return;
+
+            setProofData(parsed);
+            return;
+          } catch (error) {
+            console.error(
+              "EDIT PROOF LOCALSTORAGE PARSE ERROR:",
+              error
+            );
+          }
+        }
+
+        /*
+          2. Kiểm tra IndexedDB
+        */
+
+        console.log(
+          "EDIT PROOF: Đang tìm trong IndexedDB..."
+        );
+
+        const saved =
+          await loadEditProofData(key);
+
+        if (!mounted) return;
+
+        console.log(
+          "EDIT PROOF INDEXEDDB DATA:",
+          saved
+        );
+
+        if (saved) {
+          setProofData(saved);
+
+          console.log(
+            "EDIT PROOF REVIEW LOAD SUCCESS"
+          );
+        } else {
+          console.warn(
+            "EDIT PROOF REVIEW: KHÔNG TÌM THẤY DATA → QUAY VỀ EDITPROOF"
+          );
+
+          router.push(
+            "/dashboard/editproof"
+          );
+        }
+
+      } catch (error) {
+        if (!mounted) return;
+
+        console.error(
+          "EDIT PROOF REVIEW LOAD ERROR:",
+          error
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-
-    } catch (error) {
-      console.error(
-        "EDIT PROOF REVIEW LOAD ERROR:",
-        error
-      );
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadData();
-}, [router]);
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   /* =======================================================
      CREATE PDF
@@ -2133,30 +2205,34 @@ export default function EditProofReviewPage() {
         {/* BUTTONS */}
 
         <div className="mt-8 flex items-center justify-between">
-
+          
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={
               goBack
             }
             disabled={saving}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+            className="menu-btn menu-btn-white"
           >
             ← Chỉnh sửa lại
           </button>
+          </div>
 
+          <div className="menu-btn-wrapper menu-btn-wrapper-footer">
           <button
             type="button"
             onClick={
               confirmEdit
             }
             disabled={saving}
-            className="cursor-pointer rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="menu-btn menu-btn-green"
           >
             {saving
               ? "Đang xác nhận..."
               : "Xác nhận"}
           </button>
+          </div>
 
         </div>
 
