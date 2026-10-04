@@ -269,6 +269,10 @@ export default function Dashboard() {
 
   setInfoHeight(infoSectionRef.current.offsetHeight);
 }, [student]);
+
+  const [activeTab, setActiveTab] = useState<
+  "home" | "introduction" | "notifications"
+>("home");
     
   // ==========================================
   // Loading
@@ -374,21 +378,88 @@ export default function Dashboard() {
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
-        <header className="mb-8 text-center">
-          <div>
-            <h1 className="font-svn-internation text-6xl font-bold text-sv5t-blue">
-              CỔNG THÔNG TIN DANH HIỆU "SINH VIÊN 5 TỐT"
-            </h1>
+        <div className="mb-8 flex justify-center">
+          {infoHeight > 0 && (
+            <div
+              className="overflow-hidden bg-white"
+              style={{ height: `${infoHeight}px` }}
+            >
+              <img
+                src="/images/Title.jpg"
+                alt="Title SV5T"
+                className="h-full w-auto object-contain"
+              />
+            </div>
+          )}
+        </div>
+        
+        <nav className="mb-8 flex justify-center">
+          <div className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-sm">
+            {/* TRANG CHỦ */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("home")}
+              className={`
+                cursor-pointer
+                rounded-xl
+                px-5
+                py-3
+                font-semibold
+                transition
+                ${
+                  activeTab === "home"
+                    ? "bg-sv5t-blue text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100"
+                }
+              `}
+            >
+              <span className="mr-2">⌂</span>
+              TRANG CHỦ
+            </button>
 
-            <h1 className="font-svn-internation text-6xl font-bold text-sv5t-blue">
-              KHOA {FACULTY_NAME}
-            </h1>
-            
-            <p className="mt-1 font-bold text-gray-500">
-              Năm học {ACADEMIC_YEAR}
-            </p>
+            {/* GIỚI THIỆU */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("introduction")}
+              className={`
+                cursor-pointer
+                rounded-xl
+                px-5
+                py-3
+                font-semibold
+                transition
+                ${
+                  activeTab === "introduction"
+                    ? "bg-sv5t-blue text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100"
+                }
+              `}
+            >
+              GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"
+            </button>
+
+            {/* THÔNG BÁO */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("notifications")}
+              className={`
+                cursor-pointer
+                rounded-xl
+                px-5
+                py-3
+                font-semibold
+                transition
+                ${
+                  activeTab === "notifications"
+                    ? "bg-sv5t-blue text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100"
+                }
+              `}
+            >
+              THÔNG BÁO
+            </button>
           </div>
-        </header>
+        </nav>
 
         {/* Welcome */}
         <section className="mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
@@ -437,19 +508,19 @@ export default function Dashboard() {
             />
           </div>
         )}
-      </div>
+       </div>
 
         {/* Thông tin sinh viên */}
         <section
           ref={infoSectionRef}
           className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Thông tin sinh viên
+          <h2 className="font-svn-internation text-sv5t-blue mb-5 text-5xl font-semibold">
+            THÔNG TIN SINH VIÊN
           </h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Mã số sinh viên
               </p>
 
@@ -459,7 +530,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Họ và tên
               </p>
 
@@ -469,7 +540,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Ngày sinh
               </p>
 
@@ -479,7 +550,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Giới tính
               </p>
 
@@ -489,7 +560,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Lớp
               </p>
 
@@ -499,7 +570,7 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500">
                 Khoa
               </p>
 
@@ -515,8 +586,8 @@ export default function Dashboard() {
 
           {/* Gửi hồ sơ */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Gửi hồ sơ
+            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+              GỬI HỒ SƠ
             </h3>
 
             <p className="mt-2 text-gray-600">
@@ -566,8 +637,8 @@ export default function Dashboard() {
           </div>
 
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Tạo minh chứng
+            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+              TẠO MINH CHỨNG
             </h3>
 
             {/* Minh chứng */}
@@ -619,8 +690,8 @@ export default function Dashboard() {
 
           {/* Chỉnh sửa */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Yêu cầu chỉnh sửa
+            <h3 className="font-svn-internation text-sv5t-orange text-3xl font-semibold text-gray-900">
+              YÊU CẦU CHỈNH SỬA
             </h3>
 
             <p className="mt-2 text-gray-600">
@@ -671,8 +742,8 @@ export default function Dashboard() {
 
           {/* Chỉnh sửa hồ sơ */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Chỉnh sửa hồ sơ
+            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+              CHỈNH SỬA HỒ SƠ
             </h3>
 
             <p className="mt-2 text-gray-600">
@@ -723,8 +794,8 @@ export default function Dashboard() {
 
           {/* Bổ sung hồ sơ */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Bổ sung minh chứng
+            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+              BỔ SUNG MINH CHỨNG
             </h3>
 
             <p className="mt-2 text-gray-600">
@@ -775,8 +846,8 @@ export default function Dashboard() {
 
           {/* Kết quả */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Xem kết quả
+            <h3 className="font-svn-internation text-sv5t-green text-3xl font-semibold text-gray-900">
+              XEM KẾT QUẢ
             </h3>
 
             <p className="mt-2 text-gray-600">

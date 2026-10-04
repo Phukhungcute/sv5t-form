@@ -1,4 +1,5 @@
 "use client";
+import { FACULTY_NAME_NORMAL } from "@/lib/constants";
 
 export default function FloatingBubbles() {
   return (
@@ -22,7 +23,7 @@ export default function FloatingBubbles() {
           shadow-md
           transition-all
           duration-300
-          hover:w-50
+          hover:w-80
           hover:shadow-lg
         "
       >
@@ -45,7 +46,7 @@ export default function FloatingBubbles() {
             group-hover:opacity-100
           "
         >
-          Đoàn - Hội Khoa
+          Đoàn - Hội khoa {FACULTY_NAME_NORMAL}
         </span>
       </a>
 
@@ -68,7 +69,7 @@ export default function FloatingBubbles() {
           shadow-md
           transition-all
           duration-300
-          hover:w-40
+          hover:w-65
           hover:shadow-lg
         "
       >
@@ -91,7 +92,7 @@ export default function FloatingBubbles() {
             group-hover:opacity-100
           "
         >
-          CLB SV5T
+          Câu lạc bộ "Sinh viên 5 tốt"
         </span>
       </a>
 
@@ -114,7 +115,7 @@ export default function FloatingBubbles() {
           shadow-md
           transition-all
           duration-300
-          hover:w-40
+          hover:w-60
           hover:shadow-lg
         "
       >
@@ -137,7 +138,7 @@ export default function FloatingBubbles() {
             group-hover:opacity-100
           "
         >
-          Group hỗ trợ
+          Group hỗ trợ sinh viên
         </span>
       </a>
 

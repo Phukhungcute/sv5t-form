@@ -506,7 +506,7 @@ export default function ResultPage() {
 
               {/* OPTIONS */}
 
-              <div className="mt-4 flex justify-evenly">
+              <div className="mt-3 flex justify-evenly">
 
                 {/* ĐƯỢC */}
                 <button
@@ -630,7 +630,7 @@ export default function ResultPage() {
 
               {/* XÁC NHẬN */}
 
-              <div className="mt-4 flex items-center justify-end">
+              <div className="flex items-center justify-end">
                 <div className="menu-btn-wrapper menu-btn-wrapper-footer">
                   <button
                     type="button"
