@@ -3,17 +3,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+  FACULTY_NAME_NORMAL,
+  ACADEMIC_YEAR,
+} from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { Success } from "@/lib/success-notification";
 
 type Student = {
   mssv: string;
   full_name: string;
+  class_name: string;
 };
 
 type Submission = {
+  id: number;
   status: "passed" | "failed" | "consider" | null;
   version: number;
   is_edit: number;
+  participation: boolean | null;
 };
 
 export default function ResultPage() {
@@ -22,7 +30,8 @@ export default function ResultPage() {
   const [student, setStudent] =
     useState<Student | null>(null);
 
-    const displayName = student?.full_name ?? "[user]";
+  const displayName =
+    student?.full_name ?? "[user]";
 
   const [submission, setSubmission] =
     useState<Submission | null>(null);
@@ -30,12 +39,18 @@ export default function ResultPage() {
   const [loading, setLoading] =
     useState(true);
 
+  const [participationChoice, setParticipationChoice] =
+    useState<boolean | null>(null);
+
+  const [participationSaving, setParticipationSaving] =
+    useState(false);
+
   useEffect(() => {
-  initializeStudentPage(
-    router,
-    "result"
-  );
-}, [router]);
+    initializeStudentPage(
+      router,
+      "result"
+    );
+  }, [router]);
 
   useEffect(() => {
     async function loadResult() {
@@ -90,7 +105,9 @@ export default function ResultPage() {
           error: studentError,
         } = await supabase
           .from("students")
-          .select("mssv, full_name")
+          .select(
+            "mssv, full_name, class_name"
+          )
           .eq("mssv", profile.mssv)
           .single();
 
@@ -116,7 +133,9 @@ export default function ResultPage() {
           error: submissionError,
         } = await supabase
           .from("submissions")
-          .select("status, version, is_edit")
+          .select(
+            "id, status, version, is_edit, participation"
+          )
           .eq("mssv", profile.mssv)
           .order("version", {
             ascending: false,
@@ -132,12 +151,20 @@ export default function ResultPage() {
           return;
         }
 
-        setSubmission(
-          latestSubmission
-            ? (latestSubmission as Submission)
-            : null
-        );
+        if (latestSubmission) {
+          const submissionData =
+            latestSubmission as Submission;
 
+          setSubmission(submissionData);
+
+          // Nếu trước đó đã xác nhận thì hiển thị
+          // lựa chọn cũ.
+          setParticipationChoice(
+            submissionData.participation
+          );
+        } else {
+          setSubmission(null);
+        }
       } catch (error) {
         console.error(
           "RESULT LOAD ERROR:",
@@ -150,6 +177,75 @@ export default function ResultPage() {
 
     loadResult();
   }, [router]);
+
+  /* ==========================================
+     XÁC NHẬN THAM GIA LỄ TUYÊN DƯƠNG
+  ========================================== */
+
+  async function handleParticipationConfirm() {
+  if (participationChoice === null) {
+    alert(
+      "Vui lòng chọn Được hoặc Không."
+    );
+    return;
+  }
+
+  if (!submission?.id) {
+    return;
+  }
+
+  setParticipationSaving(true);
+
+  try {
+    const { error } = await supabase
+      .from("submissions")
+      .update({
+        participation:
+          participationChoice,
+      })
+      .eq("id", submission.id);
+
+    if (error) {
+      console.error(
+        "PARTICIPATION UPDATE ERROR:",
+        error
+      );
+
+      alert(
+        "Không thể lưu lựa chọn. Vui lòng thử lại."
+      );
+
+      return;
+    }
+
+    setSubmission((current) =>
+      current
+        ? {
+            ...current,
+            participation:
+              participationChoice,
+          }
+        : current
+    );
+
+    Success(
+      participationChoice
+        ? "Đã xác nhận tham gia lễ tuyên dương!"
+        : "Đã xác nhận không tham gia lễ tuyên dương!"
+    );
+  } catch (error) {
+    console.error(
+      "PARTICIPATION CONFIRM ERROR:",
+      error
+    );
+
+    alert(
+      "Đã xảy ra lỗi. Vui lòng thử lại."
+    );
+  } finally {
+    setParticipationSaving(false);
+  }
+}
 
   /* ==========================================
      LOADING
@@ -199,24 +295,32 @@ export default function ResultPage() {
 
   let statusText = "ĐÃ NỘP";
   let statusClass =
-    "bg-blue-100 text-blue-700";
+    "bg-blue-300 text-blue-700";
+  let statusBackground =
+    "bg-white";
 
   if (status === "passed") {
     statusText = "ĐẠT";
     statusClass =
-      "bg-green-100 text-green-700";
+      "bg-green-300 text-green-700";
+    statusBackground =
+      "bg-green-100";
   }
 
   if (status === "failed") {
     statusText = "KHÔNG ĐẠT";
     statusClass =
-      "bg-red-100 text-red-700";
+      "bg-red-300 text-red-700";
+    statusBackground =
+      "bg-red-100";
   }
 
   if (status === "consider") {
     statusText = "XEM XÉT";
     statusClass =
-      "bg-yellow-100 text-yellow-700";
+      "bg-yellow-300 text-yellow-700";
+    statusBackground =
+      "bg-yellow-100";
   }
 
   /* ==========================================
@@ -279,7 +383,8 @@ export default function ResultPage() {
           </p>
 
           <p className="mt-3">
-            Hồ sơ của bạn cần chỉnh sửa/bổ sung thêm trước khi có thể đánh giá kết quả.
+            Hồ sơ của bạn cần chỉnh sửa/bổ sung
+            thêm trước khi có thể đánh giá kết quả.
           </p>
         </>
       );
@@ -312,7 +417,9 @@ export default function ResultPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-10">
       <div className="mx-auto max-w-3xl">
 
-        <div className="rounded-2xl bg-white p-8 shadow-sm">
+        <div
+          className={`rounded-2xl ${statusBackground} p-8 shadow-sm`}
+        >
 
           {/* TITLE */}
 
@@ -336,7 +443,7 @@ export default function ResultPage() {
 
           <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex justify-start gap-32">
 
               <div>
                 <p className="text-sm text-gray-500">
@@ -350,7 +457,7 @@ export default function ResultPage() {
 
               <div>
                 <p className="text-sm text-gray-500">
-                  MSSV
+                  Mã số sinh viên
                 </p>
 
                 <p className="mt-1 font-semibold text-gray-900">
@@ -360,11 +467,11 @@ export default function ResultPage() {
 
               <div>
                 <p className="text-sm text-gray-500">
-                  Phiên bản hồ sơ
+                  Lớp
                 </p>
 
                 <p className="mt-1 font-semibold text-gray-900">
-                  {`v${submission.version}${submission.is_edit ? "*" : ""}`}
+                  {student.class_name}
                 </p>
               </div>
 
@@ -374,7 +481,7 @@ export default function ResultPage() {
 
           {/* MESSAGE */}
 
-          <div className="mt-6 rounded-xl border border-gray-200 p-6 text-gray-700">
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6 text-gray-700">
 
             <h2 className="font-semibold text-gray-900">
               Thông báo
@@ -386,20 +493,199 @@ export default function ResultPage() {
 
           </div>
 
+          {/* ==========================================
+              THAM GIA LỄ TUYÊN DƯƠNG
+          ========================================== */}
+
+          {status === "passed" && (
+            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
+
+              <p className="font-semibold text-gray-900">
+                Bạn có tham gia được lễ tuyên dương không?
+              </p>
+
+              {/* OPTIONS */}
+
+              <div className="mt-4 flex justify-evenly">
+
+                {/* ĐƯỢC */}
+                <button
+                  type="button"
+                  onClick={() => setParticipationChoice(true)}
+                  disabled={participationSaving}
+                  className={`
+                    flex
+                    w-28
+                    cursor-pointer
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-2xl
+                    bg-white
+                    px-4
+                    py-2.5
+                    text-sm
+                    shadow-sm
+                    transition
+                    hover:-translate-y-0.5
+                    active:translate-y-0.5
+                    hover:shadow-md
+                    ${
+                      participationChoice === true
+                        ? "border-2 border-green-500 text-green-700"
+                        : "border border-gray-200 text-gray-700"
+                    }
+                    ${
+                      participationSaving
+                        ? "cursor-not-allowed opacity-70"
+                        : ""
+                    }
+                  `}
+                >
+                  <span
+                    className={`
+                      flex
+                      h-4
+                      w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      border-2
+                      ${
+                        participationChoice === true
+                          ? "border-green-500"
+                          : "border-gray-400"
+                      }
+                    `}
+                  >
+                    {participationChoice === true && (
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                    )}
+                  </span>
+
+                  Được
+                </button>
+
+
+                {/* KHÔNG */}
+                <button
+                  type="button"
+                  onClick={() => setParticipationChoice(false)}
+                  disabled={participationSaving}
+                  className={`
+                    flex
+                    w-28
+                    cursor-pointer
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-2xl
+                    bg-white
+                    px-4
+                    py-2.5
+                    text-sm
+                    shadow-sm
+                    transition
+                    hover:-translate-y-0.5
+                    active:translate-y-0.5
+                    hover:shadow-md
+                    ${
+                      participationChoice === false
+                        ? "border-2 border-red-500 text-red-700"
+                        : "border border-gray-200 text-gray-700"
+                    }
+                    ${
+                      participationSaving
+                        ? "cursor-not-allowed opacity-70"
+                        : ""
+                    }
+                  `}
+                >
+                  <span
+                    className={`
+                      flex
+                      h-4
+                      w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      border-2
+                      ${
+                        participationChoice === false
+                          ? "border-red-500"
+                          : "border-gray-400"
+                      }
+                    `}
+                  >
+                    {participationChoice === false && (
+                      <span className="h-2 w-2 rounded-full bg-red-500" />
+                    )}
+                  </span>
+
+                  Không
+                </button>
+
+              </div>
+
+
+              {/* XÁC NHẬN */}
+
+              <div className="mt-4 flex items-center justify-end">
+                <div className="menu-btn-wrapper menu-btn-wrapper-footer">
+                  <button
+                    type="button"
+                    onClick={handleParticipationConfirm}
+                    disabled={
+                      participationChoice === null ||
+                      participationSaving
+                    }
+                    className={`
+                      menu-btn
+                      ${
+                        participationChoice === null || participationSaving
+                          ? "menu-btn-disabled"
+                          : "menu-btn-blue"
+                      }
+                    `}
+                  >
+                    {participationSaving ? "Đang lưu..." : "Xác nhận"}
+                  </button>
+                </div>
+              </div>
+
+
+              {/* TRẠNG THÁI HIỆN TẠI */}
+
+              {submission.participation !== null && (
+                <p className="mt-3 text-right text-sm text-gray-500">
+                  Lựa chọn hiện tại:{" "}
+                  <strong>
+                    {submission.participation
+                      ? "Tham gia"
+                      : "Không tham gia"}
+                  </strong>
+                </p>
+              )}
+
+            </div>
+          )}
+
           {/* BACK */}
 
           <div className="mt-4 flex items-center justify-center">
 
             <div className="menu-btn-wrapper menu-btn-wrapper-footer">
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/dashboard")
-              }
-              className="menu-btn menu-btn-blue"
-            >
-              Quay lại trang chủ
-            </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push("/dashboard")
+                }
+                className="menu-btn menu-btn-blue"
+              >
+                Quay lại trang chủ
+              </button>
+
             </div>
 
           </div>

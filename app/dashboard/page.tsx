@@ -14,6 +14,7 @@ import {
     getDateAfter,
 } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version"
+import FloatingBubbles from "@/components/FloatingBubbles";
 
 type Student = {
   mssv: string;
@@ -307,7 +308,9 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-red-50 p-6">
+    <>
+    <FloatingBubbles />
+    <main className="min-h-screen bg-white p-6">
       
       {showPasswordSuccess && (
           <div
@@ -371,45 +374,54 @@ export default function Dashboard() {
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8 text-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              SV5T Form {ACADEMIC_YEAR}
+            <h1 className="font-svn-internation text-6xl font-bold text-sv5t-blue">
+              CỔNG THÔNG TIN DANH HIỆU "SINH VIÊN 5 TỐT"
             </h1>
 
-            <p className="mt-1 text-gray-500">
-              Hệ thống quản lý hồ sơ SV5T
+            <h1 className="font-svn-internation text-6xl font-bold text-sv5t-blue">
+              KHOA {FACULTY_NAME}
+            </h1>
+            
+            <p className="mt-1 font-bold text-gray-500">
+              Năm học {ACADEMIC_YEAR}
             </p>
           </div>
-
-          <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="font-medium text-gray-800">
-              {student?.full_name}
-            </p>
-            <p className="text-sm text-gray-500">
-              MSSV: {student?.mssv}
-            </p>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
-          >
-            Đăng xuất
-          </button>
-        </div>
         </header>
 
         {/* Welcome */}
-        <section className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Xin chào, {student.full_name} 👋
-          </h2>
+        <section className="mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
+          {/* Bên trái */}
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Xin chào, {student.full_name} 👋
+            </h2>
 
-          <p className="mt-2 text-gray-600">
-            Chào mừng bạn đến với hệ thống quản lý hồ sơ sinh viên.
-          </p>
+            <p className="mt-2 text-gray-600">
+              Chào mừng bạn đến với hệ thống quản lý hồ sơ sinh viên.
+            </p>
+          </div>
+
+          {/* Bên phải */}
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="font-medium text-gray-800">
+                {student?.full_name}
+              </p>
+
+              <p className="text-sm text-gray-500">
+                MSSV: {student?.mssv}
+              </p>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </section>
 
         <div className="mb-8 flex justify-center">
@@ -902,5 +914,6 @@ export default function Dashboard() {
 
       </div>
     </main>
+    </>
   );
 }

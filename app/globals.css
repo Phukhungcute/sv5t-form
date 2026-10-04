@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sv5t-blue: #026FEC;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +23,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 @media print {
@@ -41,6 +41,18 @@ body {
   #print-submissions {
     font-size: 10px;
   }
+}
+
+@font-face {
+  font-family: "SVN-Internation";
+  src: url("/fonts/SVN-Internation.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-svn-internation {
+  font-family: "SVN-Internation", sans-serif !important;
 }
 
 .menu-btn-wrapper {
