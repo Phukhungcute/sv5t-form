@@ -10,6 +10,7 @@ import {
     ACADEMIC_YEAR,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { Success } from "@/lib/success-notification";
 
 type ProofItem = {
   id: string;
@@ -1253,9 +1254,7 @@ const filePath =
       nextVersion
     );
 
-    alert(
-      `Gửi minh chứng thành công! Phiên bản ${nextVersion}.`
-    );
+    Success(`Gửi minh chứng thành công! Phiên bản ${nextVersion}`);
 
     router.push(
       "/dashboard"

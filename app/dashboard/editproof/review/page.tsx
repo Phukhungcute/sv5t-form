@@ -11,6 +11,7 @@ import {
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
 import { hasUsableReviewNote } from "@/lib/edit-permission";
+import { Success } from "@/lib/success-notification";
 
 type ProofItem = {
   id: string;
@@ -1987,9 +1988,7 @@ export default function EditProofReviewPage() {
         12. HOÀN TẤT
       ===================================================== */
 
-      alert(
-        `Đã gửi hồ sơ bổ sung minh chứng v${newVersion}*.`
-      );
+      Success(`Đã gửi hồ sơ bổ sung minh chứng v${newVersion}*.`);
 
       router.replace(
         "/dashboard"

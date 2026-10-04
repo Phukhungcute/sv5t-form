@@ -12,6 +12,7 @@ import {
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
 import { hasUsableReviewNote } from "@/lib/edit-permission";
+import { Success } from "@/lib/success-notification";
 
 type SubmissionData = {
   ethnicity: string;
@@ -335,7 +336,7 @@ async function handleConfirm() {
       `sv5t_edit_submission_${student.mssv}`
     );
 
-    alert("Chỉnh sửa hồ sơ thành công!");
+    Success(`Chỉnh sửa hồ sơ thành công!`);
     router.push("/dashboard");
   } catch (error) {
     console.error("CONFIRM EDIT SUBMISSION ERROR:", error);

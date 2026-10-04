@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import confetti from "canvas-confetti";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -33,6 +34,11 @@ export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [showPasswordSuccess, setShowPasswordSuccess] =
+  useState(false);
+  const [hidingPasswordSuccess, setHidingPasswordSuccess] =
+  useState(false);
+
   const [schedule, setSchedule] =
   useState<ScheduleSettings | null>(null);
 
@@ -64,7 +70,67 @@ export default function Dashboard() {
       ? buildSchedule(schedule)
       : null;
 
-  useEffect(() => {
+        useEffect(() => {
+        // Chờ Dashboard load xong
+        if (loading) {
+          return;
+        }
+
+        const success =
+          sessionStorage.getItem(
+            "passwordChangedSuccess"
+          );
+
+        if (success !== "true") {
+          return;
+        }
+
+        // Xóa ngay để hiệu ứng chỉ chạy một lần
+        sessionStorage.removeItem(
+          "passwordChangedSuccess"
+        );
+
+        // Cho Dashboard render hoàn chỉnh trước
+        const timer = setTimeout(() => {
+          setShowPasswordSuccess(true);
+
+          // Confetti
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: {
+              y: 0.15,
+            },
+          });
+        }, 100);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }, [loading]);
+
+      useEffect(() => {
+        if (!showPasswordSuccess) {
+          return;
+        }
+
+        const timer = setTimeout(() => {
+          // Bắt đầu animation đi lên
+          setHidingPasswordSuccess(true);
+
+          // Chờ animation chạy xong rồi mới xóa popup
+          setTimeout(() => {
+            setShowPasswordSuccess(false);
+            setHidingPasswordSuccess(false);
+          }, 500);
+        }, 4000);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }, [showPasswordSuccess]);
+  
+      useEffect(() => {
     async function loadStudent() {
       try {
         // ==========================================
@@ -242,6 +308,66 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-red-50 p-6">
+      
+      {showPasswordSuccess && (
+          <div
+            className="
+              fixed
+              inset-x-0
+              top-5
+              z-50
+              flex
+              justify-center
+              px-4
+            "
+          >
+            <div
+              className={`
+                w-full
+                max-w-md
+                ${
+                  hidingPasswordSuccess
+                    ? "animate-[slideUp_0.5s_ease-in]"
+                    : "animate-[slideDown_0.5s_ease-out]"
+                }
+              `}
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-4
+                  rounded-2xl
+                  border
+                  border-green-200
+                  bg-white
+                  px-5
+                  py-4
+                  shadow-xl
+                "
+              >
+                <div className="text-3xl">
+                  🎉
+                </div>
+
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800">
+                    Đổi mật khẩu thành công!
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Mật khẩu của bạn đã được cập nhật.
+                  </p>
+                </div>
+
+                <div className="text-3xl">
+                  🎊
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
@@ -583,7 +709,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Chỉnh sửa hồ sơ */}
+          {/* Bổ sung hồ sơ */}
           <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
             <h3 className="text-xl font-semibold text-gray-900">
               Bổ sung minh chứng
@@ -630,7 +756,7 @@ export default function Dashboard() {
                   : ""
               }`}
             >
-              Chỉnh sửa
+              Bổ sung
             </button>
             </div>
           </div>

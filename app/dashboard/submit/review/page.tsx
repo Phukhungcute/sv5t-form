@@ -11,6 +11,7 @@ import {
     isSubmissionPeriod,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import { Success } from "@/lib/success-notification";
 
 type SubmissionData = {
   ethnicity: string;
@@ -274,9 +275,7 @@ async function handleConfirm() {
     // 6. HOÀN TẤT
     // ==========================================
 
-    alert(
-      "Gửi hồ sơ thành công!"
-    );
+    Success("Chúc mừng bạn đã gửi hồ sơ thành công!");
 
     router.push("/dashboard");
 

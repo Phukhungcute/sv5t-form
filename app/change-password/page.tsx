@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { Success } from "@/lib/success-notification";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -209,6 +210,59 @@ export default function ChangePasswordPage() {
       console.log(
         "CHANGE PASSWORD SUCCESS"
       );
+
+      // ========================================
+      // ĐĂNG NHẬP LẠI BẰNG MẬT KHẨU MỚI
+      // ========================================
+
+      const email = session.user.email;
+
+      if (!email) {
+        setError(
+          "Không tìm thấy email tài khoản. Vui lòng đăng nhập lại."
+        );
+
+        return;
+      }
+
+      const {
+        data: loginData,
+        error: loginError,
+      } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password: newPassword,
+        });
+
+      console.log(
+        "RE-LOGIN DATA:",
+        loginData?.session
+          ? "SESSION CREATED"
+          : null
+      );
+
+      console.log(
+        "RE-LOGIN ERROR:",
+        loginError
+      );
+
+      if (loginError || !loginData.session) {
+        setError(
+          "Đổi mật khẩu thành công nhưng không thể tạo lại phiên đăng nhập. Vui lòng đăng nhập lại."
+        );
+
+        return;
+      }
+
+      // ========================================
+      // ĐI TỚI DASHBOARD
+      // ========================================
+
+      console.log(
+        "NEW SESSION CREATED SUCCESSFULLY"
+      );
+
+      Success("Đổi mật khẩu thành công!");
 
       router.replace("/dashboard");
     } catch (error) {

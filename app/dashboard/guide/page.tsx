@@ -78,6 +78,38 @@ export default function GuidePage() {
                   
               </h1>
           </div>
+
+          <div className="mt-4 rounded-xl border border-black bg-yellow-100 p-6 text-2xl text-left text-black font-bold">
+            4/ Xem yêu cầu:
+              <h1 className="mt-2 text-xl font-normal text-left">
+                Đây là trang sinh viên có thể tạo minh chứng<br />
+                  
+              </h1>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-black bg-yellow-100 p-6 text-2xl text-left text-black font-bold">
+            5/ Chỉnh sửa hồ sơ:
+              <h1 className="mt-2 text-xl font-normal text-left">
+                Đây là trang sinh viên có thể tạo minh chứng<br />
+                  
+              </h1>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-black bg-yellow-100 p-6 text-2xl text-left text-black font-bold">
+            6/ Bổ sung minh chứng:
+              <h1 className="mt-2 text-xl font-normal text-left">
+                Đây là trang sinh viên có thể tạo minh chứng<br />
+                  
+              </h1>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-black bg-green-200 p-6 text-2xl text-left text-black font-bold">
+            7/ Xem kết quả:
+              <h1 className="mt-2 text-xl font-normal text-left">
+                Đây là trang sinh viên có thể tạo minh chứng<br />
+                  
+              </h1>
+          </div>
         </section>
       </div>
     </main>
