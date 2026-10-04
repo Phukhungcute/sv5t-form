@@ -378,20 +378,20 @@ export default function Dashboard() {
       <div className="mx-auto max-w-5xl">
 
         {/* HEADER — DESKTOP */}
-        <div className="hidden md:flex flex-col items-center shadow">
-          {/* Ảnh tiêu đề */}
-          {infoHeight > 0 && (
-            <div
-              className="overflow-hidden rounded-t-2xl bg-white"
-              style={{ height: `${infoHeight}px` }}
-            >
-              <img
-                src="/images/Title.jpg"
-                alt="Title SV5T"
-                className="h-full w-auto object-contain"
-              />
-            </div>
-          )}
+        <div className="hidden md:flex flex-col items-start shadow">
+        {/* Ảnh tiêu đề */}
+        {infoHeight > 0 && (
+          <div
+            className="overflow-hidden rounded-t-2xl bg-white"
+            style={{ height: "200px" }}
+          >
+            <img
+              src="/images/Title.jpg"
+              alt="Title SV5T"
+              className="h-full w-auto object-contain"
+            />
+          </div>
+        )}
 
           {/* Ribbon */}
           <nav className="flex w-full max-w-5xl justify-start overflow-hidden bg-sv5t-blue shadow-md">
