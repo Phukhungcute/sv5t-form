@@ -19,7 +19,7 @@ const montserrat = Montserrat({
 // });
 
 export const metadata: Metadata = {
-  title: "Cổng thông tin quản lý hồ sơ Sinh viên năm tốt",
+  title: "CỔNG THÔNG TIN DANH HIỆU SINH VIÊN 5 TỐT KHOA GIÁO DỤC TIỂU HỌC TRƯỜNG ĐẠI HỌC SÀI GÒN",
   description: "Hệ thống đăng ký và quản lý biểu mẫu SV5T",
 };
 

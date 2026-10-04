@@ -271,7 +271,7 @@ export default function Dashboard() {
 }, [student]);
 
   const [activeTab, setActiveTab] = useState<
-  "home" | "introduction" | "notifications"
+  "home" | "introduction" | "notifications" | "contact"
 >("home");
     
   // ==========================================
@@ -377,11 +377,12 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-5xl">
 
-        {/* Header */}
-        <div className="mb-8 flex justify-center">
+        {/* HEADER — DESKTOP */}
+        <div className="hidden md:flex flex-col items-center shadow">
+          {/* Ảnh tiêu đề */}
           {infoHeight > 0 && (
             <div
-              className="overflow-hidden bg-white"
+              className="overflow-hidden rounded-t-2xl bg-white"
               style={{ height: `${infoHeight}px` }}
             >
               <img
@@ -391,86 +392,109 @@ export default function Dashboard() {
               />
             </div>
           )}
-        </div>
-        
-        <nav className="mb-8 flex justify-center">
-          <div className="flex items-center gap-2 rounded-2xl bg-white p-2 shadow-sm">
-            {/* TRANG CHỦ */}
+
+          {/* Ribbon */}
+          <nav className="flex w-full max-w-5xl justify-start overflow-hidden bg-sv5t-blue shadow-md">
+            {/* Trang chủ */}
             <button
               type="button"
               onClick={() => setActiveTab("home")}
               className={`
                 cursor-pointer
-                rounded-xl
-                px-5
+                px-6
                 py-3
                 font-semibold
+                text-white
                 transition
                 ${
                   activeTab === "home"
-                    ? "bg-sv5t-blue text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-white/20"
+                    : "hover:bg-white/10"
                 }
               `}
             >
-              <span className="mr-2">⌂</span>
-              TRANG CHỦ
+              🏠︎ TRANG CHỦ
             </button>
 
-            {/* GIỚI THIỆU */}
+            {/* Giới thiệu */}
             <button
               type="button"
               onClick={() => setActiveTab("introduction")}
               className={`
                 cursor-pointer
-                rounded-xl
-                px-5
+                border-l
+                border-white/20
+                px-6
                 py-3
                 font-semibold
+                text-white
                 transition
                 ${
                   activeTab === "introduction"
-                    ? "bg-sv5t-blue text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-white/20"
+                    : "hover:bg-white/10"
                 }
               `}
             >
-              GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"
+              ★ GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"
             </button>
 
-            {/* THÔNG BÁO */}
+            {/* Thông báo */}
             <button
               type="button"
               onClick={() => setActiveTab("notifications")}
               className={`
                 cursor-pointer
-                rounded-xl
-                px-5
+                border-l
+                border-white/20
+                px-6
                 py-3
                 font-semibold
+                text-white
                 transition
                 ${
                   activeTab === "notifications"
-                    ? "bg-sv5t-blue text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-white/20"
+                    : "hover:bg-white/10"
                 }
               `}
             >
-              THÔNG BÁO
+              ⩍ THÔNG BÁO
             </button>
-          </div>
-        </nav>
+
+            {/* LIÊN HỆ */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("contact")}
+              className={`
+                cursor-pointer
+                px-6
+                py-3
+                font-semibold
+                text-white
+                transition
+                ${
+                  activeTab === "contact"
+                    ? "bg-white/20"
+                    : "hover:bg-white/10"
+                }
+              `}
+            >
+              ✉ LIÊN HỆ
+            </button>
+          </nav>
+        </div>
 
         {/* Welcome */}
-        <section className="mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
+        <section className="mt-4 mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
           {/* Bên trái */}
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">
-              Xin chào, {student.full_name} 👋
+              Xin chào, {student.full_name}!
             </h2>
 
             <p className="mt-2 text-gray-600">
-              Chào mừng bạn đến với hệ thống quản lý hồ sơ sinh viên.
+              Chúc bạn một ngày tốt lành!
             </p>
           </div>
 
