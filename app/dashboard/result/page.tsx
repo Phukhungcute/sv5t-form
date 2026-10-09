@@ -443,39 +443,79 @@ export default function ResultPage() {
 
           <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
 
-            <div className="flex justify-start gap-32">
+            <>
+              <div className="hidden md:block">
+                {/* Giao diện desktop hiện tại */}
+                <div className="flex justify-start gap-32">
 
-              <div>
-                <p className="text-sm text-gray-500">
-                  Họ và tên
-                </p>
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Họ và tên
+                    </p>
 
-                <p className="mt-1 font-semibold text-gray-900">
-                  {student.full_name}
-                </p>
+                    <p className="mt-1 font-semibold text-gray-900">
+                      {student.full_name}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Mã số sinh viên
+                    </p>
+
+                    <p className="mt-1 font-semibold text-gray-900">
+                      {student.mssv}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Lớp
+                    </p>
+
+                    <p className="mt-1 font-semibold text-gray-900">
+                      {student.class_name}
+                    </p>
+                  </div>
+
+                </div>
               </div>
 
-              <div>
-                <p className="text-sm text-gray-500">
-                  Mã số sinh viên
-                </p>
+              <div className="block md:hidden">
+                {/* Giao diện mobile */}
+                <div className="flex flex-col gap-2 md:flex-row md:justify-start md:gap-32">
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">
+                      Họ và tên:
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {student.full_name}
+                    </p>
+                  </div>
 
-                <p className="mt-1 font-semibold text-gray-900">
-                  {student.mssv}
-                </p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">
+                      Mã số sinh viên:
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {student.mssv}
+                    </p>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-sm text-gray-500 whitespace-nowrap">
+                      Lớp:
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {student.class_name}
+                    </p>
+                  </div>
+                </div>
+
               </div>
+            </>
 
-              <div>
-                <p className="text-sm text-gray-500">
-                  Lớp
-                </p>
-
-                <p className="mt-1 font-semibold text-gray-900">
-                  {student.class_name}
-                </p>
-              </div>
-
-            </div>
+            
 
           </div>
 
