@@ -15,6 +15,7 @@ import {
 } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version"
 import FloatingBubbles from "@/components/FloatingBubbles";
+import NewsTicker from "@/components/NewsTicker";
 
 type Student = {
   mssv: string;
@@ -313,7 +314,7 @@ export default function Dashboard() {
 
   return (
     <>
-    <FloatingBubbles />
+    <FloatingBubbles/>
     <main className="min-h-screen bg-white p-6">
       
       {showPasswordSuccess && (
@@ -378,11 +379,10 @@ export default function Dashboard() {
       <div className="mx-auto max-w-5xl">
 
         {/* HEADER — DESKTOP */}
-        <div className="hidden md:flex flex-col items-start shadow">
+        <div className="hidden md:flex flex-col items-start">
         {/* Ảnh tiêu đề */}
         {infoHeight > 0 && (
           <div
-            className="overflow-hidden rounded-t-2xl bg-white"
             style={{ height: "200px" }}
           >
             <img
@@ -485,442 +485,452 @@ export default function Dashboard() {
           </nav>
         </div>
 
-        {/* Welcome */}
-        <section className="mt-4 mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
-          {/* Bên trái */}
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Xin chào, {student.full_name}!
-            </h2>
+      {/* Tiêu điểm */}
+      <div className="mb-8 mt-4">
+        <NewsTicker />
+      </div>
 
-            <p className="mt-2 text-gray-600">
-              Chúc bạn một ngày tốt lành!
-            </p>
-          </div>
+        {/* Trang chủ */}
+      {activeTab === "home" && (
+        <>
+      {/* Welcome */}
+              <section className="mt-4 mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
+                {/* Bên trái */}
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    Xin chào, {student.full_name}!
+                  </h2>
 
-          {/* Bên phải */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-medium text-gray-800">
-                {student?.full_name}
-              </p>
+                  <p className="mt-2 text-gray-600">
+                    Chúc bạn một ngày tốt lành!
+                  </p>
+                </div>
 
-              <p className="text-sm text-gray-500">
-                MSSV: {student?.mssv}
-              </p>
-            </div>
+                {/* Bên phải */}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="font-medium text-gray-800">
+                      {student?.full_name}
+                    </p>
 
-            <button
-              onClick={handleLogout}
-              className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
-            >
-              Đăng xuất
-            </button>
-          </div>
-        </section>
+                    <p className="text-sm text-gray-500">
+                      MSSV: {student?.mssv}
+                    </p>
+                  </div>
 
-        <div className="mb-8 flex justify-center">
-        {infoHeight > 0 && (
-          <div
-            className="overflow-hidden rounded-2xl bg-white shadow"
-            style={{ height: `${infoHeight}px` }}
-          >
-            <img
-              src="/images/Announcement1.jpg"
-              alt="Banner SV5T"
-              className="h-full w-auto object-contain"
-            />
-          </div>
-        )}
-       </div>
+                  <button
+                    onClick={handleLogout}
+                    className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              </section>
 
-        {/* Thông tin sinh viên */}
-        <section
-          ref={infoSectionRef}
-          className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="font-svn-internation text-sv5t-blue mb-5 text-5xl font-semibold">
-            THÔNG TIN SINH VIÊN
-          </h2>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-gray-500">
-                Mã số sinh viên
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {student.mssv}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">
-                Họ và tên
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {student.full_name}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">
-                Ngày sinh
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {new Date(student.birth_date).toLocaleDateString("vi-VN")}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">
-                Giới tính
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {student.gender}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">
-                Lớp
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {student.class_name}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-gray-500">
-                Khoa
-              </p>
-
-              <p className="mt-1 font-medium text-gray-900">
-                {FACULTY_NAME_NORMAL}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Menu */}
-        <section className="grid gap-6 md:grid-cols-3">
-
-          {/* Gửi hồ sơ */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
-              GỬI HỒ SƠ
-            </h3>
-
-            <p className="mt-2 text-gray-600">
-              Điền và gửi hồ sơ của bạn đến hệ thống.
-            </p>
-
-            {submissionOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đang mở
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Đang đóng
-              </p>
-            )}
-
-            {SCHEDULE?.submission?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
-                  {SCHEDULE?.submission.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
+              <div className="mb-8 flex justify-center">
+              {infoHeight > 0 && (
+                <div
+                  className="overflow-hidden rounded-2xl bg-white shadow"
+                  style={{ height: `${infoHeight}px` }}
+                >
+                  <img
+                    src="/images/Announcement1.jpg"
+                    alt="Banner SV5T"
+                    className="h-full w-auto object-contain"
+                  />
+                </div>
               )}
-
-            <div className="menu-btn-wrapper">
-            <button
-              onClick={() => {
-                if (!submissionOpen) {
-                  alert("Đang ngoài thời gian nộp hồ sơ.");
-                  return;
-                }
-
-                router.push("/dashboard/submit");
-              }}
-              className={`menu-btn menu-btn-blue ${
-                !submissionOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Gửi hồ sơ
-            </button>
             </div>
-          </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
-              TẠO MINH CHỨNG
-            </h3>
+              {/* Thông tin sinh viên */}
+              <section
+                ref={infoSectionRef}
+                className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="font-svn-internation text-sv5t-blue mb-5 text-5xl font-semibold">
+                  THÔNG TIN SINH VIÊN
+                </h2>
 
-            {/* Minh chứng */}
-            <p className="mt-2 text-gray-600">
-              Tạo và gửi minh chứng của bạn đến hệ thống.
-            </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-gray-500">
+                      Mã số sinh viên
+                    </p>
 
-            {submissionOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đang mở
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Đang đóng
-              </p>
-            )}
+                    <p className="mt-1 font-medium text-gray-900">
+                      {student.mssv}
+                    </p>
+                  </div>
 
-            {SCHEDULE?.submission?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
-                  {SCHEDULE?.submission.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
-              )}
-            
-            <div className="menu-btn-wrapper">
-            <button
-              onClick={() => {
-                if (!submissionOpen) {
-                  alert("Đang ngoài thời gian nộp minh chứng.");
-                  return;
-                }
+                  <div>
+                    <p className="text-gray-500">
+                      Họ và tên
+                    </p>
 
-                router.push("/dashboard/proof");
-              }}
-              className={`menu-btn menu-btn-blue ${
-                !submissionOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Tạo minh chứng
-            </button>
-            </div>
-          </div>
+                    <p className="mt-1 font-medium text-gray-900">
+                      {student.full_name}
+                    </p>
+                  </div>
 
-          {/* Chỉnh sửa */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-orange text-3xl font-semibold text-gray-900">
-              YÊU CẦU CHỈNH SỬA
-            </h3>
+                  <div>
+                    <p className="text-gray-500">
+                      Ngày sinh
+                    </p>
 
-            <p className="mt-2 text-gray-600">
-              Yêu cầu chỉnh sửa, bổ sung hồ sơ (nếu có).
-            </p>
+                    <p className="mt-1 font-medium text-gray-900">
+                      {new Date(student.birth_date).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
 
-            {additionOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đang mở
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Đang đóng
-              </p>
-            )}
+                  <div>
+                    <p className="text-gray-500">
+                      Giới tính
+                    </p>
 
-            {SCHEDULE?.addition?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Hạn xem: {SCHEDULE?.addition.start} {"-"}{" "}
-                  {SCHEDULE?.addition.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
-              )}
+                    <p className="mt-1 font-medium text-gray-900">
+                      {student.gender}
+                    </p>
+                  </div>
 
-            <div className="menu-btn-wrapper">
-              <button
-                onClick={() => {
-                  if (!additionOpen) {
-                    alert("Đang ngoài thời gian xem yêu cầu.");
-                    return;
-                  }
+                  <div>
+                    <p className="text-gray-500">
+                      Lớp
+                    </p>
 
-                  router.push("/dashboard/request");
-                }}
-                className={`menu-btn menu-btn-yellow ${
-                  !additionOpen
-                    ? "cursor-not-allowed opacity-50"
-                    : ""
-                }`}
-              >
-                Xem yêu cầu
-              </button>
-            </div>
-          </div>
+                    <p className="mt-1 font-medium text-gray-900">
+                      {student.class_name}
+                    </p>
+                  </div>
 
-          {/* Chỉnh sửa hồ sơ */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
-              CHỈNH SỬA HỒ SƠ
-            </h3>
+                  <div>
+                    <p className="text-gray-500">
+                      Khoa
+                    </p>
 
-            <p className="mt-2 text-gray-600">
-              Chỉnh sửa thông tin hồ sơ đã gửi trong thời gian cho phép.
-            </p>
+                    <p className="mt-1 font-medium text-gray-900">
+                      {FACULTY_NAME_NORMAL}
+                    </p>
+                  </div>
+                </div>
+              </section>
 
-            {additionOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đang mở
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Đang đóng
-              </p>
-            )}
+              {/* Menu */}
+              <section className="grid gap-6 md:grid-cols-3">
 
-            {SCHEDULE?.addition?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Hạn chỉnh sửa: {SCHEDULE?.addition.start} {"-"}{" "}
-                  {SCHEDULE?.addition.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
-              )}
-            
-            <div className="menu-btn-wrapper">
-            <button
-              onClick={() => {
-                if (!additionOpen) {
-                  alert("Đang ngoài thời gian chỉnh sửa hồ sơ.");
-                  return;
-                }
+                {/* Gửi hồ sơ */}
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                    GỬI HỒ SƠ
+                  </h3>
 
-                router.push("/dashboard/editsubmit");
-              }}
-              className={`menu-btn menu-btn-blue ${
-                !additionOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Chỉnh sửa
-            </button>
-            </div>
-          </div>
+                  <p className="mt-2 text-gray-600">
+                    Điền và gửi hồ sơ của bạn đến hệ thống.
+                  </p>
 
-          {/* Bổ sung hồ sơ */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
-              BỔ SUNG MINH CHỨNG
-            </h3>
+                  {submissionOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đang mở
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Đang đóng
+                    </p>
+                  )}
 
-            <p className="mt-2 text-gray-600">
-              Bổ sung thông tin minh chứng đã gửi trong thời gian cho phép.
-            </p>
+                  {SCHEDULE?.submission?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
+                        {SCHEDULE?.submission.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
 
-            {additionOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đang mở
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Đang đóng
-              </p>
-            )}
-            
-            {SCHEDULE?.addition?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Hạn bổ sung: {SCHEDULE?.addition.start} {"-"}{" "}
-                  {SCHEDULE?.addition.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
-              )}
+                  <div className="menu-btn-wrapper">
+                  <button
+                    onClick={() => {
+                      if (!submissionOpen) {
+                        alert("Đang ngoài thời gian nộp hồ sơ.");
+                        return;
+                      }
 
-            <div className="menu-btn-wrapper">
-            <button
-              onClick={() => {
-                if (!additionOpen) {
-                  alert("Đang ngoài thời gian chỉnh sửa minh chứng.");
-                  return;
-                }
+                      router.push("/dashboard/submit");
+                    }}
+                    className={`menu-btn menu-btn-blue ${
+                      !submissionOpen
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    Gửi hồ sơ
+                  </button>
+                  </div>
+                </div>
 
-                router.push("/dashboard/editproof");
-              }}
-              className={`menu-btn menu-btn-blue ${
-                !additionOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Bổ sung
-            </button>
-            </div>
-          </div>
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                    TẠO MINH CHỨNG
+                  </h3>
 
-          {/* Kết quả */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <h3 className="font-svn-internation text-sv5t-green text-3xl font-semibold text-gray-900">
-              XEM KẾT QUẢ
-            </h3>
+                  {/* Minh chứng */}
+                  <p className="mt-2 text-gray-600">
+                    Tạo và gửi minh chứng của bạn đến hệ thống.
+                  </p>
 
-            <p className="mt-2 text-gray-600">
-              Theo dõi trạng thái và kết quả hồ sơ của bạn.
-            </p>
+                  {submissionOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đang mở
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Đang đóng
+                    </p>
+                  )}
 
-            {resultOpen ? (
-              <p className="mt-4 text-sm font-medium text-green-600">
-                ● Đã có kết quả
-              </p>
-            ) : (
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                ● Chưa có kết quả
-              </p>
-            )}
+                  {SCHEDULE?.submission?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hạn gửi: {SCHEDULE?.submission.start} {"-"}{" "}
+                        {SCHEDULE?.submission.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
+                  
+                  <div className="menu-btn-wrapper">
+                  <button
+                    onClick={() => {
+                      if (!submissionOpen) {
+                        alert("Đang ngoài thời gian nộp minh chứng.");
+                        return;
+                      }
 
-              {SCHEDULE?.result?.enabled ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Kết quả: {SCHEDULE.result.start} {"-"}{" "}
-                  {SCHEDULE.result.end}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Coming soon
-                </p>
-              )}
+                      router.push("/dashboard/proof");
+                    }}
+                    className={`menu-btn menu-btn-blue ${
+                      !submissionOpen
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    Tạo minh chứng
+                  </button>
+                  </div>
+                </div>
 
-            <div className="menu-btn-wrapper">
-            <button
-              onClick={() => {
-                if (!resultOpen) {
-                  alert("Đang ngoài thời gian xem kết quả.");
-                  return;
-                }
+                {/* Chỉnh sửa */}
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-orange text-3xl font-semibold text-gray-900">
+                    YÊU CẦU CHỈNH SỬA
+                  </h3>
 
-                router.push("/dashboard/result");
-              }}
-              className={`menu-btn menu-btn-green ${
-                !resultOpen
-                  ? "cursor-not-allowed opacity-50"
-                  : ""
-              }`}
-            >
-              Xem kết quả
-            </button>
-            </div>
-          </div>     
+                  <p className="mt-2 text-gray-600">
+                    Yêu cầu chỉnh sửa, bổ sung hồ sơ (nếu có).
+                  </p>
 
-        </section>
+                  {additionOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đang mở
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Đang đóng
+                    </p>
+                  )}
+
+                  {SCHEDULE?.addition?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hạn xem: {SCHEDULE?.addition.start} {"-"}{" "}
+                        {SCHEDULE?.addition.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
+
+                  <div className="menu-btn-wrapper">
+                    <button
+                      onClick={() => {
+                        if (!additionOpen) {
+                          alert("Đang ngoài thời gian xem yêu cầu.");
+                          return;
+                        }
+
+                        router.push("/dashboard/request");
+                      }}
+                      className={`menu-btn menu-btn-yellow ${
+                        !additionOpen
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
+                      }`}
+                    >
+                      Xem yêu cầu
+                    </button>
+                  </div>
+                </div>
+
+                {/* Chỉnh sửa hồ sơ */}
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                    CHỈNH SỬA HỒ SƠ
+                  </h3>
+
+                  <p className="mt-2 text-gray-600">
+                    Chỉnh sửa thông tin hồ sơ đã gửi trong thời gian cho phép.
+                  </p>
+
+                  {additionOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đang mở
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Đang đóng
+                    </p>
+                  )}
+
+                  {SCHEDULE?.addition?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hạn chỉnh sửa: {SCHEDULE?.addition.start} {"-"}{" "}
+                        {SCHEDULE?.addition.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
+                  
+                  <div className="menu-btn-wrapper">
+                  <button
+                    onClick={() => {
+                      if (!additionOpen) {
+                        alert("Đang ngoài thời gian chỉnh sửa hồ sơ.");
+                        return;
+                      }
+
+                      router.push("/dashboard/editsubmit");
+                    }}
+                    className={`menu-btn menu-btn-blue ${
+                      !additionOpen
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    Chỉnh sửa
+                  </button>
+                  </div>
+                </div>
+
+                {/* Bổ sung hồ sơ */}
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                    BỔ SUNG MINH CHỨNG
+                  </h3>
+
+                  <p className="mt-2 text-gray-600">
+                    Bổ sung thông tin minh chứng đã gửi trong thời gian cho phép.
+                  </p>
+
+                  {additionOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đang mở
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Đang đóng
+                    </p>
+                  )}
+                  
+                  {SCHEDULE?.addition?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Hạn bổ sung: {SCHEDULE?.addition.start} {"-"}{" "}
+                        {SCHEDULE?.addition.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
+
+                  <div className="menu-btn-wrapper">
+                  <button
+                    onClick={() => {
+                      if (!additionOpen) {
+                        alert("Đang ngoài thời gian chỉnh sửa minh chứng.");
+                        return;
+                      }
+
+                      router.push("/dashboard/editproof");
+                    }}
+                    className={`menu-btn menu-btn-blue ${
+                      !additionOpen
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    Bổ sung
+                  </button>
+                  </div>
+                </div>
+
+                {/* Kết quả */}
+                <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+                  <h3 className="font-svn-internation text-sv5t-green text-3xl font-semibold text-gray-900">
+                    XEM KẾT QUẢ
+                  </h3>
+
+                  <p className="mt-2 text-gray-600">
+                    Theo dõi trạng thái và kết quả hồ sơ của bạn.
+                  </p>
+
+                  {resultOpen ? (
+                    <p className="mt-4 text-sm font-medium text-green-600">
+                      ● Đã có kết quả
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm font-medium text-gray-500">
+                      ● Chưa có kết quả
+                    </p>
+                  )}
+
+                    {SCHEDULE?.result?.enabled ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Kết quả: {SCHEDULE.result.start} {"-"}{" "}
+                        {SCHEDULE.result.end}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Coming soon
+                      </p>
+                    )}
+
+                  <div className="menu-btn-wrapper">
+                  <button
+                    onClick={() => {
+                      if (!resultOpen) {
+                        alert("Đang ngoài thời gian xem kết quả.");
+                        return;
+                      }
+
+                      router.push("/dashboard/result");
+                    }}
+                    className={`menu-btn menu-btn-green ${
+                      !resultOpen
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    Xem kết quả
+                  </button>
+                  </div>
+                </div>     
+
+              </section>
+        </>
+      )}
         
         {/* Help Center */}
         <section className="mt-10 rounded-2xl bg-white p-6 shadow-sm">

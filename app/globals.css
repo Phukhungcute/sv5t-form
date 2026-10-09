@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  zoom: 1.1;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -408,4 +412,22 @@ body {
     opacity: 0;
     transform: translateY(-120%);
   }
+}
+
+/* Tiêu điểm chạy */
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  flex-shrink: 0;
+  will-change: transform;
+}
+
+.ticker-text {
+  display: block;
+  flex-shrink: 0;
+  padding-right: 4rem;
+  white-space: nowrap;
+  color: #374151;
+  font-size: 14px;
 }

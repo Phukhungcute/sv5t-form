@@ -833,7 +833,7 @@ export default function EditProofReviewPage() {
     y += 6;
   
     pdf.text(
-      `“SINH VIÊN 5 TỐT” CẤP TRƯỜNG NĂM HỌC ${ACADEMIC_YEAR}`,
+      `“SINH VIÊN 5 TỐT” CẤP KHOA NĂM HỌC ${ACADEMIC_YEAR}`,
       pageWidth / 2,
       y,
       {

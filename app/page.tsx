@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import FloatingBubbles from "@/components/FloatingBubbles";
 
 type LoginMode = "student" | "admin";
 
@@ -235,6 +236,8 @@ export default function Home() {
   }
 
   return (
+    <>
+    <FloatingBubbles left="left-[400px]"/>
     <main className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
 
@@ -244,12 +247,8 @@ export default function Home() {
 
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            SV5T Form
+            ĐĂNG NHẬP
           </h1>
-
-          <p className="mt-2 text-gray-500">
-            Hệ thống quản lý hồ sơ sinh viên
-          </p>
         </div>
 
         {/* ========================================
@@ -510,5 +509,6 @@ export default function Home() {
 
       </div>
     </main>
+    </>
   );
 }
