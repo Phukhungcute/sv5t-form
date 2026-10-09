@@ -2,7 +2,7 @@
 
 export default function MobileBubbles() {
   return (
-    <div className="fixed right-3 top-1/2 z-50 flex -translate-y-1/2 flex-row gap-3 md:hidden">
+    <div className="fixed right-3 top-4 z-50 flex -translate-y-1/2 flex-row gap-3 md:hidden">
       {/* Đoàn - Hội */}
       <a
         href="https://www.facebook.com/DoanHoiKhoaGiaoDucTieuHoc"

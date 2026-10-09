@@ -1,26 +1,45 @@
+
 import { execSync } from "node:child_process";
-import { writeFileSync, mkdirSync } from "node:fs";
+import {
+  writeFileSync,
+  mkdirSync,
+  readFileSync,
+  existsSync,
+} from "node:fs";
 import { dirname } from "node:path";
 
+const filePath = "lib/version.ts";
+
 function getVersion() {
-  // Khi build trên Vercel từ Git tag
+  // Khi build từ Git tag trên Vercel
   if (process.env.VERCEL_GIT_COMMIT_TAG) {
     return process.env.VERCEL_GIT_COMMIT_TAG;
   }
 
-  // Khi build local từ Git
+  // Khi Git có tag trong môi trường build
   try {
     return execSync("git describe --tags --abbrev=0", {
       encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
   } catch {
+    // Nếu không có tag, giữ version đã được commit
+    if (existsSync(filePath)) {
+      const content = readFileSync(filePath, "utf8");
+      const match = content.match(
+        /APP_VERSION\s*=\s*["']([^"']+)["']/
+      );
+
+      if (match) {
+        return match[1];
+      }
+    }
+
     return "v0.0.0";
   }
 }
 
 const version = getVersion();
-
-const filePath = "lib/version.ts";
 
 mkdirSync(dirname(filePath), { recursive: true });
 

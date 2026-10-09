@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -15,47 +16,35 @@ export default function NewsTicker({
   const secondMessageRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-  const viewport = viewportRef.current;
-  const track = trackRef.current;
-  const firstMessage = messageRef.current;
-  
-  if (!viewport || !track || !firstMessage) return;
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    const firstMessage = messageRef.current;
+    const secondMessage = secondMessageRef.current;
 
-  const secondMessage = secondMessageRef.current;
-
-if (!viewport || !track || !firstMessage || !secondMessage) {
-  return;
-}
-
-  let animationId = 0;
-
-  // Tất cả thời gian trong phần tính toán đều dùng giây
-  const pauseDuration = 3;
-  const accelerationDuration = 2;
-  const decelerationDuration = 2;
-  const maxSpeed = 80; // pixel/giây
-
-  let cycleStart = 0;
-
-  const animate = (now: number) => {
-    if (cycleStart === 0) {
-      cycleStart = now;
-    }
-
-    const elapsed = (now - cycleStart) / 1000;
-
-    const messageWidth = firstMessage.offsetWidth;
-
-    const viewportWidth = viewport.getBoundingClientRect().width;
-
-    // Tin ngắn hơn vùng hiển thị thì không cần chạy
-    if (messageWidth <= viewportWidth) {
-      track.style.transform = "translateX(0)";
-      animationId = requestAnimationFrame(animate);
+    if (!viewport || !track || !firstMessage || !secondMessage) {
       return;
     }
 
-    // Tính tốc độ tối đa phù hợp với chiều dài tin
+    let animationId = 0;
+    let cycleStart = 0;
+
+    // Thời gian tính bằng giây
+    const pauseDuration = 3;
+    const accelerationDuration = 2;
+    const decelerationDuration = 2;
+    const maxSpeed = 80; // pixel/giây
+
+    // Đo một lần, không đo lại trong mỗi frame
+    const messageWidth = firstMessage.offsetWidth;
+    const viewportWidth = viewport.clientWidth;
+
+    // Tin ngắn hơn vùng hiển thị thì không cần chạy
+    if (messageWidth <= viewportWidth) {
+      track.style.transform = "translate3d(0, 0, 0)";
+      return;
+    }
+
+    // Tính khoảng cách và tốc độ cho từng giai đoạn
     const peakSpeed = Math.min(
       maxSpeed,
       (2 * messageWidth) /
@@ -73,73 +62,90 @@ if (!viewport || !track || !firstMessage || !secondMessage) {
 
     const cruiseDistance = Math.max(
       0,
-      messageWidth - accelerationDistance - decelerationDistance,
+      messageWidth -
+        accelerationDistance -
+        decelerationDistance,
     );
 
     const cruiseDuration = cruiseDistance / peakSpeed;
 
     const travelDuration =
-      accelerationDuration + cruiseDuration + decelerationDuration;
+      accelerationDuration +
+      cruiseDuration +
+      decelerationDuration;
 
-    // Giai đoạn 1: Đứng yên
-    if (elapsed < pauseDuration) {
-      track.style.transform = "translateX(0)";
-    } else {
-      const travelTime = elapsed - pauseDuration;
+    const animate = (now: number) => {
+      if (cycleStart === 0) {
+        cycleStart = now;
+      }
+
+      const elapsed = (now - cycleStart) / 1000;
       let distance = 0;
 
-      // Giai đoạn 2: Tăng tốc từ 0
-      if (travelTime < accelerationDuration) {
-        distance = 0.5 * acceleration * travelTime ** 2;
-      }
-      // Giai đoạn 3: Chạy đều
-      else if (
-        travelTime < accelerationDuration + cruiseDuration
-      ) {
-        const cruiseTime =
-          travelTime - accelerationDuration;
+      // Giai đoạn 1: Đứng yên 3 giây
+      if (elapsed < pauseDuration) {
+        track.style.transform = "translate3d(0, 0, 0)";
+      } else {
+        const travelTime = elapsed - pauseDuration;
 
-        distance =
-          accelerationDistance + peakSpeed * cruiseTime;
-      }
-      // Giai đoạn 4: Giảm tốc về 0
-      else if (travelTime < travelDuration) {
-        const decelerationTime =
-          travelTime - accelerationDuration - cruiseDuration;
+        // Giai đoạn 2: Tăng tốc từ 0
+        if (travelTime < accelerationDuration) {
+          distance =
+            0.5 * acceleration * travelTime ** 2;
+        }
+        // Giai đoạn 3: Chạy đều
+        else if (
+          travelTime <
+          accelerationDuration + cruiseDuration
+        ) {
+          const cruiseTime =
+            travelTime - accelerationDuration;
 
-        distance =
-          accelerationDistance +
-          cruiseDistance +
-          peakSpeed * decelerationTime -
-          0.5 * acceleration * decelerationTime ** 2;
-      }
-      // Kết thúc một chu kỳ
-      else {
-        track.style.transform = "translateX(0)";
-        cycleStart = now;
-        animationId = requestAnimationFrame(animate);
-        return;
+          distance =
+            accelerationDistance +
+            peakSpeed * cruiseTime;
+        }
+        // Giai đoạn 4: Giảm tốc về 0
+        else if (travelTime < travelDuration) {
+          const decelerationTime =
+            travelTime -
+            accelerationDuration -
+            cruiseDuration;
+
+          distance =
+            accelerationDistance +
+            cruiseDistance +
+            peakSpeed * decelerationTime -
+            0.5 * acceleration * decelerationTime ** 2;
+        }
+        // Kết thúc chu kỳ, bắt đầu lại
+        else {
+          track.style.transform = "translate3d(0, 0, 0)";
+          cycleStart = now;
+          animationId = requestAnimationFrame(animate);
+          return;
+        }
+
+        track.style.transform =
+          `translate3d(${-distance}px, 0, 0)`;
       }
 
-      track.style.transform = `translateX(${-distance}px)`;
-    }
+      animationId = requestAnimationFrame(animate);
+    };
 
     animationId = requestAnimationFrame(animate);
-  };
 
-  animationId = requestAnimationFrame(animate);
-
-  return () => {
-    cancelAnimationFrame(animationId);
-  };
-}, [message]);
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, [message]);
 
   return (
     <div className="flex w-full overflow-hidden rounded-xl bg-white shadow-sm">
       {/* Nhãn Tiêu điểm */}
       <div className="z-10 flex shrink-0 items-center gap-2 bg-sv5t-blue px-5 py-3 text-white">
         <span className="text-xl" aria-hidden="true">
-          📣︎
+          📣
         </span>
 
         <span className="whitespace-nowrap text-sm font-bold tracking-wide">
