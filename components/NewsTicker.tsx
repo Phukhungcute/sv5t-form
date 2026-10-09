@@ -32,7 +32,15 @@ export default function NewsTicker({
     const pauseDuration = 3;
     const accelerationDuration = 2;
     const decelerationDuration = 2;
-    const maxSpeed = 80; // pixel/giây
+
+    // Tốc độ tối đa (pixel/giây)
+    const desktopMaxSpeed = 80;
+    const mobileMaxSpeed = 35;
+
+    // Nhận diện giao diện mobile
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+    const maxSpeed = isMobile ? mobileMaxSpeed : desktopMaxSpeed;
 
     // Đo một lần, không đo lại trong mỗi frame
     const messageWidth = firstMessage.offsetWidth;
@@ -145,7 +153,7 @@ export default function NewsTicker({
       {/* Nhãn Tiêu điểm */}
       <div className="z-10 flex shrink-0 items-center gap-2 bg-sv5t-blue px-5 py-3 text-white">
         <span className="text-xl" aria-hidden="true">
-          📣
+          📣︎
         </span>
 
         <span className="whitespace-nowrap text-sm font-bold tracking-wide">
