@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import SuccessNotification from "@/components/SuccessNotification";
+import PortraitOnly from "@/components/PortraitOnly";
 
 const montserrat = Montserrat({
   subsets: ["latin", "vietnamese"],
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${montserrat.className} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <PortraitOnly />
         <SuccessNotification />
 
         {children}
