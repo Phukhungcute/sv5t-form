@@ -12,13 +12,20 @@ export default function NewsTicker({
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLSpanElement>(null);
+  const secondMessageRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
   const viewport = viewportRef.current;
   const track = trackRef.current;
   const firstMessage = messageRef.current;
-
+  
   if (!viewport || !track || !firstMessage) return;
+
+  const secondMessage = secondMessageRef.current;
+
+if (!viewport || !track || !firstMessage || !secondMessage) {
+  return;
+}
 
   let animationId = 0;
 
@@ -37,7 +44,8 @@ export default function NewsTicker({
 
     const elapsed = (now - cycleStart) / 1000;
 
-    const messageWidth = firstMessage.getBoundingClientRect().width;
+    const messageWidth = firstMessage.offsetWidth;
+
     const viewportWidth = viewport.getBoundingClientRect().width;
 
     // Tin ngắn hơn vùng hiển thị thì không cần chạy
@@ -131,7 +139,7 @@ export default function NewsTicker({
       {/* Nhãn Tiêu điểm */}
       <div className="z-10 flex shrink-0 items-center gap-2 bg-sv5t-blue px-5 py-3 text-white">
         <span className="text-xl" aria-hidden="true">
-          📢
+          📣︎
         </span>
 
         <span className="whitespace-nowrap text-sm font-bold tracking-wide">
@@ -156,6 +164,7 @@ export default function NewsTicker({
           </span>
 
           <span
+            ref={secondMessageRef}
             className="ticker-text"
             aria-hidden="true"
           >

@@ -15,7 +15,9 @@ import {
 } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version"
 import FloatingBubbles from "@/components/FloatingBubbles";
+import MobileBubbles from "@/components/MobileBubbles";
 import NewsTicker from "@/components/NewsTicker";
+import DisableBrowserZoom from "@/components/DisableBrowserZoom";
 
 type Student = {
   mssv: string;
@@ -314,7 +316,7 @@ export default function Dashboard() {
 
   return (
     <>
-    <FloatingBubbles/>
+    <DisableBrowserZoom />
     <main className="min-h-screen bg-white p-6">
       
       {showPasswordSuccess && (
@@ -380,6 +382,7 @@ export default function Dashboard() {
 
         {/* HEADER — DESKTOP */}
         <div className="hidden md:flex flex-col items-start">
+          <FloatingBubbles/>
         {/* Ảnh tiêu đề */}
         {infoHeight > 0 && (
           <div
@@ -483,6 +486,11 @@ export default function Dashboard() {
               ✉ LIÊN HỆ
             </button>
           </nav>
+        </div>
+        
+        {/* HEADER — PHONE */}
+        <div className="block md:hidden">
+          <MobileBubbles />
         </div>
 
       {/* Tiêu điểm */}
@@ -931,6 +939,42 @@ export default function Dashboard() {
               </section>
         </>
       )}
+
+      {activeTab === "introduction" && (
+        <>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Đây là một test page
+            </h2>
+        </>
+      )}
+
+      {activeTab === "notifications" && (
+        <>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Đây là một test page
+            </h2>
+        </>
+      )}
+
+      {activeTab === "contact" && (
+        <>
+          {/* Liên hệ hỗ trợ */}
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Liên hệ hỗ trợ</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ Ban phụ trách SV5T.
+                </p>
+              </div>
+              <div className="shrink-0 text-sm text-gray-600 md:text-right">
+                <p>Email: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
+                <p className="mt-1">SĐT: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
         
         {/* Help Center */}
         <section className="mt-10 rounded-2xl bg-white p-6 shadow-sm">
@@ -990,21 +1034,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Liên hệ hỗ trợ */}
-          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Liên hệ hỗ trợ</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ Ban phụ trách SV5T.
-                </p>
-              </div>
-              <div className="shrink-0 text-sm text-gray-600 md:text-right">
-                <p>Email: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
-                <p className="mt-1">SĐT: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
-              </div>
-            </div>
-          </div>
         </section>
 
         {/* Footer */}

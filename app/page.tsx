@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import FloatingBubbles from "@/components/FloatingBubbles";
+import MobileBubbles from "@/components/MobileBubbles";
+import DisableBrowserZoom from "@/components/DisableBrowserZoom";
 
 type LoginMode = "student" | "admin";
 
@@ -237,7 +239,18 @@ export default function Home() {
 
   return (
     <>
-    <FloatingBubbles left="left-[400px]"/>
+      <>
+      <DisableBrowserZoom />
+        <div className="hidden md:block">
+          {/* Giao diện desktop hiện tại */}
+          <FloatingBubbles left="left-[400px]"/>
+        </div>
+
+        <div className="block md:hidden">
+          {/* Giao diện mobile */}
+          <MobileBubbles />
+        </div>
+      </>
     <main className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
 
