@@ -361,9 +361,9 @@ async function cleanupOldSubmissions(
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* Header */}
-
-        <div className="mb-8 flex items-start justify-between">
+        {/* HEADER DESKTOP */}
+        <div className="mb-8 hidden items-start justify-between md:flex">
+          {/* Bên trái: Tiêu đề */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Xem lại hồ sơ
@@ -374,14 +374,38 @@ async function cleanupOldSubmissions(
             </p>
           </div>
 
+          {/* Bên phải: Nút chỉnh sửa */}
           <div className="menu-btn-wrapper menu-btn-wrapper-header">
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/submit")}
-            className="menu-btn menu-btn-white"
-          >
-            ← Chỉnh sửa
-          </button>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/submit")}
+              className="menu-btn menu-btn-white menu-btn-header"
+            >
+              ← Chỉnh sửa
+            </button>
+          </div>
+        </div>
+
+        {/* HEADER MOBILE */}
+        <div className="mb-8 md:hidden">
+          <div className="menu-btn-wrapper menu-btn-wrapper-header mb-4">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/submit")}
+              className="menu-btn menu-btn-white menu-btn-header"
+            >
+              ← Chỉnh sửa
+            </button>
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Xem lại hồ sơ
+            </h1>
+
+            <p className="mt-2 text-gray-600">
+              Vui lòng kiểm tra toàn bộ thông tin trước khi xác nhận.
+            </p>
           </div>
         </div>
 

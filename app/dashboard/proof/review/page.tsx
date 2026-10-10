@@ -476,7 +476,7 @@ async function createProofPDF(
   y += 6;
 
   pdf.text(
-    `“SINH VIÊN 5 TỐT” CẤP TRƯỜNG NĂM HỌC ${ACADEMIC_YEAR}`,
+    `“SINH VIÊN 5 TỐT” CẤP KHOA NĂM HỌC ${ACADEMIC_YEAR}`,
     pageWidth / 2,
     y,
     {
@@ -1457,9 +1457,45 @@ async function cleanupOldProofs(
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* HEADER */}
+        {/* HEADER DESKTOP */}
+        <div className="mb-8 hidden items-start justify-between md:flex">
+            {/* Bên trái: Tiêu đề */}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Xem lại minh chứng
+              </h1>
 
-        <div className="mb-8 flex items-start justify-between">
+              <p className="mt-2 text-gray-600">
+                Kiểm tra lại toàn bộ minh chứng
+                trước khi xác nhận.
+              </p>
+            </div>
+
+            {/* Bên phải: Nút chỉnh sửa */}
+            <div className="menu-btn-wrapper menu-btn-wrapper-header">
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/proof")}
+                className="menu-btn menu-btn-white menu-btn-header"
+              >
+                ← Chỉnh sửa
+              </button>
+            </div>
+          
+          
+        </div>
+
+        {/* HEADER MOBILE */}
+        <div className="mb-8 md:hidden">
+          <div className="menu-btn-wrapper menu-btn-wrapper-header mb-4">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/proof")}
+              className="menu-btn menu-btn-white menu-btn-header"
+            >
+              ← Chỉnh sửa
+            </button>
+          </div>
 
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -1471,21 +1507,6 @@ async function cleanupOldProofs(
               trước khi xác nhận.
             </p>
           </div>
-
-          <div className="menu-btn-wrapper menu-btn-wrapper-header">
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                "/dashboard/proof"
-              )
-            }
-            className="menu-btn menu-btn-white"
-          >
-            ← Chỉnh sửa
-          </button>
-          </div>
-
         </div>
 
         {/* THANH DUNG LƯỢNG */}

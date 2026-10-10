@@ -523,8 +523,8 @@ function isStep1Complete() {
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-      {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+    {/* HEADER DESKTOP */}
+    <div className="mb-8 hidden items-start justify-between md:flex">
       {/* Bên trái */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
@@ -538,15 +538,42 @@ function isStep1Complete() {
 
       {/* Bên phải */}
       <div className="menu-btn-wrapper menu-btn-wrapper-header">
-      <button
-        type="button"
-        onClick={() => router.push("/dashboard")}
-        className="menu-btn menu-btn-blue"
-      >
-        ← Quay về trang chủ
-      </button>
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className="menu-btn menu-btn-blue"
+        >
+          ← Quay về trang chủ
+        </button>
       </div>
     </div>
+
+    {/* HEADER MOBILE */}
+    <div className="mb-8 md:hidden">
+      {/* Hàng 1: Nút quay về góc trên bên trái */}
+      <div className="mb-4 flex justify-start">
+        <div className="menu-btn-wrapper menu-btn-wrapper-header">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="menu-btn menu-btn-blue"
+          >
+            ← Quay về trang chủ
+          </button>
+        </div>
+      </div>
+
+      {/* Hàng 2: Tiêu đề và mô tả */}
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900">
+      Gửi hồ sơ
+    </h1>
+
+    <p className="mt-2 text-gray-600">
+      Vui lòng điền đầy đủ và chính xác các thông tin dưới đây.
+    </p>
+  </div>
+</div>
 
         {/* Progress */}
 
@@ -565,74 +592,74 @@ function isStep1Complete() {
           {/* Thanh tiến trình */}
 
           <div className="relative">
-  {/* Đường thẳng nằm phía sau các vòng tròn */}
-  <div className="absolute left-[7.14%] right-[7.14%] top-5 h-1 rounded bg-gray-200" />
+          {/* Đường thẳng nằm phía sau các vòng tròn */}
+          <div className="absolute left-[7.14%] right-[7.14%] top-4 md:top-5 h-1 rounded bg-gray-200" />
 
-  {/* 7 bước */}
-  <div className="relative grid grid-cols-7">
+          {/* 7 bước */}
+            <div className="relative grid grid-cols-7">
 
-    {stepNames.map((step, index) => {
-      const stepNumber = index + 1;
-      const isCurrent = stepNumber === currentStep;
+              {stepNames.map((step, index) => {
+                const stepNumber = index + 1;
+                const isCurrent = stepNumber === currentStep;
 
-      // Các bước sau chỉ mở khi Step 0 hoàn thành
-      const isLocked =
-        stepNumber > 1 && !isStep1Complete();
+                // Các bước sau chỉ mở khi Step 0 hoàn thành
+                const isLocked =
+                  stepNumber > 1 && !isStep1Complete();
 
-      return (
-        <div
-          key={step}
-          className="flex flex-col items-center"
-        >
-          <button
-            type="button"
-            disabled={isLocked}
-            onClick={() => {
-              if (!isLocked) {
-                setCurrentStep(stepNumber);
-              }
-            }}
-            className={`group flex flex-col items-center ${
-              isLocked
-                ? "cursor-not-allowed opacity-50"
-                : "cursor-pointer"
-            }`}
-            title={
-              isLocked
-                ? "Hãy điền đầy đủ thông tin bắt buộc"
-                : step
-            }
-          >
-            <div
-              className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
-                isCurrent
-                  ? "border-blue-600 bg-blue-600 text-white shadow-md ring-4 ring-blue-100"
-                  : isLocked
-                    ? "border-gray-300 bg-gray-100 text-gray-400"
-                    : "border-gray-300 bg-white text-gray-500 hover:border-blue-400 hover:text-blue-600"
-              }`}
-            >
-              {stepNumber}
+                return (
+                  <div
+                    key={step}
+                    className="flex flex-col items-center"
+                  >
+                    <button
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => {
+                        if (!isLocked) {
+                          setCurrentStep(stepNumber);
+                        }
+                      }}
+                      className={`group flex flex-col items-center ${
+                        isLocked
+                          ? "cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
+                      title={
+                        isLocked
+                          ? "Hãy điền đầy đủ thông tin bắt buộc"
+                          : step
+                      }
+                    >
+                      <div
+                        className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all md:h-10 md:w-10 md:text-sm ${
+                          isCurrent
+                            ? "border-blue-600 bg-blue-600 text-white shadow-md ring-4 ring-blue-100"
+                            : isLocked
+                              ? "border-gray-300 bg-gray-100 text-gray-400"
+                              : "border-gray-300 bg-white text-gray-500 hover:border-blue-400 hover:text-blue-600"
+                        }`}
+                      >
+                        {stepNumber}
+                      </div>
+
+                      <span
+                        className={`mt-3 hidden text-center text-xs md:block ${
+                          isCurrent
+                            ? "font-semibold text-blue-600"
+                            : isLocked
+                              ? "text-gray-400"
+                              : "text-gray-500"
+                        }`}
+                      >
+                        {step}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+
             </div>
-
-            <span
-              className={`mt-3 hidden text-center text-xs md:block ${
-                isCurrent
-                  ? "font-semibold text-blue-600"
-                  : isLocked
-                    ? "text-gray-400"
-                    : "text-gray-500"
-              }`}
-            >
-              {step}
-            </span>
-          </button>
-        </div>
-      );
-    })}
-
-  </div>
-</div>
+          </div>
 
         </section>
 

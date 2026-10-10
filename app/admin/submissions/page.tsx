@@ -1401,7 +1401,7 @@ function exportToExcel() {
             <button
               type="button"
               onClick={() => setStatusFilter("all")}
-              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
                 statusFilter === "all"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1413,7 +1413,7 @@ function exportToExcel() {
             <button
               type="button"
               onClick={() => setStatusFilter("passed")}
-              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
                 statusFilter === "passed"
                   ? "bg-green-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1425,7 +1425,7 @@ function exportToExcel() {
             <button
               type="button"
               onClick={() => setStatusFilter("failed")}
-              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
                 statusFilter === "failed"
                   ? "bg-red-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1437,7 +1437,7 @@ function exportToExcel() {
             <button
               type="button"
               onClick={() => setStatusFilter("consider")}
-              className={`w-[120px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
                 statusFilter === "consider"
                   ? "bg-yellow-500 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"

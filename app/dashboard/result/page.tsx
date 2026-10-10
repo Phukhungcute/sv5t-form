@@ -463,39 +463,37 @@ export default function ResultPage() {
 
             <>
               <div className="hidden md:block">
-                {/* Giao diện desktop hiện tại */}
-                <div className="flex justify-start gap-32">
-
-                  <div>
+              {/* Giao diện desktop */}
+                <div className="flex justify-start gap-30">
+                  {/* Họ và tên */}
+                  <div className="w-40 shrink-0">
                     <p className="text-sm text-gray-500">
                       Họ và tên
                     </p>
-
                     <p className="mt-1 font-semibold text-gray-900">
                       {student.full_name}
                     </p>
                   </div>
 
-                  <div>
+                  {/* Mã số sinh viên */}
+                  <div className="w-40 shrink-0">
                     <p className="text-sm text-gray-500">
                       Mã số sinh viên
                     </p>
-
                     <p className="mt-1 font-semibold text-gray-900">
                       {student.mssv}
                     </p>
                   </div>
 
-                  <div>
+                  {/* Lớp */}
+                  <div className="w-32 shrink-0">
                     <p className="text-sm text-gray-500">
                       Lớp
                     </p>
-
                     <p className="mt-1 font-semibold text-gray-900">
                       {student.class_name}
                     </p>
                   </div>
-
                 </div>
               </div>
 
