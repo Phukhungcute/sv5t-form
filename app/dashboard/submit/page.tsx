@@ -564,16 +564,16 @@ function isStep1Complete() {
       </div>
 
       {/* Hàng 2: Tiêu đề và mô tả */}
-  <div>
-    <h1 className="text-3xl font-bold text-gray-900">
-      Gửi hồ sơ
-    </h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Gửi hồ sơ
+        </h1>
 
-    <p className="mt-2 text-gray-600">
-      Vui lòng điền đầy đủ và chính xác các thông tin dưới đây.
-    </p>
-  </div>
-</div>
+        <p className="mt-2 text-gray-600">
+          Vui lòng điền đầy đủ và chính xác các thông tin dưới đây.
+        </p>
+      </div>
+    </div>
 
         {/* Progress */}
 

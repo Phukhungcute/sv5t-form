@@ -194,17 +194,37 @@ export default function RequestPage() {
           }`}
         >
 
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Nhận xét từ quản trị viên
-            </h2>
+          <>
+            <div className="hidden md:block">
+              {/* Giao diện desktop hiện tại */}
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Nhận xét từ quản trị viên
+                </h2>
 
-            {hasNote && (
-              <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-yellow-800">
-                Cần bổ sung/chỉnh sửa
-              </span>
-            )}
-          </div>
+                {hasNote && (
+                  <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-yellow-800">
+                    Cần bổ sung/chỉnh sửa
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="block md:hidden">
+              {/* Giao diện mobile */}
+              <div className="flex flex-col items-start gap-2">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Nhận xét từ quản trị viên
+                </h2>
+
+                {hasNote && (
+                  <span className="rounded-full bg-yellow-200 px-3 py-1 text-xs font-semibold text-yellow-800">
+                    Cần bổ sung/chỉnh sửa
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
 
           {hasNote ? (
             <div className="mt-5 rounded-xl border border-yellow-300 bg-white p-5">

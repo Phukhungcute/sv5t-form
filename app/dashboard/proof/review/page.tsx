@@ -1481,8 +1481,6 @@ async function cleanupOldProofs(
                 ← Chỉnh sửa
               </button>
             </div>
-          
-          
         </div>
 
         {/* HEADER MOBILE */}

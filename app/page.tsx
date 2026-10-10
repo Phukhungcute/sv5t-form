@@ -155,7 +155,7 @@ export default function Home() {
       } = await supabase
         .from("profiles")
         .select(
-          "mssv, role, must_change_password"
+          "mssv, role, must_change_password, maintenance_access"
         )
         .eq("id", user.id)
         .single();
@@ -173,6 +173,52 @@ export default function Home() {
         );
 
         return;
+      }
+
+      // ==========================================
+      // KIỂM TRA CHẾ ĐỘ BẢO TRÌ
+      // ==========================================
+
+      // Admin luôn được phép đăng nhập
+      if (profile.role !== "admin") {
+        const {
+          data: settings,
+          error: settingsError,
+        } = await supabase
+          .from("app_settings")
+          .select("maintenance_mode")
+          .eq("id", 1)
+          .maybeSingle();
+
+        // Không thể xác minh trạng thái bảo trì:
+        // từ chối tiếp tục để tránh bỏ qua kiểm tra.
+        if (settingsError || !settings) {
+          console.error(
+            "MAINTENANCE CHECK ERROR:",
+            settingsError
+          );
+
+          await supabase.auth.signOut();
+
+          setError(
+            "Không thể kiểm tra trạng thái hệ thống. Vui lòng thử lại."
+          );
+
+          return;
+        }
+
+        if (
+          settings.maintenance_mode &&
+          !profile.maintenance_access
+        ) {
+          await supabase.auth.signOut();
+
+          setError(
+            "Hệ thống đang bảo trì. Vui lòng quay lại sau."
+          );
+
+          return;
+        }
       }
 
       // ==========================================

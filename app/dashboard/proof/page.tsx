@@ -679,9 +679,9 @@ export default function ProofPage() {
               <button
                 type="button"
                 onClick={() => router.push("/dashboard")}
-                className="menu-btn menu-btn-white menu-btn-header"
+                className="menu-btn menu-btn-blue"
               >
-                ← Chỉnh sửa
+                ← Quay về trang chủ
               </button>
             </div>
         </div>

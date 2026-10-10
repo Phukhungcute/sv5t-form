@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState , useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -205,6 +205,43 @@ export default function EditSubmitReviewPage() {
     useState<Student | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+
+  const [showBackAlert, setShowBackAlert] = useState(false);
+
+  const historyGuardAdded = useRef(false);
+
+  useEffect(() => {
+  const reviewUrl = window.location.href;
+
+  // Chỉ thêm mục lịch sử dự phòng một lần
+  if (!historyGuardAdded.current) {
+    window.history.pushState(
+      { reviewGuard: true },
+      "",
+      reviewUrl
+    );
+
+    historyGuardAdded.current = true;
+  }
+
+  const handlePopState = () => {
+    // Hiện popup cảnh báo
+    setShowBackAlert(true);
+
+    // Giữ người dùng ở trang review
+    window.history.pushState(
+      { reviewGuard: true },
+      "",
+      reviewUrl
+    );
+  };
+
+  window.addEventListener("popstate", handlePopState);
+
+  return () => {
+    window.removeEventListener("popstate", handlePopState);
+  };
+}, []);
 
   useEffect(() => {
     async function loadData() {
@@ -414,9 +451,9 @@ async function cleanupOldSubmissions(
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* Header */}
-
-        <div className="mb-8 flex items-start justify-between">
+        {/* HEADER DESKTOP */}
+        <div className="mb-8 hidden items-start justify-between md:flex">
+          {/* Bên trái: Tiêu đề */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Xem lại hồ sơ
@@ -427,14 +464,38 @@ async function cleanupOldSubmissions(
             </p>
           </div>
 
+          {/* Bên phải: Nút chỉnh sửa */}
           <div className="menu-btn-wrapper menu-btn-wrapper-header">
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/editsubmit")}
-            className="menu-btn menu-btn-white"
-          >
-            ← Chỉnh sửa
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowBackAlert(true)}
+              className="menu-btn menu-btn-white menu-btn-header"
+            >
+              ← Chỉnh sửa
+            </button>
+          </div>
+        </div>
+
+        {/* HEADER MOBILE */}
+        <div className="mb-8 md:hidden">
+          <div className="menu-btn-wrapper menu-btn-wrapper-header mb-4">
+            <button
+              type="button"
+              onClick={() => setShowBackAlert(true)}
+              className="menu-btn menu-btn-white menu-btn-header"
+            >
+              ← Chỉnh sửa
+            </button>
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Xem lại hồ sơ
+            </h1>
+
+            <p className="mt-2 text-gray-600">
+              Vui lòng kiểm tra toàn bộ thông tin trước khi xác nhận.
+            </p>
           </div>
         </div>
 
@@ -866,6 +927,67 @@ async function cleanupOldSubmissions(
         </section>
 
       </div>
+
+      {showBackAlert && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowBackAlert(false);
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="back-alert-title"
+            aria-describedby="back-alert-description"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                <span className="text-xl text-amber-700">!</span>
+              </div>
+
+              <div>
+                <h2
+                  id="back-alert-title"
+                  className="text-lg font-bold text-gray-900"
+                >
+                  Xác nhận quay lại chỉnh sửa?
+                </h2>
+
+                <p
+                  id="back-alert-description"
+                  className="mt-2 text-sm leading-6 text-gray-600"
+                >
+                  Các dữ liệu chỉnh sửa của bạn sẽ không được lưu.
+                  Bạn có chắc chắn muốn quay lại?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBackAlert(false)}
+                className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
+              >
+                Không, ở lại
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/editsubmit")}
+                className="cursor-pointer rounded-lg bg-sv5t-blue px-4 py-2 font-medium text-white transition hover:opacity-90"
+              >
+                Có, quay lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

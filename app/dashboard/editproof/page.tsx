@@ -727,9 +727,46 @@ console.log(
     <main className="min-h-screen bg-gray-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* HEADER */}
+        {/* HEADER DESKTOP */}
+        <div className="mb-8 hidden items-start justify-between md:flex">
+            {/* Bên trái: Tiêu đề */}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Tạo minh chứng
+              </h1>
 
-        <div className="mb-8 flex items-start justify-between">
+              <p className="mt-2 text-gray-600">
+                Vui lòng tải lên hình ảnh minh chứng
+                tương ứng với từng nội dung.
+              </p>
+            </div>
+
+            {/* Bên phải: Nút chỉnh sửa */}
+            <div className="menu-btn-wrapper menu-btn-wrapper-header">
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard")}
+                className="menu-btn menu-btn-blue"
+              >
+                ← Quay về trang chủ
+              </button>
+            </div>
+        </div>
+
+        {/* HEADER MOBILE */}
+        <div className="mb-8 md:hidden">
+          <div className="mb-4 flex justify-start">
+            <div className="menu-btn-wrapper menu-btn-wrapper-header">
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard")}
+                className="menu-btn menu-btn-blue"
+              >
+                ← Quay về trang chủ
+              </button>
+            </div>
+          </div>
+
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Tạo minh chứng
@@ -739,18 +776,6 @@ console.log(
               Vui lòng tải lên hình ảnh minh chứng
               tương ứng với từng nội dung.
             </p>
-          </div>
-
-          <div className="menu-btn-wrapper menu-btn-wrapper-header">
-          <button
-            type="button"
-            onClick={() =>
-              router.push("/dashboard")
-            }
-            className="menu-btn menu-btn-blue"
-          >
-            ← Quay về trang chủ
-          </button>
           </div>
         </div>
 
