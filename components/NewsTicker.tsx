@@ -34,8 +34,8 @@ export default function NewsTicker({
     const decelerationDuration = 2;
 
     // Tốc độ tối đa (pixel/giây)
-    const desktopMaxSpeed = 80;
-    const mobileMaxSpeed = 35;
+    const desktopMaxSpeed = 150;
+    const mobileMaxSpeed = 80;
 
     // Nhận diện giao diện mobile
     const isMobile = window.matchMedia("(max-width: 767px)").matches;

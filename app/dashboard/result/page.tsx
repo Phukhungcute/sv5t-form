@@ -280,6 +280,24 @@ export default function ResultPage() {
               Bạn chưa có hồ sơ được gửi lên hệ thống.
             </p>
 
+            <div className="mt-4 flex items-center justify-center">
+
+            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push("/dashboard")
+                }
+                className="menu-btn menu-btn-blue"
+              >
+                Quay lại trang chủ
+              </button>
+
+            </div>
+
+          </div>
+
           </div>
 
         </div>

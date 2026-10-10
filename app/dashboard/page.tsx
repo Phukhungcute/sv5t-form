@@ -276,6 +276,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<
   "home" | "introduction" | "notifications" | "contact"
 >("home");
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
   // ==========================================
   // Loading
@@ -491,6 +493,77 @@ export default function Dashboard() {
         {/* HEADER — PHONE */}
         <div className="block md:hidden">
           <MobileBubbles />
+        <div className="relative h-[140px] w-full overflow-hidden md:hidden">
+          <img
+            src="/images/Title.jpg"
+            alt="Title SV5T"
+            className="absolute left-1/2 top-1/2 h-full w-full max-w-none -translate-x-[140px] -translate-y-1/2 scale-[1] object-cover object-left"
+          />
+        </div>
+        {/* Ribbon */}
+          <nav className="relative z-30 w-full max-w-5xl bg-sv5t-blue shadow-md md:hidden">
+            {/* Nút Menu luôn giữ nguyên */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
+              className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 font-semibold text-white transition hover:bg-white/10"
+            >
+              {/* Biểu tượng ba gạch chuyển động thành dấu X */}
+              <span className="text-2xl leading-none" aria-hidden="true">
+                ☰
+              </span>
+
+              <span>MENU</span>
+            </button>
+
+            {/* Vùng menu trượt xuống */}
+            <div
+              id="mobile-nav-menu"
+              aria-hidden={!isMobileMenuOpen}
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                isMobileMenuOpen
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden">
+                {[
+                  { id: "home", label: "🏠︎  TRANG CHỦ" },
+                  {
+                    id: "introduction",
+                    label: '★  GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"',
+                  },
+                  { id: "notifications", label: "⩍  THÔNG BÁO" },
+                  { id: "contact", label: "✉  LIÊN HỆ" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    tabIndex={isMobileMenuOpen ? 0 : -1}
+                    onClick={() => {
+                      setActiveTab(
+                        item.id as
+                          | "home"
+                          | "introduction"
+                          | "notifications"
+                          | "contact",
+                      );
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full border-t border-white/20 px-5 py-3 text-left font-semibold text-white transition-colors duration-200 ${
+                      activeTab === item.id
+                        ? "bg-white/20"
+                        : "hover:bg-white/10"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </nav>
         </div>
 
       {/* Tiêu điểm */}
@@ -503,36 +576,82 @@ export default function Dashboard() {
         <>
       {/* Welcome */}
               <section className="mt-4 mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
-                {/* Bên trái */}
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">
-                    Xin chào, {student.full_name}!
-                  </h2>
+                <>
+                  <div className="hidden md:flex md:w-full md:items-center md:justify-between">
+                    {/* Giao diện desktop hiện tại */}
+                    {/* Bên trái */}
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Xin chào, {student.full_name}!
+                      </h2>
 
-                  <p className="mt-2 text-gray-600">
-                    Chúc bạn một ngày tốt lành!
-                  </p>
-                </div>
+                      <p className="mt-2 text-gray-600">
+                        Chúc bạn một ngày tốt lành!
+                      </p>
+                    </div>
 
-                {/* Bên phải */}
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium text-gray-800">
-                      {student?.full_name}
-                    </p>
+                    {/* Bên phải */}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="font-medium text-gray-800">
+                          {student?.full_name}
+                        </p>
 
-                    <p className="text-sm text-gray-500">
-                      MSSV: {student?.mssv}
-                    </p>
+                        <p className="text-sm text-gray-500">
+                          MSSV: {student?.mssv}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={handleLogout}
-                    className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
+                  <div className="block md:hidden">
+                    {/* Giao diện mobile */}
+                  <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                    {/* Bên trái */}
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Xin chào,
+                      </h2>
+
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        {student.full_name}!
+                      </h2>
+
+                      <p className="mt-2 text-gray-600">
+                        Chúc bạn một ngày tốt lành!
+                      </p>
+                    </div>
+
+                    {/* Bên phải */}
+                    <div className="flex items-center justify-between gap-4 md:justify-start">
+                      <div className="text-left md:text-right">
+                        <p className="font-medium text-gray-800">
+                          {student?.full_name}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          MSSV: {student?.mssv}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="cursor-pointer whitespace-nowrap rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+
+                  </div>
+                </>
               </section>
 
               <div className="mb-8 flex justify-center">
@@ -1039,10 +1158,13 @@ export default function Dashboard() {
         {/* Footer */}
         <footer className="mt-8 border-t border-gray-200 py-6 text-center">
           <p className="text-sm font-medium text-gray-700">
-            SV5T Form • Năm học {ACADEMIC_YEAR}
+            Năm học {ACADEMIC_YEAR}
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            © 2026 • Đơn vị phụ trách • Phiên bản {APP_VERSION}
+            © {new Date().getFullYear()} • Cổng Thông Tin SV5T • All rights reserved
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Phiên bản {APP_VERSION}
           </p>
         </footer>
 
