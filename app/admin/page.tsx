@@ -135,6 +135,14 @@ type MaintenanceStudent = {
   full_name: string;
 };
 
+type AccountStudent = {
+  mssv: string;
+  full_name: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  class_name: string | null;
+};
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -396,6 +404,90 @@ async function toggleSchedule(
     const [accountMssv, setAccountMssv] = useState("");
     const [deleteMssv, setDeleteMssv] = useState("");
     const [cohortKey, setCohortKey] = useState(""); 
+
+  // Danh sách tài khoản sinh viên để tạo/xoá
+    const [studentsWithoutAccount, setStudentsWithoutAccount] =
+      useState<AccountStudent[]>([]);
+
+    const [studentsWithAccount, setStudentsWithAccount] =
+      useState<AccountStudent[]>([]);
+
+    // MSSV được chọn
+    const [selectedCreateMssv, setSelectedCreateMssv] =
+      useState<string[]>([]);
+
+    const [selectedDeleteMssv, setSelectedDeleteMssv] =
+      useState<string[]>([]);
+
+    // Thu gọn / mở rộng
+    const [createListOpen, setCreateListOpen] =
+      useState(false);
+
+    const [deleteListOpen, setDeleteListOpen] =
+      useState(false);
+
+    // Tìm kiếm
+    const [createSearch, setCreateSearch] = useState("");
+    const [deleteSearch, setDeleteSearch] = useState("");
+
+    // Trạng thái tải danh sách
+    const [accountListLoading, setAccountListLoading] =
+      useState(false);
+
+    const [selectedAccountActionLoading, setSelectedAccountActionLoading] =
+      useState(false);
+
+    async function loadStudentAccountLists() {
+      setAccountListLoading(true);
+
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.access_token) {
+          throw new Error("Phiên đăng nhập đã hết hạn.");
+        }
+
+        const response = await fetch(
+          "/api/admin/student-account-list",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ?? "Không thể tải danh sách tài khoản."
+          );
+        }
+
+        setStudentsWithoutAccount(
+          result.studentsWithoutAccount ?? []
+        );
+
+        setStudentsWithAccount(
+          result.studentsWithAccount ?? []
+        );
+      } catch (error) {
+        console.error("LOAD STUDENT ACCOUNT LIST ERROR:", error);
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách tài khoản."
+        );
+      } finally {
+        setAccountListLoading(false);
+      }
+    }
 
     // ==========================================
     // THẺ VÀNG - MAINTENANCE ACCESS
@@ -839,6 +931,151 @@ async function toggleSchedule(
       }
     }
 
+    /* =================================================
+         FILTER STUDENTS
+      ================================================= */
+
+    const filteredStudentsWithoutAccount = studentsWithoutAccount.filter(
+      (student) => {
+        const query = createSearch.trim().toLowerCase();
+
+        return (
+          !query ||
+          student.mssv.toLowerCase().includes(query) ||
+          (student.full_name ?? "").toLowerCase().includes(query) ||
+          (student.class_name ?? "").toLowerCase().includes(query)
+        );
+      }
+    );
+
+    const filteredStudentsWithAccount = studentsWithAccount.filter(
+      (student) => {
+        const query = deleteSearch.trim().toLowerCase();
+
+        return (
+          !query ||
+          student.mssv.toLowerCase().includes(query) ||
+          (student.full_name ?? "").toLowerCase().includes(query) ||
+          (student.class_name ?? "").toLowerCase().includes(query)
+        );
+      }
+    );
+
+    function toggleSelectedMssv(
+      mssv: string,
+      selected: string[],
+      setSelected: (value: string[]) => void
+    ) {
+      setSelected(
+        selected.includes(mssv)
+          ? selected.filter((item) => item !== mssv)
+          : [...selected, mssv]
+      );
+    }
+
+    function toggleAllVisibleMssv(
+      visibleMssv: string[],
+      selected: string[],
+      setSelected: (value: string[]) => void
+    ) {
+      const allVisibleSelected =
+        visibleMssv.length > 0 &&
+        visibleMssv.every((mssv) => selected.includes(mssv));
+
+      if (allVisibleSelected) {
+        setSelected(
+          selected.filter((mssv) => !visibleMssv.includes(mssv))
+        );
+      } else {
+        setSelected(
+          [...new Set([...selected, ...visibleMssv])]
+        );
+      }
+    }
+
+
+
+    async function runSelectedAccountAction(
+  action: "create_selected" | "delete_selected"
+) {
+  const selectedMssv =
+    action === "create_selected"
+      ? selectedCreateMssv
+      : selectedDeleteMssv;
+
+  if (!adminPassword.trim()) {
+    alert("Vui lòng nhập lại mật khẩu quản trị viên.");
+    return;
+  }
+
+  if (selectedMssv.length === 0) {
+    alert("Vui lòng chọn ít nhất một sinh viên.");
+    return;
+  }
+
+  const isCreate = action === "create_selected";
+  const actionLabel = isCreate ? "tạo tài khoản" : "xóa tài khoản";
+
+  const confirmed = window.confirm(
+    `Bạn đã chọn ${selectedMssv.length} sinh viên để ${actionLabel}.\n\n` +
+      (isCreate
+        ? "Tài khoản sẽ được tạo theo thông tin sinh viên trong database."
+        : "Tài khoản sinh viên và dữ liệu liên quan có thể bị xóa vĩnh viễn.") +
+      "\n\nBạn có chắc chắn muốn tiếp tục?"
+  );
+
+  if (!confirmed) return;
+
+  setSelectedAccountActionLoading(true);
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      router.push("/");
+      return;
+    }
+
+    const response = await fetch("/api/admin/account-actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        action,
+        mssvs: selectedMssv,
+        adminPassword,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(result.error ?? "Không thể thực hiện thao tác.");
+      return;
+    }
+
+    alert(result.message ?? "Đã xử lý xong.");
+
+    if (isCreate) {
+      setSelectedCreateMssv([]);
+    } else {
+      setSelectedDeleteMssv([]);
+    }
+
+    await loadStudentAccountLists();
+  } catch (error) {
+    console.error("SELECTED ACCOUNT ACTION ERROR:", error);
+    alert("Không thể kết nối tới máy chủ.");
+  } finally {
+    setSelectedAccountActionLoading(false);
+  }
+}
 
   /* =====================================================
      CHECK ADMIN
@@ -884,6 +1121,7 @@ async function toggleSchedule(
         await loadSchedule();
         await loadQA();
         await loadMaintenanceAccess();
+        await loadStudentAccountLists();
       /* =================================================
          LOAD STUDENTS
       ================================================= */
@@ -1749,103 +1987,380 @@ async function toggleSchedule(
           </div>
 
           {/* ================================================
-              1. TẠO 1 TÀI KHOẢN
+              1. TẠO TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
-          <div className="mt-8 rounded-xl border border-gray-200 p-5">
+          <div className="mt-8 overflow-hidden rounded-xl border border-gray-200">
+            <button
+              type="button"
+              onClick={() => {
+                const nextOpen = !createListOpen;
+                setCreateListOpen(nextOpen);
 
-            <h3 className="text-lg font-semibold text-gray-800">
-              5.1. Tạo tài khoản sinh viên
-            </h3>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Nhập MSSV để tạo tài khoản theo thông tin trong
-              bảng sinh viên.
-            </p>
-
-            <div className="mt-4 flex gap-3">
-
-              <input
-                type="text"
-                value={accountMssv}
-                onChange={(e) =>
-                  setAccountMssv(e.target.value)
+                if (nextOpen && studentsWithoutAccount.length === 0) {
+                  void loadStudentAccountLists();
                 }
-                placeholder="Nhập MSSV"
-                spellCheck={false}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
+              }}
+              aria-expanded={createListOpen}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 bg-blue-50 px-5 py-4 text-left transition hover:bg-blue-100"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  6.1. Tạo tài khoản sinh viên
+                </h3>
 
-              <div className="menu-btn-wrapper-inline">
-              <button
-                type="button"
-                disabled={adminActionLoading}
-                onClick={() =>
-                  runAdminAction("create")
-                }
-                className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {adminActionLoading
-                  ? "Đang xử lý..."
-                  : "Tạo tài khoản"}
-              </button>
+                <p className="mt-1 text-sm text-gray-600">
+                  {accountListLoading
+                    ? "Đang tải danh sách..."
+                    : `${studentsWithoutAccount.length} sinh viên chưa có tài khoản`}
+                </p>
               </div>
 
-            </div>
+              <ChevronDown
+                size={20}
+                className={`shrink-0 transition-transform duration-200 ${
+                  createListOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {createListOpen && (
+              <div className="space-y-4 border-t border-gray-200 p-5">
+                <p className="text-sm text-gray-600">
+                  Chọn các sinh viên cần tạo tài khoản. Mật khẩu ban đầu được
+                  tạo từ ngày sinh theo quy tắc hiện tại của hệ thống.
+                </p>
+
+                <input
+                  type="search"
+                  value={createSearch}
+                  onChange={(e) => setCreateSearch(e.target.value)}
+                  placeholder="Tìm theo MSSV, họ tên hoặc lớp..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredStudentsWithoutAccount.length > 0 &&
+                        filteredStudentsWithoutAccount.every((student) =>
+                          selectedCreateMssv.includes(student.mssv)
+                        )
+                      }
+                      onChange={() =>
+                        toggleAllVisibleMssv(
+                          filteredStudentsWithoutAccount.map((student) => student.mssv),
+                          selectedCreateMssv,
+                          setSelectedCreateMssv
+                        )
+                      }
+                      disabled={
+                        accountListLoading ||
+                        selectedAccountActionLoading ||
+                        filteredStudentsWithoutAccount.length === 0
+                      }
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    Chọn tất cả đang hiển thị
+                  </label>
+
+                  <span className="text-sm text-gray-500">
+                    Đã chọn:{" "}
+                    <strong className="text-blue-700">
+                      {selectedCreateMssv.length}
+                    </strong>
+                  </span>
+                </div>
+
+                {accountListLoading ? (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    Đang tải danh sách sinh viên...
+                  </p>
+                ) : filteredStudentsWithoutAccount.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    {studentsWithoutAccount.length === 0
+                      ? "Tất cả sinh viên hiện đã có tài khoản."
+                      : "Không tìm thấy sinh viên phù hợp."}
+                  </div>
+                ) : (
+                  <div className="max-h-[480px] space-y-2 overflow-y-auto pr-1">
+                    {filteredStudentsWithoutAccount.map((student) => (
+                      <label
+                        key={student.mssv}
+                        className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition hover:border-blue-300 hover:bg-blue-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedCreateMssv.includes(student.mssv)}
+                          onChange={() =>
+                            toggleSelectedMssv(
+                              student.mssv,
+                              selectedCreateMssv,
+                              setSelectedCreateMssv
+                            )
+                          }
+                          disabled={selectedAccountActionLoading}
+                          className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="font-semibold text-gray-900">
+                              {student.full_name || "Chưa có họ tên"}
+                            </span>
+
+                            <span className="text-sm font-medium text-blue-700">
+                              {student.mssv}
+                            </span>
+                          </div>
+
+                          <div className="mt-1 grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-gray-500 sm:grid-cols-3">
+                            <span>
+                              Ngày sinh:{" "}
+                              {student.birth_date
+                                ? formatDateDisplay(student.birth_date)
+                                : "Chưa có"}
+                            </span>
+
+                            <span>
+                              Giới tính: {student.gender || "Chưa có"}
+                            </span>
+
+                            <span>
+                              Lớp: {student.class_name || "Chưa có"}
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => void loadStudentAccountLists()}
+                    disabled={
+                      accountListLoading ||
+                      selectedAccountActionLoading ||
+                      adminActionLoading
+                    }
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Làm mới danh sách
+                  </button>
+
+                  <div className="menu-btn-wrapper-inline">
+                    <button
+                      type="button"
+                      onClick={() => void runSelectedAccountAction("create_selected")}
+                      disabled={
+                        selectedAccountActionLoading ||
+                        adminActionLoading ||
+                        accountListLoading ||
+                        selectedCreateMssv.length === 0
+                      }
+                      className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {selectedAccountActionLoading
+                        ? "Đang tạo tài khoản..."
+                        : `Tạo tài khoản (${selectedCreateMssv.length})`}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ================================================
-              2. XOÁ 1 TÀI KHOẢN
+              2. XOÁ TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
-          <div className="mt-5 rounded-xl border border-gray-200 p-5">
+          <div className="mt-5 overflow-hidden rounded-xl border border-red-200">
+            <button
+              type="button"
+              onClick={() => {
+                const nextOpen = !deleteListOpen;
+                setDeleteListOpen(nextOpen);
 
-            <h3 className="text-lg font-semibold text-gray-800">
-              5.2. Xoá tài khoản sinh viên
-            </h3>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Xoá tài khoản Auth, profile, hồ sơ và minh chứng
-              của MSSV được nhập.
-            </p>
-
-            <div className="mt-4 flex gap-3">
-
-              <input
-                type="text"
-                value={deleteMssv}
-                onChange={(e) =>
-                  setDeleteMssv(e.target.value)
+                if (nextOpen && studentsWithAccount.length === 0) {
+                  void loadStudentAccountLists();
                 }
-                placeholder="Nhập MSSV"
-                spellCheck={false}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
-              />
+              }}
+              aria-expanded={deleteListOpen}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 bg-red-50 px-5 py-4 text-left transition hover:bg-red-100"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-red-800">
+                  6.2. Xóa tài khoản sinh viên
+                </h3>
 
-              <div className="menu-btn-wrapper-inline">
-              <button
-                type="button"
-                disabled={adminActionLoading}
-                onClick={() => {
-                  if (
-                    !confirm(
-                      `Bạn có chắc chắn muốn xoá toàn bộ dữ liệu của MSSV ${deleteMssv}?`
-                    )
-                  ) {
-                    return;
-                  }
-
-                  runAdminAction("delete");
-                }}
-                className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {adminActionLoading
-                  ? "Đang xử lý..."
-                  : "Xoá tài khoản"}
-              </button>
+                <p className="mt-1 text-sm text-gray-600">
+                  {accountListLoading
+                    ? "Đang tải danh sách..."
+                    : `${studentsWithAccount.length} sinh viên có tài khoản`}
+                </p>
               </div>
 
-            </div>
+              <ChevronDown
+                size={20}
+                className={`shrink-0 transition-transform duration-200 ${
+                  deleteListOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {deleteListOpen && (
+              <div className="space-y-4 border-t border-red-100 p-5">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Cảnh báo: thao tác này có thể xóa tài khoản đăng nhập, hồ sơ,
+                  minh chứng và dữ liệu liên quan của các sinh viên đã chọn.
+                  Tài khoản có vai trò admin không được đưa vào danh sách này.
+                </div>
+
+                <input
+                  type="search"
+                  value={deleteSearch}
+                  onChange={(e) => setDeleteSearch(e.target.value)}
+                  placeholder="Tìm theo MSSV, họ tên hoặc lớp..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredStudentsWithAccount.length > 0 &&
+                        filteredStudentsWithAccount.every((student) =>
+                          selectedDeleteMssv.includes(student.mssv)
+                        )
+                      }
+                      onChange={() =>
+                        toggleAllVisibleMssv(
+                          filteredStudentsWithAccount.map((student) => student.mssv),
+                          selectedDeleteMssv,
+                          setSelectedDeleteMssv
+                        )
+                      }
+                      disabled={
+                        accountListLoading ||
+                        selectedAccountActionLoading ||
+                        filteredStudentsWithAccount.length === 0
+                      }
+                      className="h-4 w-4 accent-red-600"
+                    />
+                    Chọn tất cả đang hiển thị
+                  </label>
+
+                  <span className="text-sm text-gray-500">
+                    Đã chọn:{" "}
+                    <strong className="text-red-700">
+                      {selectedDeleteMssv.length}
+                    </strong>
+                  </span>
+                </div>
+
+                {accountListLoading ? (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    Đang tải danh sách sinh viên...
+                  </p>
+                ) : filteredStudentsWithAccount.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    {studentsWithAccount.length === 0
+                      ? "Chưa có tài khoản sinh viên nào để xóa."
+                      : "Không tìm thấy sinh viên phù hợp."}
+                  </div>
+                ) : (
+                  <div className="max-h-[480px] space-y-2 overflow-y-auto pr-1">
+                    {filteredStudentsWithAccount.map((student) => (
+                      <label
+                        key={student.mssv}
+                        className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition hover:border-red-300 hover:bg-red-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedDeleteMssv.includes(student.mssv)}
+                          onChange={() =>
+                            toggleSelectedMssv(
+                              student.mssv,
+                              selectedDeleteMssv,
+                              setSelectedDeleteMssv
+                            )
+                          }
+                          disabled={selectedAccountActionLoading}
+                          className="mt-1 h-4 w-4 shrink-0 accent-red-600"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="font-semibold text-gray-900">
+                              {student.full_name || "Chưa có họ tên"}
+                            </span>
+
+                            <span className="text-sm font-medium text-red-700">
+                              {student.mssv}
+                            </span>
+                          </div>
+
+                          <div className="mt-1 grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-gray-500 sm:grid-cols-3">
+                            <span>
+                              Ngày sinh:{" "}
+                              {student.birth_date
+                                ? formatDateDisplay(student.birth_date)
+                                : "Chưa có"}
+                            </span>
+
+                            <span>
+                              Giới tính: {student.gender || "Chưa có"}
+                            </span>
+
+                            <span>
+                              Lớp: {student.class_name || "Chưa có"}
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => void loadStudentAccountLists()}
+                    disabled={
+                      accountListLoading ||
+                      selectedAccountActionLoading ||
+                      adminActionLoading
+                    }
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Làm mới danh sách
+                  </button>
+
+                  <div className="menu-btn-wrapper-inline">
+                    <button
+                      type="button"
+                      onClick={() => void runSelectedAccountAction("delete_selected")}
+                      disabled={
+                        selectedAccountActionLoading ||
+                        adminActionLoading ||
+                        accountListLoading ||
+                        selectedDeleteMssv.length === 0
+                      }
+                      className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {selectedAccountActionLoading
+                        ? "Đang xóa tài khoản..."
+                        : `Xóa tài khoản (${selectedDeleteMssv.length})`}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ================================================
@@ -1855,7 +2370,7 @@ async function toggleSchedule(
           <div className="mt-5 rounded-xl border border-gray-200 p-5">
 
             <h3 className="text-lg font-semibold text-gray-800">
-              5.3. Tạo tài khoản hàng loạt
+              6.3. Tạo tài khoản hàng loạt
             </h3>
 
             <p className="mt-1 text-sm text-gray-500">
@@ -1904,7 +2419,7 @@ async function toggleSchedule(
           <div className="mt-5 rounded-xl border-2 border-red-300 bg-red-50 p-5">
 
             <h3 className="text-lg font-semibold text-red-700">
-              5.4. XOÁ TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
+              6.4. XOÁ TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
             </h3>
 
             <p className="mt-1 text-sm text-red-600">
@@ -1977,7 +2492,7 @@ async function toggleSchedule(
           <div className="mt-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
 
             <h3 className="text-lg font-semibold text-amber-800">
-              5.5. CẤP / THU HỒI THẺ VÀNG VÀ KÍCH HOẠT BẢO TRÌ
+              6.5. CẤP / THU HỒI THẺ VÀNG VÀ KÍCH HOẠT BẢO TRÌ
             </h3>
 
             <p className="mt-1 text-sm text-amber-700">
