@@ -45,6 +45,7 @@ function getClassKey(className: string) {
   // DGT1252 → 25
 
     const PROOF_BUCKET = "proofs";
+    const AWARD_BUCKET = "student-awards";
 
 /* =====================================================
    XÓA TOÀN BỘ DỮ LIỆU CỦA 1 TÀI KHOẢN
@@ -96,6 +97,20 @@ async function deleteStudentAccount(mssv: string) {
     throw editProofsSelectError;
   }
 
+  // Lấy đường dẫn ảnh tuyên dương
+  const {
+    data: awardPhoto,
+    error: awardPhotoSelectError,
+  } = await supabaseAdmin
+    .from("student_award_photos")
+    .select("file_path")
+    .eq("mssv", mssv)
+    .maybeSingle();
+
+  if (awardPhotoSelectError) {
+    throw awardPhotoSelectError;
+  }
+
   // ------------------------------------------
   // 3. XÓA FILE TRONG STORAGE
   //
@@ -134,6 +149,24 @@ async function deleteStudentAccount(mssv: string) {
 
     if (storageError) {
       throw storageError;
+    }
+  }
+
+  // Xóa ảnh tuyên dương trong Storage,
+  // nhưng giữ nguyên bucket student-awards.
+  const awardPhotoPath = awardPhoto?.file_path;
+
+  if (
+    typeof awardPhotoPath === "string" &&
+    awardPhotoPath.trim() !== ""
+  ) {
+    const { error: awardStorageError } =
+      await supabaseAdmin.storage
+        .from(AWARD_BUCKET)
+        .remove([awardPhotoPath]);
+
+    if (awardStorageError) {
+      throw awardStorageError;
     }
   }
 
@@ -177,6 +210,17 @@ async function deleteStudentAccount(mssv: string) {
 
   if (submissionError) {
     throw submissionError;
+  }
+
+  // Xóa bản ghi ảnh tuyên dương
+  const { error: awardPhotoDeleteError } =
+    await supabaseAdmin
+      .from("student_award_photos")
+      .delete()
+      .eq("mssv", mssv);
+
+  if (awardPhotoDeleteError) {
+    throw awardPhotoDeleteError;
   }
 
   // ------------------------------------------

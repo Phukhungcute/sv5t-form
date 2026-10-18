@@ -45,12 +45,54 @@ export default function ResultPage() {
   const [participationSaving, setParticipationSaving] =
     useState(false);
 
+  const [awardPhotoUrl, setAwardPhotoUrl] =
+  useState<string | null>(null);
+
+  const [awardPhotoLoading, setAwardPhotoLoading] =
+    useState(false);
+
+  const [awardPhotoUploading, setAwardPhotoUploading] =
+    useState(false);
+
   useEffect(() => {
     initializeStudentPage(
       router,
       "result"
     );
   }, [router]);
+
+  async function loadAwardPhoto(mssv: string) {
+  setAwardPhotoLoading(true);
+
+  try {
+    const { data, error } = await supabase
+      .from("student_award_photos")
+      .select("file_path")
+      .eq("mssv", mssv)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data?.file_path) {
+      setAwardPhotoUrl(null);
+      return;
+    }
+
+    const { data: signedData, error: signedError } =
+      await supabase.storage
+        .from("student-awards")
+        .createSignedUrl(data.file_path, 60 * 60);
+
+    if (signedError) throw signedError;
+
+    setAwardPhotoUrl(signedData.signedUrl);
+  } catch (error) {
+    console.error("LOAD AWARD PHOTO ERROR:", error);
+    setAwardPhotoUrl(null);
+  } finally {
+    setAwardPhotoLoading(false);
+  }
+}
 
   useEffect(() => {
     async function loadResult() {
@@ -123,6 +165,8 @@ export default function ResultPage() {
         }
 
         setStudent(studentData);
+
+        await loadAwardPhoto(studentData.mssv);
 
         /* ==========================================
            4. LẤY SUBMISSION MỚI NHẤT
@@ -246,6 +290,72 @@ export default function ResultPage() {
     setParticipationSaving(false);
   }
 }
+
+  /* ==========================================
+     Up ảnh tuyên dương
+  ========================================== */
+
+  async function handleAwardPhotoUpload(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    // Cho phép chọn lại cùng một file sau đó.
+    event.target.value = "";
+
+    if (!file || !student) return;
+
+    const allowedTypes = ["image/png", "image/jpeg"];
+    const maxSize = 20 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Vui lòng chọn ảnh PNG hoặc JPG.");
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert("Ảnh không được vượt quá 20 MB.");
+      return;
+    }
+
+    setAwardPhotoUploading(true);
+
+    try {
+      const filePath = `${student.mssv}/celebration`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("student-awards")
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: file.type,
+          cacheControl: "0",
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: saveError } = await supabase
+        .from("student_award_photos")
+        .upsert(
+          {
+            mssv: student.mssv,
+            file_path: filePath,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "mssv" }
+        );
+
+      if (saveError) throw saveError;
+
+      await loadAwardPhoto(student.mssv);
+
+      Success("Đã tải ảnh tuyên dương lên thành công!");
+    } catch (error) {
+      console.error("UPLOAD AWARD PHOTO ERROR:", error);
+      alert("Không thể tải ảnh lên. Vui lòng thử lại.");
+    } finally {
+      setAwardPhotoUploading(false);
+    }
+  }
 
   /* ==========================================
      LOADING
@@ -550,7 +660,7 @@ export default function ResultPage() {
           </div>
 
           {/* ==========================================
-              THAM GIA LỄ TUYÊN DƯƠNG
+              THAM GIA LỄ TUYÊN DƯƠNG (CHỈ KHI ĐẠT)
           ========================================== */}
 
           {status === "passed" && (
@@ -723,6 +833,100 @@ export default function ResultPage() {
                 </p>
               )}
 
+            </div>
+          )}
+
+          {/* ==========================================
+              ẢNH TUYÊN DƯƠNG (CHỈ KHI ĐẠT)
+          ========================================== */}
+
+          {status === "passed" && (
+            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
+              <h2 className="font-semibold text-gray-900">
+                Ảnh tuyên dương của bạn
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Vui lòng tải lên ảnh tuyên dương của bạn.
+                Chấp nhận định dạng PNG, JPG, dung lượng
+                không quá 20 MB.
+              </p>
+
+              {/* Ô tải ảnh */}
+
+              <div className="mt-4">
+                <label
+                  htmlFor="award-photo"
+                  className={`
+                    flex cursor-pointer flex-col items-center
+                    justify-center rounded-xl border-2 border-dashed
+                    border-blue-300 bg-white px-4 py-8 text-center
+                    transition hover:border-blue-500 hover:bg-blue-50
+                    ${
+                      awardPhotoUploading
+                        ? "pointer-events-none opacity-60"
+                        : ""
+                    }
+                  `}
+                >
+                  <span className="text-3xl">📷</span>
+
+                  <span className="mt-2 font-medium text-gray-800">
+                    {awardPhotoUploading
+                      ? "Đang tải ảnh lên..."
+                      : awardPhotoUrl
+                        ? "Chọn ảnh khác để thay thế ảnh hiện tại"
+                        : "Nhấn để chọn ảnh tuyên dương"}
+                  </span>
+
+                  <span className="mt-1 text-sm text-gray-500">
+                    PNG hoặc JPG · Tối đa 20 MB
+                  </span>
+
+                  <input
+                    id="award-photo"
+                    type="file"
+                    accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                    className="sr-only"
+                    disabled={awardPhotoUploading}
+                    onChange={handleAwardPhotoUpload}
+                  />
+                </label>
+              </div>
+
+              {/* Ảnh hiện tại */}
+
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-800">
+                  Ảnh hiện tại
+                </h3>
+
+                {awardPhotoLoading ? (
+                  <div className="mt-3 rounded-xl border border-gray-200 bg-white p-8 text-center">
+                    <p className="text-sm text-gray-500">
+                      Đang tải ảnh...
+                    </p>
+                  </div>
+                ) : awardPhotoUrl ? (
+                  <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white p-3">
+                    <img
+                      src={awardPhotoUrl}
+                      alt="Ảnh tuyên dương hiện tại"
+                      className="mx-auto max-h-[480px] w-full rounded-lg object-contain"
+                    />
+
+                    <p className="mt-3 text-center text-sm text-green-700">
+                      Ảnh đã được lưu trên hệ thống.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-gray-200 bg-white px-4 py-8 text-center">
+                    <p className="text-sm text-gray-500">
+                      Bạn chưa tải ảnh tuyên dương lên.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

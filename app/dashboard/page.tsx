@@ -18,6 +18,7 @@ import FloatingBubbles from "@/components/FloatingBubbles";
 import MobileBubbles from "@/components/MobileBubbles";
 import NewsTicker from "@/components/NewsTicker";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
+import { Sun, Cloud, MoonStar, Star } from "lucide-react";
 
 type Student = {
   mssv: string;
@@ -278,6 +279,42 @@ export default function Dashboard() {
 >("home");
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+useEffect(() => {
+  const updateTime = () => {
+    setCurrentTime(new Date());
+  };
+
+  updateTime();
+
+  const timer = window.setInterval(updateTime, 1000);
+
+  return () => window.clearInterval(timer);
+}, []);
+
+const vietnamHour = currentTime
+  ? Number(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        hour: "2-digit",
+        hourCycle: "h23",
+      }).format(currentTime)
+    )
+  : 12;
+
+const isDaytime = vietnamHour >= 6 && vietnamHour < 18;
+
+const vietnamTime = currentTime
+  ? new Intl.DateTimeFormat("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).format(currentTime)
+  : "--:--:--";
     
   // ==========================================
   // Loading
@@ -464,7 +501,7 @@ export default function Dashboard() {
                 }
               `}
             >
-              ⩍ THÔNG BÁO
+              🕭 THÔNG BÁO
             </button>
 
             {/* LIÊN HỆ */}
@@ -535,7 +572,7 @@ export default function Dashboard() {
                     id: "introduction",
                     label: '★  GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"',
                   },
-                  { id: "notifications", label: "⩍  THÔNG BÁO" },
+                  { id: "notifications", label: "🕭 THÔNG BÁO" },
                   { id: "contact", label: "✉  LIÊN HỆ" },
                 ].map((item) => (
                   <button
@@ -574,85 +611,196 @@ export default function Dashboard() {
         {/* Trang chủ */}
       {activeTab === "home" && (
         <>
-      {/* Welcome */}
-              <section className="mt-4 mb-8 flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
-                <>
-                  <div className="hidden md:flex md:w-full md:items-center md:justify-between">
-                    {/* Giao diện desktop hiện tại */}
-                    {/* Bên trái */}
-                    <div>
-                      <h2 className="text-2xl font-semibold text-gray-900">
-                        Xin chào, {student.full_name}!
-                      </h2>
+      {/* Welcome */}              
+        <section
+          className={`relative isolate mt-4 mb-8 overflow-hidden rounded-2xl border p-6 shadow-sm ${
+            isDaytime
+              ? "border-cyan-100 bg-gradient-to-br from-cyan-50 via-sky-100 to-blue-100"
+              : "border-indigo-800/50 bg-gradient-to-br from-blue-950 via-indigo-950 to-indigo-900"
+          }`}
+        >
+          {/* Background ngày/đêm — chỉ hiện trên desktop */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden md:block"
+          >
+            {isDaytime ? (
+              <>
+                {/* Ánh sáng mặt trời */}
+                <div className="absolute -right-10 -top-16 size-48 rounded-full bg-yellow-200/30 blur-3xl" />
 
-                      <p className="mt-2 text-gray-600">
-                        Chúc bạn một ngày tốt lành!
-                      </p>
-                    </div>
+                {/* Mặt trời */}
+                <div className="absolute right-10 top-5 flex w-24 flex-col items-center gap-1 md:right-2 md:w-28">
+                  <Sun
+                    className="size-10 text-amber-400/90 md:size-12"
+                    strokeWidth={1.5}
+                  />
 
-                    {/* Bên phải */}
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-medium text-gray-800">
-                          {student?.full_name}
-                        </p>
+                  <span
+                    className={`whitespace-nowrap text-xs font-semibold tabular-nums ${
+                      isDaytime ? "text-sky-800" : "text-indigo-100"
+                    }`}
+                  >
+                    {vietnamTime}
+                  </span>
+                </div>
 
-                        <p className="text-sm text-gray-500">
-                          MSSV: {student?.mssv}
-                        </p>
-                      </div>
+                {/* Mây phía trên */}
+                <Cloud className="absolute left-[15%] top-4 size-14 text-white/80" strokeWidth={1.5} />
+                <Cloud className="absolute left-[42%] top-8 size-10 text-white/70" strokeWidth={1.5} />
+                <Cloud className="absolute left-[67%] top-3 size-14 text-white/80" strokeWidth={1.5} />
 
-                      <button
-                        onClick={handleLogout}
-                        className="cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
-                      >
-                        Đăng xuất
-                      </button>
-                    </div>
-                  </div>
+                {/* Mây phía dưới */}
+                <Cloud className="absolute left-[30%] top-20 size-12 text-white/50" strokeWidth={1.5} />
+                <Cloud className="absolute right-[24%] top-24 size-12 text-white/50" strokeWidth={1.5} />
+              </>
+            ) : (
+              <>
+                {/* Quầng sáng mặt trăng */}
+                <div className="absolute -right-10 -top-16 size-48 rounded-full bg-indigo-300/10 blur-3xl" />
 
-                  <div className="block md:hidden">
-                    {/* Giao diện mobile */}
-                  <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                    {/* Bên trái */}
-                    <div>
-                      <h2 className="text-2xl font-semibold text-gray-900">
-                        Xin chào,
-                      </h2>
+                {/* Mặt trăng */}
+                <div className="absolute right-10 top-5 flex w-24 flex-col items-center gap-1 md:right-2 md:w-28">
+                  <MoonStar
+                    className="size-10 text-amber-100/90 md:size-12"
+                    strokeWidth={1.4}
+                  />
 
-                      <h2 className="text-2xl font-semibold text-gray-900">
-                        {student.full_name}!
-                      </h2>
+                  <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-indigo-100">
+                    {vietnamTime}
+                  </span>
+                </div>
 
-                      <p className="mt-2 text-gray-600">
-                        Chúc bạn một ngày tốt lành!
-                      </p>
-                    </div>
+                {/* Các ngôi sao */}
+                <Star className="absolute left-[12%] top-5 size-3 fill-current text-indigo-100/80" />
+                <Star className="absolute left-[30%] top-12 size-2 fill-current text-white/70" />
+                <Star className="absolute left-[44%] top-4 size-3 fill-current text-white/80" />
+                <Star className="absolute left-[61%] top-16 size-2 fill-current text-indigo-100/80" />
+                <Star className="absolute right-[25%] top-8 size-2 fill-current text-white/70" />
+                <Star className="absolute left-[20%] top-24 size-2 fill-current text-white/60" />
+                <Star className="absolute right-[38%] top-24 size-3 fill-current text-indigo-100/70" />
+                <Star className="absolute right-[12%] top-20 size-2 fill-current text-white/70" />
+              </>
+            )}
+          </div>
 
-                    {/* Bên phải */}
-                    <div className="flex items-center justify-between gap-4 md:justify-start">
-                      <div className="text-left md:text-right">
-                        <p className="font-medium text-gray-800">
-                          {student?.full_name}
-                        </p>
+          {/* Desktop */}
+          <div className="relative z-10 hidden w-full items-center justify-between md:flex">
+            {/* Bên trái */}
+            <div>
+              <h2
+                className={`text-2xl font-semibold ${
+                  isDaytime ? "text-gray-900" : "text-slate-50"
+                }`}
+              >
+                Xin chào, {student.full_name}!
+              </h2>
 
-                        <p className="text-sm text-gray-500">
-                          MSSV: {student?.mssv}
-                        </p>
-                      </div>
+              <p
+                className={`mt-2 ${
+                  isDaytime ? "text-gray-600" : "text-indigo-200"
+                }`}
+              >
+                {isDaytime
+                  ? "Chúc bạn một ngày tốt lành!"
+                  : "Chúc bạn có một buổi tối bình yên."}
+              </p>
+            </div>
 
-                      <button
-                        onClick={handleLogout}
-                        className="cursor-pointer whitespace-nowrap rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
-                      >
-                        Đăng xuất
-                      </button>
-                    </div>
-                  </div>
+            {/* Bên phải */}
+            <div className="mr-24 flex items-center gap-4">
+              <div className="text-right">
+                <p
+                  className={`font-medium ${
+                    isDaytime ? "text-gray-800" : "text-slate-100"
+                  }`}
+                >
+                  {student?.full_name}
+                </p>
 
-                  </div>
-                </>
-              </section>
+                <p
+                  className={`text-sm ${
+                    isDaytime ? "text-gray-500" : "text-indigo-200"
+                  }`}
+                >
+                  MSSV: {student?.mssv}
+                </p>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition hover:-translate-y-0.5 active:translate-y-0.5 ${
+                  isDaytime
+                    ? "border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                    : "border-rose-300/30 text-rose-200 hover:border-rose-300/60 hover:bg-rose-300/10"
+                }`}
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+
+          {/* Giao diện Mobile*/}
+          <div className="relative z-10 block md:hidden">
+            <div className="flex flex-col gap-5">
+              <div>
+                <h2
+                className={`text-2xl font-semibold ${
+                  isDaytime ? "text-gray-900" : "text-slate-50"
+                }`}
+                >
+                  Xin chào,
+                </h2>
+
+                <h2
+                className={`text-2xl font-semibold ${
+                  isDaytime ? "text-gray-900" : "text-slate-50"
+                }`}
+                >
+                  {student.full_name}!
+                </h2>
+
+                <p
+                  className={`mt-2 ${
+                    isDaytime ? "text-gray-600" : "text-indigo-200"
+                  }`}
+                >
+                  {isDaytime
+                    ? "Chúc bạn một ngày tốt lành!"
+                    : "Chúc bạn có một buổi tối bình yên."}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p
+                    className={`font-medium ${
+                      isDaytime ? "text-gray-800" : "text-slate-100"
+                    }`}
+                  >
+                    {student?.full_name}
+                  </p>
+
+                  <p
+                    className={`text-sm ${
+                      isDaytime ? "text-gray-500" : "text-indigo-200"
+                    }`}
+                  >
+                    MSSV: {student?.mssv}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="cursor-pointer whitespace-nowrap rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
 
               <div className="mb-8 flex justify-center">
               {infoHeight > 0 && (
@@ -1161,11 +1309,15 @@ export default function Dashboard() {
             Năm học {ACADEMIC_YEAR}
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            © {new Date().getFullYear()} • Cổng Thông Tin SV5T • All rights reserved
+            © {new Date().getFullYear()} • Cổng Thông Tin SV5T • Phiên bản {APP_VERSION}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
-            Phiên bản {APP_VERSION}
+          <p className="mt-1 text-xs text-gray-500 hidden md:block">
+            D.Đ.P & LCH SV khoa Giáo dục Tiểu học • All rights reserved
           </p>
+          <h1 className="mt-1 text-xs text-gray-500 block md:hidden">
+            <p>D.Đ.P & LCH SV khoa Giáo dục Tiểu học</p>
+            <p>All rights reserved</p>
+          </h1>
         </footer>
 
       </div>
