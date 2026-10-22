@@ -1271,7 +1271,7 @@ const vietnamTime = currentTime
             </button>
 
             <button
-              onClick={() => router.push("/dashboard/guide")}
+              onClick={() => alert("Tính năng chưa hoàn thiện!")} /*router.push("/dashboard/introduction")}*/
               className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
@@ -1279,14 +1279,14 @@ const vietnamTime = currentTime
                   📖
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Hướng dẫn sử dụng</h3>
-                  <p className="mt-1 text-sm text-gray-500">Các bước sử dụng hệ thống</p>
+                  <h3 className="font-semibold text-gray-900">Giới thiệu</h3>
+                  <p className="mt-1 text-sm text-gray-500">Tổng quan về hệ thống</p>
                 </div>
               </div>
             </button>
 
             <button
-              onClick={() => router.push("/dashboard/regulations")}
+              onClick={() => router.push("/dashboard/guide")}
               className="cursor-pointer group rounded-xl border border-gray-200 p-5 text-left transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
@@ -1294,8 +1294,8 @@ const vietnamTime = currentTime
                   📄
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Quy định</h3>
-                  <p className="mt-1 text-sm text-gray-500">Quy định và tiêu chí SV5T</p>
+                  <h3 className="font-semibold text-gray-900">Hướng dẫn xét duyệt</h3>
+                  <p className="mt-1 text-sm text-gray-500">Quy định về bộ tiêu chí SV5T</p>
                 </div>
               </div>
             </button>
