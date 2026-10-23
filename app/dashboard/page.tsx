@@ -455,7 +455,7 @@ const vietnamTime = currentTime
                 }
               `}
             >
-              🏠︎ TRANG CHỦ
+              🏠︎🏠︎ TRANG CHỦ
             </button>
 
             {/* Giới thiệu */}
