@@ -41,7 +41,7 @@ export default function IntroductionPage() {
           <p className="mt-3 text-center text-sm text-gray-500">
             Nếu không xem được PDF,{" "}
             <a
-              href="/documents/quy-dinh-sv5t.pdf"
+              href="/documents/huong-dan-sv5t.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-blue-600 underline"
