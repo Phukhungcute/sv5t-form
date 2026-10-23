@@ -18,7 +18,7 @@ import FloatingBubbles from "@/components/FloatingBubbles";
 import MobileBubbles from "@/components/MobileBubbles";
 import NewsTicker from "@/components/NewsTicker";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
-import { Sun, Cloud, MoonStar, Star , Bell , House , Mail } from "lucide-react";
+import { Sun, Cloud, MoonStar, Star , Bell , House , Phone } from "lucide-react";
 
 type Student = {
   mssv: string;
@@ -455,7 +455,10 @@ const vietnamTime = currentTime
                 }
               `}
             >
-              🏠︎🏠︎ TRANG CHỦ
+              <span className="flex items-center gap-2">
+                <House className="h-5 w-5 shrink-0" fill="currentColor"/>
+                <span>TRANG CHỦ</span>
+              </span>
             </button>
 
             {/* Giới thiệu */}
@@ -478,7 +481,10 @@ const vietnamTime = currentTime
                 }
               `}
             >
-              ★ GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"
+              <span className="flex items-center gap-2">
+                <Star className="h-5 w-5 shrink-0" fill="currentColor"/>
+                <span>GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"</span>
+              </span>
             </button>
 
             {/* Thông báo */}
@@ -501,7 +507,10 @@ const vietnamTime = currentTime
                 }
               `}
             >
-              🕭 THÔNG BÁO
+              <span className="flex items-center gap-2">
+                <Bell className="h-5 w-5 shrink-0" fill="currentColor"/>
+                <span>THÔNG BÁO</span>
+              </span>
             </button>
 
             {/* LIÊN HỆ */}
@@ -522,7 +531,10 @@ const vietnamTime = currentTime
                 }
               `}
             >
-              ✉ LIÊN HỆ
+              <span className="flex items-center gap-2">
+                <Phone className="h-5 w-5 shrink-0" fill="currentColor"/>
+                <span>LIÊN HỆ</span>
+              </span>
             </button>
           </nav>
         </div>
@@ -571,7 +583,7 @@ const vietnamTime = currentTime
                     (
                       <>
                       <span className="flex items-center gap-2">
-                        <Star className="h-5 w-5 shrink-0"/>
+                        <House className="h-5 w-5 shrink-0" fill="currentColor"/>
                         <span>TRANG CHỦ</span>
                       </span>
                       </>
@@ -603,7 +615,7 @@ const vietnamTime = currentTime
                     (
                       <>
                       <span className="flex items-center gap-2">
-                        <Mail className="h-5 w-5 shrink-0"/>
+                        <Phone className="h-5 w-5 shrink-0" fill="currentColor"/>
                         <span>LIÊN HỆ"</span>
                       </span>
                       </>

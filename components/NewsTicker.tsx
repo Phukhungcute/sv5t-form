@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Megaphone } from "lucide-react";
 
 type NewsTickerProps = {
   message?: string;
@@ -152,12 +153,10 @@ export default function NewsTicker({
     <div className="flex w-full overflow-hidden rounded-xl bg-white shadow-sm">
       {/* Nhãn Tiêu điểm */}
       <div className="z-10 flex shrink-0 items-center gap-2 bg-sv5t-blue px-5 py-3 text-white">
-        <span className="text-xl" aria-hidden="true">
-          📣︎
-        </span>
 
-        <span className="whitespace-nowrap text-sm font-bold tracking-wide">
-          TIÊU ĐIỂM
+        <span className="flex item-center gap-2 whitespace-nowrap text-sm font-bold tracking-wide">
+          <Megaphone className="h-5 w-5 shrink-0" fill="currentColor"/>
+          <span>TIÊU ĐIỂM</span>
         </span>
       </div>
 
