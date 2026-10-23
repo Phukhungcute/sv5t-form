@@ -1,12 +1,26 @@
 import type { Metadata } from "next";
 //import { Geist, Geist_Mono } from "next/font/google";//
-import { Montserrat } from "next/font/google";
+//import { Montserrat } from "next/font/google";//
+import localFont from "next/font/local";
 import "./globals.css";
 import SuccessNotification from "@/components/SuccessNotification";
 import PortraitOnly from "@/components/PortraitOnly";
 
-const montserrat = Montserrat({
-  subsets: ["latin", "vietnamese"],
+const avo = localFont({
+  src: [
+    {
+      path: "../public/fonts/UTM Avo.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/UTM AvoBold.ttf",
+      weight: "500",
+      style: "normal",
+    },
+  ],
+  variable: "--font-avo",
+  display: "swap",
 });
 
 // const geistSans = Geist({
@@ -35,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${montserrat.className} h-full antialiased`}
+      className={`${avo.className} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <PortraitOnly />

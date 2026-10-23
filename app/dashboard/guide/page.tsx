@@ -21,18 +21,18 @@ export default function IntroductionPage() {
 
         <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm md:p-8">
           <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-            Hướng dẫn xét duyệt
+            Hướng dẫn xét chọn
           </h1>
 
           <p className="mt-2 text-gray-500">
-            Quy định và tiêu chí xét duyệt danh hiệu Sinh viên 5 tốt.
+            Quy định và tiêu chí xét chọn danh hiệu Sinh viên 5 tốt.
           </p>
 
           {/* Hiển thị file PDF */}
           <div className="mt-6 overflow-hidden rounded-xl border border-gray-200">
             <iframe
               src="/documents/huong-dan-sv5t.pdf"
-              title="Quy định xét duyệt danh hiệu Sinh viên 5 tốt"
+              title="Quy định xét chọn danh hiệu Sinh viên 5 tốt"
               className="h-[75vh] min-h-[500px] w-full"
             />
           </div>

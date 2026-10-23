@@ -690,7 +690,7 @@ const vietnamTime = currentTime
             <div>
               <h2
                 className={`text-2xl font-semibold ${
-                  isDaytime ? "text-gray-900" : "text-slate-50"
+                  isDaytime ? "text-sv5t-blue" : "text-slate-50"
                 }`}
               >
                 Xin chào, {student.full_name}!
@@ -712,7 +712,7 @@ const vietnamTime = currentTime
               <div className="text-right">
                 <p
                   className={`font-medium ${
-                    isDaytime ? "text-gray-800" : "text-slate-100"
+                    isDaytime ? "text-sv5t-blue" : "text-slate-100"
                   }`}
                 >
                   {student?.full_name}
@@ -746,7 +746,7 @@ const vietnamTime = currentTime
               <div>
                 <h2
                 className={`text-2xl font-semibold ${
-                  isDaytime ? "text-gray-900" : "text-slate-50"
+                  isDaytime ? "text-sv5t-blue" : "text-slate-50"
                 }`}
                 >
                   Xin chào,
@@ -754,7 +754,7 @@ const vietnamTime = currentTime
 
                 <h2
                 className={`text-2xl font-semibold ${
-                  isDaytime ? "text-gray-900" : "text-slate-50"
+                  isDaytime ? "text-sv5t-blue" : "text-slate-50"
                 }`}
                 >
                   {student.full_name}!
@@ -762,7 +762,7 @@ const vietnamTime = currentTime
 
                 <p
                   className={`mt-2 ${
-                    isDaytime ? "text-gray-600" : "text-indigo-200"
+                    isDaytime ? "text-gray-500" : "text-indigo-200"
                   }`}
                 >
                   {isDaytime
@@ -775,7 +775,7 @@ const vietnamTime = currentTime
                 <div>
                   <p
                     className={`font-medium ${
-                      isDaytime ? "text-gray-800" : "text-slate-100"
+                      isDaytime ? "text-sv5t-blue" : "text-slate-100"
                     }`}
                   >
                     {student?.full_name}
@@ -918,7 +918,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
 
@@ -970,7 +971,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
                   
@@ -998,11 +1000,11 @@ const vietnamTime = currentTime
                 {/* Chỉnh sửa */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
                   <h3 className="font-svn-internation text-sv5t-orange text-3xl font-semibold text-gray-900">
-                    YÊU CẦU CHỈNH SỬA
+                    XEM YÊU CẦU CHỈNH SỬA
                   </h3>
 
                   <p className="mt-2 text-gray-600">
-                    Yêu cầu chỉnh sửa, bổ sung hồ sơ (nếu có).
+                    Xem yêu cầu chỉnh sửa, bổ sung hồ sơ từ Hội đồng xét chọn.
                   </p>
 
                   {additionOpen ? (
@@ -1022,7 +1024,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
 
@@ -1074,7 +1077,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
                   
@@ -1126,7 +1130,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
 
@@ -1178,7 +1183,8 @@ const vietnamTime = currentTime
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-gray-500">
-                        Coming soon
+                        ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
+                        {/* Coming Soon */}
                       </p>
                     )}
 
@@ -1218,7 +1224,7 @@ const vietnamTime = currentTime
       {activeTab === "notifications" && (
         <>
             <h2 className="text-xl font-semibold text-gray-900">
-              Đây là một test page
+              Hiện chưa có thông báo.
             </h2>
         </>
       )}
@@ -1227,16 +1233,49 @@ const vietnamTime = currentTime
         <>
           {/* Liên hệ hỗ trợ */}
           <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4">
               <div>
-                <h3 className="font-semibold text-gray-900">Liên hệ hỗ trợ</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ Ban phụ trách SV5T.
+                <h3 className="text-xl font-semibold text-gray-900">
+                  LIÊN HỆ HỖ TRỢ
+                </h3>
+
+                <p className="mt-1 text-gray-500">
+                  Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ BCH Liên Chi hội Sinh viên khoa hoặc Ban Chủ nhiệm Câu lạc bộ "Sinh viên 5 tốt" khoa Giáo dục Tiểu học.
                 </p>
               </div>
-              <div className="shrink-0 text-sm text-gray-600 md:text-right">
-                <p>Email: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
-                <p className="mt-1">SĐT: <span className="font-medium text-gray-800">Đang cập nhật</span></p>
+
+              <div className="font-medium text-sv5t-blue">
+                <div>
+                  Email:{" "}
+                  <p className="font-medium text-gray-800">
+                    Liên Chi hội Sinh viên khoa: <span className="font-normal">hsv.gdth@sgu.edu.vn</span>
+                  </p>
+                  <p className="font-medium text-gray-800">
+                    Câu lạc bộ "Sinh viên 5 tốt": <span className="font-normal">sv5t.gdth.sgu@gmail.com</span>
+                  </p>
+                </div>
+
+                <div className="mt-5">
+                  Số điện thoại:{" "}
+                  <div className="font-normal">
+                  <p className="text-gray-800">
+                    <span className="font-normal">090.673.9434 </span> 
+                    (Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa)
+                  </p>
+                  <p className="text-gray-800">
+                    <span className="font-normal">078.599.6575</span> (Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB)
+                  </p>
+                  <p className="text-gray-800">
+                    <span className="font-normal">098.732.7862</span> (Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa)
+                  </p>
+                  <p className="text-gray-800">
+                    <span className="font-normal">087.913.9129</span> (Đ/c Võ Minh Quyền - Chủ nhiệm CLB)
+                  </p>
+                  <p className="text-gray-800">
+                    <span className="font-normal">034.829.6097</span> (Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB)
+                  </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1294,7 +1333,7 @@ const vietnamTime = currentTime
                   📄
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Hướng dẫn xét duyệt</h3>
+                  <h3 className="font-semibold text-gray-900">Hướng dẫn xét chọn</h3>
                   <p className="mt-1 text-sm text-gray-500">Quy định về bộ tiêu chí SV5T</p>
                 </div>
               </div>
@@ -1304,10 +1343,7 @@ const vietnamTime = currentTime
         </section>
 
         {/* Footer */}
-        <footer className="mt-8 border-t border-gray-200 py-6 text-center">
-          <p className="text-sm font-medium text-gray-700">
-            Năm học {ACADEMIC_YEAR}
-          </p>
+        <footer className="mb-5 mt-8 border-t border-gray-200 py-6 text-center">
           <p className="mt-1 text-xs text-gray-500">
             © {new Date().getFullYear()} • Cổng Thông Tin SV5T • Phiên bản {APP_VERSION}
           </p>
