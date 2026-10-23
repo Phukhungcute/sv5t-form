@@ -18,7 +18,7 @@ import FloatingBubbles from "@/components/FloatingBubbles";
 import MobileBubbles from "@/components/MobileBubbles";
 import NewsTicker from "@/components/NewsTicker";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
-import { Sun, Cloud, MoonStar, Star } from "lucide-react";
+import { Sun, Cloud, MoonStar, Star , Bell , House , Mail } from "lucide-react";
 
 type Student = {
   mssv: string;
@@ -567,13 +567,48 @@ const vietnamTime = currentTime
             >
               <div className="overflow-hidden">
                 {[
-                  { id: "home", label: "🏠︎  TRANG CHỦ" },
+                  { id: "home", label:
+                    (
+                      <>
+                      <span className="flex items-center gap-2">
+                        <Star className="h-5 w-5 shrink-0"/>
+                        <span>TRANG CHỦ</span>
+                      </span>
+                      </>
+                    ),
+                  },
                   {
                     id: "introduction",
-                    label: '★  GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"',
+                    label:
+                    (
+                      <>
+                      <span className="flex items-center gap-2">
+                        <Star className="h-5 w-5 shrink-0" fill="currentColor" />
+                        <span>GIỚI THIỆU VỀ PHONG TRÀO "SINH VIÊN 5 TỐT"</span>
+                      </span>
+                      </>
+                    ),
                   },
-                  { id: "notifications", label: "🕭 THÔNG BÁO" },
-                  { id: "contact", label: "✉  LIÊN HỆ" },
+                  { id: "notifications", label:
+                    (
+                      <>
+                      <span className="flex items-center gap-2">
+                        <Bell className="h-5 w-5 shrink-0" fill="currentColor" />
+                        <span>THÔNG BÁO</span>
+                      </span>
+                      </>
+                    ),
+                      },
+                  { id: "contact", label:
+                    (
+                      <>
+                      <span className="flex items-center gap-2">
+                        <Mail className="h-5 w-5 shrink-0"/>
+                        <span>LIÊN HỆ"</span>
+                      </span>
+                      </>
+                    ),
+                  }
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -1258,22 +1293,65 @@ const vietnamTime = currentTime
                 <div className="mt-5">
                   Số điện thoại:{" "}
                   <div className="font-normal">
-                  <p className="text-gray-800">
-                    <span className="font-normal">090.673.9434 </span> 
-                    (Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa)
-                  </p>
-                  <p className="text-gray-800">
-                    <span className="font-normal">078.599.6575</span> (Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB)
-                  </p>
-                  <p className="text-gray-800">
-                    <span className="font-normal">098.732.7862</span> (Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa)
-                  </p>
-                  <p className="text-gray-800">
-                    <span className="font-normal">087.913.9129</span> (Đ/c Võ Minh Quyền - Chủ nhiệm CLB)
-                  </p>
-                  <p className="text-gray-800">
-                    <span className="font-normal">034.829.6097</span> (Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB)
-                  </p>
+                    <>
+                      <div className="hidden md:block">
+                        {/* Giao diện desktop hiện tại */}
+                        <p className="text-gray-800">
+                          <span>090.673.9434</span> (Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa)
+                        </p>
+                        <p className="text-gray-800">
+                          <span>078.599.6575</span> (Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB)
+                        </p>
+                        <p className="text-gray-800">
+                          <span>098.732.7862</span> (Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa)
+                        </p>
+                        <p className="text-gray-800">
+                          <span>087.913.9129</span> (Đ/c Võ Minh Quyền - Chủ nhiệm CLB)
+                        </p>
+                        <p className="text-gray-800">
+                          <span>034.829.6097</span> (Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB)
+                        </p>
+                      </div>
+
+                      <div className="block md:hidden">
+                        {/* Giao diện mobile */}
+                        <p className="text-gray-800">
+                          090.673.9434
+                        </p>
+                        <p className="text-gray-800">
+                          👉 Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa
+                        </p>
+
+                        <p className="text-gray-800">
+                          <span>078.599.6575</span>
+                        </p>
+                        <p className="text-gray-800">
+                          👉 Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB
+                        </p>
+
+                        <p className="text-gray-800">
+                          <span>098.732.7862</span>
+                        </p>
+                        <p className="text-gray-800">
+                          👉 Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa
+                        </p>
+
+                        <p className="text-gray-800">
+                          <span>087.913.9129</span>
+                        </p>
+                        <p className="text-gray-800">
+                          👉 Đ/c Võ Minh Quyền - Chủ nhiệm CLB
+                        </p>
+
+                        <p className="text-gray-800">
+                          <span>034.829.6097</span>
+                        </p>
+                        <p className="text-gray-800">
+                          👉 Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB
+                        </p>
+
+                      </div>
+                    </>
                   </div>
                 </div>
               </div>
