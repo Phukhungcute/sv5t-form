@@ -31,7 +31,7 @@ export default function IntroductionPage() {
           {/* Hiển thị file PDF */}
           <div className="mt-6 overflow-hidden rounded-xl border border-gray-200">
             <iframe
-              src="/documents/quy-dinh-sv5t.pdf"
+              src="/documents/huong-dan-sv5t.pdf"
               title="Quy định xét duyệt danh hiệu Sinh viên 5 tốt"
               className="h-[75vh] min-h-[500px] w-full"
             />
