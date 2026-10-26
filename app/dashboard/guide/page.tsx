@@ -32,14 +32,14 @@ export default function IntroductionPage() {
           <div className="mt-6 overflow-hidden rounded-xl border border-gray-200">
             <iframe
               src="/documents/huong-dan-sv5t.pdf"
-              title="Quy định xét chọn danh hiệu Sinh viên 5 tốt"
+              title="Quy định xét chọn   danh hiệu Sinh viên 5 tốt"
               className="h-[75vh] min-h-[500px] w-full"
             />
           </div>
 
           {/* Liên kết mở PDF nếu trình duyệt không hiển thị được */}
           <p className="mt-3 text-center text-sm text-gray-500">
-            Nếu không xem được PDF,{" "}
+            Nếu không xem được hết PDF,{" "}
             <a
               href="/documents/huong-dan-sv5t.pdf"
               target="_blank"

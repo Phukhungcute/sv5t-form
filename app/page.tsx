@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import FloatingBubbles from "@/components/FloatingBubbles";
-import MobileBubbles from "@/components/MobileBubbles";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
 
 type LoginMode = "student" | "admin";
@@ -285,289 +283,504 @@ export default function Home() {
 
   return (
     <>
+    {/*
       <>
       <DisableBrowserZoom />
         <div className="hidden md:block">
-          {/* Giao diện desktop hiện tại */}
+          {/* Giao diện desktop hiện tại *\}
           <FloatingBubbles left="left-[400px]"/>
         </div>
 
         <div className="block md:hidden">
-          {/* Giao diện mobile */}
+          {/* Giao diện mobile *\}
           <MobileBubbles />
         </div>
       </>
-    <main className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+      */}
 
-        {/* ========================================
-            TIÊU ĐỀ
-        ======================================== */}
+    <>
+      {/* =====================================================
+          GIAO DIỆN DESKTOP
+          Hiển thị từ breakpoint md trở lên (mặc định: 768px)
+      ===================================================== */}
 
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            ĐĂNG NHẬP
-          </h1>
-        </div>
+      <div className="hidden md:block">
+        <main className="flex min-h-screen items-center px-40 bg-gray-100">
+          <div className="flex min-h-screen items-center justify-center gap-10 bg-gray-100 px-10 py-8">
+            <div className="w-full max-w-md shrink-0 rounded-2xl bg-white p-8 shadow-lg">
 
-        {/* ========================================
-            TAB ĐĂNG NHẬP
-        ======================================== */}
+            {/* TIÊU ĐỀ */}
 
-        <div className="mb-6 flex rounded-lg bg-gray-100 p-1">
-
-          {/* Sinh viên */}
-
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode("student");
-              setError("");
-            }}
-            disabled={loading}
-            className={`flex-1 cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition ${
-              loginMode === "student"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Sinh viên
-          </button>
-
-          {/* Admin */}
-
-          <button
-            type="button"
-            onClick={() => {
-              setLoginMode("admin");
-              setError("");
-            }}
-            disabled={loading}
-            className={`flex-1 cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition ${
-              loginMode === "admin"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Quản trị viên
-          </button>
-
-        </div>
-
-        {/* ========================================
-            FORM
-        ======================================== */}
-
-        <form
-          onSubmit={handleLogin}
-          className="space-y-5"
-        >
-
-          {/* ======================================
-              ADMIN → EMAIL
-          ====================================== */}
-
-          {loginMode === "admin" && (
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Email quản trị
-              </label>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                placeholder="Nhập email"
-                autoComplete="username"
-                disabled={loading}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-                required
-              />
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-sv5t-blue">
+                ĐĂNG NHẬP
+              </h1>
             </div>
-          )}
 
-          {/* ======================================
-              STUDENT → MSSV
-          ====================================== */}
+            {/* TAB ĐĂNG NHẬP */}
 
-          {loginMode === "student" && (
-            <div>
-              <label
-                htmlFor="mssv"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Mã số sinh viên
-              </label>
+            <div className="mb-6 flex rounded-lg bg-gray-100 p-1">
 
-              <input
-                id="mssv"
-                name="mssv"
-                type="text"
-                value={mssv}
-                onChange={(e) =>
-                  setMssv(e.target.value)
-                }
-                placeholder="Nhập MSSV"
-                autoComplete="username"
+              {/* Sinh viên */}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("student");
+                  setError("");
+                }}
                 disabled={loading}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-                required
-              />
+                className={`flex-1 cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition ${
+                  loginMode === "student"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Sinh viên
+              </button>
+
+              {/* Admin */}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("admin");
+                  setError("");
+                }}
+                disabled={loading}
+                className={`flex-1 cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition ${
+                  loginMode === "admin"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Quản trị viên
+              </button>
+
             </div>
-          )}
 
-          {/* ======================================
-              MẬT KHẨU
-          ====================================== */}
+            {/* FORM */}
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
+            <form
+              onSubmit={handleLogin}
+              className="space-y-5"
             >
-              Mật khẩu
-            </label>
 
-            <div>
+              {/* ADMIN → EMAIL */}
 
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="Nhập mật khẩu"
-                  autoComplete="current-password"
-                  disabled={loading}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-                  required
-                />
+              {loginMode === "admin" && (
+                <div>
+                  <label
+                    htmlFor="email-desktop"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Email quản trị
+                  </label>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowPassword((prev) => !prev)
-                  }
-                  disabled={loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
-                  aria-label={
-                    showPassword
-                      ? "Ẩn mật khẩu"
-                      : "Hiện mật khẩu"
-                  }
+                  <input
+                    id="email-desktop"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email"
+                    autoComplete="username"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* STUDENT → MSSV */}
+
+              {loginMode === "student" && (
+                <div>
+                  <label
+                    htmlFor="mssv-desktop"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Mã số sinh viên
+                  </label>
+
+                  <input
+                    id="mssv-desktop"
+                    name="mssv"
+                    type="text"
+                    value={mssv}
+                    onChange={(e) => setMssv(e.target.value)}
+                    placeholder="Nhập MSSV"
+                    autoComplete="username"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* MẬT KHẨU */}
+
+              <div>
+                <label
+                  htmlFor="password-desktop"
+                  className="mb-2 block text-sm font-medium text-gray-700"
                 >
-                  {showPassword ? (
-                    // Mắt bị gạch — đang hiện mật khẩu
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 3l18 18"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10.584 10.587a2 2 0 002.829 2.829"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.88 5.09A10.77 10.77 0 0112 4.5c5.25 0 9.27 4.5 10.5 7.5a11.83 11.83 0 01-4.05 4.83"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6.228 6.228C4.44 7.45 3.2 9.18 1.5 12c1.23 3 5.25 7.5 10.5 7.5 1.61 0 3.09-.36 4.37-.99"
-                      />
-                    </svg>
-                  ) : (
-                    // Mắt — đang che mật khẩu
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="2.75"
-                      />
-                    </svg>
-                  )}
-                </button>
+                  Mật khẩu
+                </label>
+
+                <div className="relative">
+                  <input
+                    id="password-desktop"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu"
+                    autoComplete="current-password"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 3l18 18"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M10.584 10.587a2 2 0 002.829 2.829"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9.88 5.09A10.77 10.77 0 0112 4.5c5.25 0 9.27 4.5 10.5 7.5a11.83 11.83 0 01-4.05 4.83"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6.228 6.228C4.44 7.45 3.2 9.18 1.5 12c1.23 3 5.25 7.5 10.5 7.5 1.61 0 3.09-.36 4.37-.99"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"
+                        />
+                        <circle cx="12" cy="12" r="2.75" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+
+              {/* THÔNG BÁO LỖI */}
+
+              {error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              {/* NÚT ĐĂNG NHẬP */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              </button>
+
+            </form>
+
+            {/* GHI CHÚ */}
+
+            {loginMode === "student" && (
+              <p className="mt-6 text-center text-sm text-gray-500">
+                Mật khẩu mặc định là ngày tháng năm sinh
+              </p>
+            )}
+
+            {loginMode === "admin" && (
+              <p className="mt-6 text-center text-sm text-gray-500">
+                Sử dụng email và mật khẩu quản trị được cấp
+              </p>
+            )}
+
           </div>
-
-          {/* ======================================
-              THÔNG BÁO LỖI
-          ====================================== */}
-
-          {error && (
-            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          {/* ======================================
-              NÚT ĐĂNG NHẬP
-          ====================================== */}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading
-              ? "Đang đăng nhập..."
-              : "Đăng nhập"}
-          </button>
-
-        </form>
-
-        {/* ========================================
-            GHI CHÚ
-        ======================================== */}
-
-        {loginMode === "student" && (
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Mật khẩu mặc định là ngày tháng năm sinh
-          </p>
-        )}
-
-        {loginMode === "admin" && (
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Sử dụng email và mật khẩu quản trị được cấp
-          </p>
-        )}
-
+          <div className="flex flex-1 items-center">
+          <img
+            src="/images/Login.png"
+            alt="Thông báo Sinh viên 5 tốt"
+            className="h-auto max-h-[80vh] w-full max-w-3xl object-contain"
+          />
+          </div>
+          </div>
+        </main>
       </div>
-    </main>
+
+
+      {/* =====================================================
+          GIAO DIỆN MOBILE
+          Hiển thị dưới breakpoint md
+      ===================================================== */}
+
+      <div className="block md:hidden">
+        <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
+
+            {/* TIÊU ĐỀ */}
+
+            <div className="mb-7 text-center">
+              <h1 className="text-2xl font-bold text-sv5t-blue">
+                ĐĂNG NHẬP
+              </h1>
+            </div>
+
+            {/* TAB ĐĂNG NHẬP */}
+
+            <div className="mb-6 flex rounded-lg bg-gray-100 p-1">
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("student");
+                  setError("");
+                }}
+                disabled={loading}
+                className={`flex-1 cursor-pointer rounded-md px-2 py-3 text-sm font-medium transition ${
+                  loginMode === "student"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Sinh viên
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("admin");
+                  setError("");
+                }}
+                disabled={loading}
+                className={`flex-1 cursor-pointer rounded-md px-2 py-3 text-sm font-medium transition ${
+                  loginMode === "admin"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Quản trị viên
+              </button>
+
+            </div>
+
+            {/* FORM */}
+
+            <form
+              onSubmit={handleLogin}
+              className="space-y-5"
+            >
+
+              {/* ADMIN → EMAIL */}
+
+              {loginMode === "admin" && (
+                <div>
+                  <label
+                    htmlFor="email-mobile"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Email quản trị
+                  </label>
+
+                  <input
+                    id="email-mobile"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email"
+                    autoComplete="username"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* STUDENT → MSSV */}
+
+              {loginMode === "student" && (
+                <div>
+                  <label
+                    htmlFor="mssv-mobile"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Mã số sinh viên
+                  </label>
+
+                  <input
+                    id="mssv-mobile"
+                    name="mssv"
+                    type="text"
+                    value={mssv}
+                    onChange={(e) => setMssv(e.target.value)}
+                    placeholder="Nhập MSSV"
+                    autoComplete="username"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* MẬT KHẨU */}
+
+              <div>
+                <label
+                  htmlFor="password-mobile"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
+                  Mật khẩu
+                </label>
+
+                <div className="relative">
+                  <input
+                    id="password-mobile"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu"
+                    autoComplete="current-password"
+                    disabled={loading}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 3l18 18"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M10.584 10.587a2 2 0 002.829 2.829"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9.88 5.09A10.77 10.77 0 0112 4.5c5.25 0 9.27 4.5 10.5 7.5a11.83 11.83 0 01-4.05 4.83"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6.228 6.228C4.44 7.45 3.2 9.18 1.5 12c1.23 3 5.25 7.5 10.5 7.5 1.61 0 3.09-.36 4.37-.99"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"
+                        />
+                        <circle cx="12" cy="12" r="2.75" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* THÔNG BÁO LỖI */}
+
+              {error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              {/* NÚT ĐĂNG NHẬP */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              </button>
+
+            </form>
+
+            {/* GHI CHÚ */}
+
+            {loginMode === "student" && (
+              <p className="mt-6 text-center text-sm leading-6 text-gray-500">
+                Mật khẩu mặc định là ngày tháng năm sinh
+              </p>
+            )}
+
+            {loginMode === "admin" && (
+              <p className="mt-6 text-center text-sm leading-6 text-gray-500">
+                Sử dụng email và mật khẩu quản trị được cấp
+              </p>
+            )}
+
+          </div>
+        </main>
+      </div>
+    </>
     </>
   );
 }

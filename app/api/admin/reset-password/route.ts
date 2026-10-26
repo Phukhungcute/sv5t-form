@@ -4,39 +4,76 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabasePublishableKey || !serviceRoleKey) {
   throw new Error("Thiếu biến môi trường Supabase.");
 }
 
-// Client dùng để kiểm tra session của admin.
-// Không dùng Service Role Key cho bước này.
+// Chỉ dùng để xác thực access token.
 const supabaseAuth = createClient(
   supabaseUrl,
   supabasePublishableKey
 );
 
-// Client này CHỈ chạy ở server và chứa Service Role Key.
+// Chỉ sử dụng ở server.
 const supabaseAdmin = createClient(
   supabaseUrl,
   serviceRoleKey
 );
 
-function formatPassword(birthDate: string) {
-  const [year, month, day] = birthDate.split("-");
+type ResetResult = {
+  mssv: string;
+  fullName: string | null;
+  success: boolean;
+  message: string;
+};
+
+function formatPassword(birthDate: string): string | null {
+  // Chỉ chấp nhận ngày sinh dạng YYYY-MM-DD.
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+
+  const y = Number(year);
+  const m = Number(month);
+  const d = Number(day);
+
+  // Kiểm tra ngày hợp lệ, bao gồm cả năm nhuận.
+  const date = new Date(Date.UTC(y, m - 1, d));
+
+  if (
+    date.getUTCFullYear() !== y ||
+    date.getUTCMonth() !== m - 1 ||
+    date.getUTCDate() !== d
+  ) {
+    return null;
+  }
+
   return `${day}${month}${year}`;
+}
+
+function normalizeMssv(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const mssv = value.trim();
+
+  return mssv || null;
 }
 
 export async function POST(request: Request) {
   try {
     // =================================================
-    // 1. LẤY ACCESS TOKEN CỦA NGƯỜI ĐANG GỌI API
+    // 1. XÁC THỰC ACCESS TOKEN
     // =================================================
 
-    const authorization =
-      request.headers.get("authorization");
+    const authorization = request.headers.get("authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json(
@@ -45,11 +82,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const accessToken = authorization.slice(7);
+    const accessToken = authorization.slice(7).trim();
 
-    // =================================================
-    // 2. KIỂM TRA TOKEN + ROLE ADMIN
-    // =================================================
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "Access token không hợp lệ." },
+        { status: 401 }
+      );
+    }
 
     const {
       data: { user },
@@ -65,22 +105,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // =================================================
+    // 2. KIỂM TRA QUYỀN ADMIN
+    // =================================================
+
     const { data: adminProfile, error: adminProfileError } =
       await supabaseAdmin
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
     if (
       adminProfileError ||
       !adminProfile ||
       adminProfile.role !== "admin"
     ) {
-      console.warn(
-        "RESET PASSWORD FORBIDDEN:",
-        user.id
-      );
+      if (adminProfileError) {
+        console.error(
+          "RESET PASSWORD ADMIN PROFILE ERROR:",
+          adminProfileError
+        );
+      }
 
       return NextResponse.json(
         { error: "Bạn không có quyền thực hiện thao tác này." },
@@ -89,124 +135,277 @@ export async function POST(request: Request) {
     }
 
     // =================================================
-    // 3. LẤY MSSV
+    // 3. ĐỌC VÀ KIỂM TRA DANH SÁCH MSSV
     // =================================================
 
-    const body = await request.json();
-    const mssv = String(body?.mssv ?? "").trim();
+    let body: unknown;
 
-    if (!mssv) {
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: "Vui lòng nhập MSSV." },
+        { error: "Dữ liệu gửi lên không hợp lệ." },
         { status: 400 }
       );
     }
 
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { error: "Dữ liệu gửi lên không hợp lệ." },
+        { status: 400 }
+      );
+    }
+
+    const payload = body as {
+      mssv?: unknown;
+      mssvs?: unknown;
+    };
+
+    let requestedMssvs: string[];
+
+    if (Array.isArray(payload.mssvs)) {
+      // Reset nhiều sinh viên.
+      if (payload.mssvs.length === 0) {
+        return NextResponse.json(
+          { error: "Vui lòng chọn ít nhất một sinh viên." },
+          { status: 400 }
+        );
+      }
+
+      // Giới hạn số lượng để tránh một request quá lớn.
+      if (payload.mssvs.length > 100) {
+        return NextResponse.json(
+          {
+            error:
+              "Mỗi lần chỉ được reset tối đa 100 sinh viên.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const normalized = payload.mssvs.map(normalizeMssv);
+
+      if (normalized.some((mssv) => mssv === null)) {
+        return NextResponse.json(
+          { error: "Danh sách MSSV chứa dữ liệu không hợp lệ." },
+          { status: 400 }
+        );
+      }
+
+      requestedMssvs = normalized as string[];
+    } else {
+      // Tương thích với API cũ: { mssv: "..." }.
+      const mssv = normalizeMssv(payload.mssv);
+
+      if (!mssv) {
+        return NextResponse.json(
+          { error: "Vui lòng nhập MSSV." },
+          { status: 400 }
+        );
+      }
+
+      requestedMssvs = [mssv];
+    }
+
+    // Loại bỏ MSSV trùng lặp.
+    requestedMssvs = [...new Set(requestedMssvs)];
+
     // =================================================
-    // 4. TÌM SINH VIÊN
+    // 4. LẤY THÔNG TIN SINH VIÊN
     // =================================================
 
-    const { data: student, error: studentError } =
+    const { data: students, error: studentsError } =
       await supabaseAdmin
         .from("students")
         .select("mssv, full_name, birth_date")
-        .eq("mssv", mssv)
-        .single();
+        .in("mssv", requestedMssvs);
 
-    if (studentError || !student) {
-      console.error("RESET PASSWORD STUDENT ERROR:", studentError);
-
-      return NextResponse.json(
-        { error: "Không tìm thấy sinh viên với MSSV này." },
-        { status: 404 }
-      );
-    }
-
-    // =================================================
-    // 5. TÌM PROFILE CỦA SINH VIÊN
-    // =================================================
-
-    const { data: studentProfile, error: profileError } =
-      await supabaseAdmin
-        .from("profiles")
-        .select("id, role")
-        .eq("mssv", student.mssv)
-        .single();
-
-    if (profileError || !studentProfile) {
-      console.error("RESET PASSWORD PROFILE ERROR:", profileError);
+    if (studentsError) {
+      console.error("RESET PASSWORD STUDENTS ERROR:", studentsError);
 
       return NextResponse.json(
-        { error: "Sinh viên chưa có tài khoản hệ thống." },
-        { status: 404 }
-      );
-    }
-
-    if (studentProfile.role !== "student") {
-      return NextResponse.json(
-        { error: "Tài khoản này không phải tài khoản sinh viên." },
-        { status: 400 }
-      );
-    }
-
-    // =================================================
-    // 6. RESET PASSWORD VỀ NGÀY SINH
-    // =================================================
-
-    const password = formatPassword(student.birth_date);
-
-    const { error: updateError } =
-      await supabaseAdmin.auth.admin.updateUserById(
-        studentProfile.id,
-        {
-          password,
-        }
-      );
-
-    if (updateError) {
-      console.error("RESET PASSWORD AUTH ERROR:", updateError);
-
-      return NextResponse.json(
-        { error: "Không thể reset mật khẩu." },
+        { error: "Không thể lấy danh sách sinh viên." },
         { status: 500 }
       );
     }
 
-    // Sau khi admin reset, bắt sinh viên đổi mật khẩu lại.
-    const { error: mustChangeError } =
-      await supabaseAdmin
-        .from("profiles")
-        .update({ must_change_password: true })
-        .eq("id", studentProfile.id);
-
-    if (mustChangeError) {
-      console.error(
-        "RESET PASSWORD PROFILE UPDATE ERROR:",
-        mustChangeError
-      );
-
-      // Mật khẩu đã reset thành công, nên trả về lỗi riêng
-      // để admin biết phần must_change_password chưa cập nhật.
-      return NextResponse.json(
-        {
-          error:
-            "Đã reset mật khẩu nhưng không thể cập nhật trạng thái đổi mật khẩu.",
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log(
-      `ADMIN RESET PASSWORD: ${student.mssv} (${student.full_name})`
+    const studentMap = new Map(
+      (students ?? []).map((student) => [student.mssv, student])
     );
 
-    return NextResponse.json({
-      success: true,
-      message: `Đã reset mật khẩu cho ${student.mssv}.`,
-      student: {
-        mssv: student.mssv,
+    // =================================================
+    // 5. LẤY PROFILE TƯƠNG ỨNG
+    // =================================================
+
+    const { data: profiles, error: profilesError } =
+      await supabaseAdmin
+        .from("profiles")
+        .select("id, mssv, role")
+        .in("mssv", requestedMssvs);
+
+    if (profilesError) {
+      console.error("RESET PASSWORD PROFILES ERROR:", profilesError);
+
+      return NextResponse.json(
+        { error: "Không thể lấy thông tin tài khoản sinh viên." },
+        { status: 500 }
+      );
+    }
+
+    const profileMap = new Map(
+      (profiles ?? []).map((profile) => [profile.mssv, profile])
+    );
+
+    // =================================================
+    // 6. RESET TỪNG TÀI KHOẢN
+    // =================================================
+
+    const results: ResetResult[] = [];
+
+    // Thực hiện tuần tự để hạn chế số thao tác đồng thời.
+    for (const mssv of requestedMssvs) {
+      const student = studentMap.get(mssv);
+
+      if (!student) {
+        results.push({
+          mssv,
+          fullName: null,
+          success: false,
+          message: "Không tìm thấy sinh viên.",
+        });
+
+        continue;
+      }
+
+      const profile = profileMap.get(mssv);
+
+      if (!profile) {
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message: "Sinh viên chưa có tài khoản hệ thống.",
+        });
+
+        continue;
+      }
+
+      if (profile.role !== "student") {
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message: "Tài khoản không phải tài khoản sinh viên.",
+        });
+
+        continue;
+      }
+
+      if (!student.birth_date) {
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message: "Sinh viên chưa có ngày sinh.",
+        });
+
+        continue;
+      }
+
+      const password = formatPassword(student.birth_date);
+
+      if (!password) {
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message: "Ngày sinh không hợp lệ.",
+        });
+
+        continue;
+      }
+
+      // 6.1. Cập nhật mật khẩu.
+      const { error: updateError } =
+        await supabaseAdmin.auth.admin.updateUserById(
+          profile.id,
+          { password }
+        );
+
+      if (updateError) {
+        console.error(
+          `RESET PASSWORD AUTH ERROR (${mssv}):`,
+          updateError
+        );
+
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message: "Không thể cập nhật mật khẩu.",
+        });
+
+        continue;
+      }
+
+      // 6.2. Đánh dấu bắt buộc đổi mật khẩu.
+      const { data: updatedProfile, error: mustChangeError } =
+        await supabaseAdmin
+          .from("profiles")
+          .update({ must_change_password: true })
+          .eq("id", profile.id)
+          .select("id")
+          .maybeSingle();
+
+      if (mustChangeError || !updatedProfile) {
+        console.error(
+          `RESET PASSWORD PROFILE UPDATE ERROR (${mssv}):`,
+          mustChangeError
+        );
+
+        results.push({
+          mssv,
+          fullName: student.full_name,
+          success: false,
+          message:
+            "Mật khẩu đã được reset nhưng trạng thái bắt buộc đổi mật khẩu chưa được cập nhật.",
+        });
+
+        continue;
+      }
+
+      console.log(
+        `ADMIN RESET PASSWORD: ${mssv} (${student.full_name})`
+      );
+
+      results.push({
+        mssv,
         fullName: student.full_name,
-      },
+        success: true,
+        message: `Đã reset mật khẩu cho ${mssv}.`,
+      });
+    }
+
+    // =================================================
+    // 7. TRẢ KẾT QUẢ
+    // =================================================
+
+    const successCount = results.filter(
+      (result) => result.success
+    ).length;
+
+    const failedCount = results.length - successCount;
+
+    return NextResponse.json({
+      success: failedCount === 0,
+      message:
+        failedCount === 0
+          ? `Đã reset mật khẩu thành công cho ${successCount} sinh viên.`
+          : `Đã reset thành công ${successCount}/${results.length} sinh viên. Có ${failedCount} trường hợp thất bại.`,
+      total: results.length,
+      successCount,
+      failedCount,
+      results,
     });
   } catch (error) {
     console.error("RESET PASSWORD ERROR:", error);

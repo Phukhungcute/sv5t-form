@@ -9,6 +9,7 @@ type QA = {
   question: string;
   answer: string;
   created_at: string;
+  sort_order: number | null;
 };
 
 export default function QAPage() {
@@ -21,9 +22,10 @@ export default function QAPage() {
   useEffect(() => {
     async function loadQA() {
       const { data, error } = await supabase
-        .from("qa")
-        .select("id, question, answer, created_at")
-        .order("id", { ascending: true });
+      .from("qa")
+      .select("id, question, answer, created_at, sort_order")
+      .order("sort_order", { ascending: true, nullsFirst: false })
+      .order("id", { ascending: true });
 
       if (error) {
         console.error("LOAD QA ERROR:", error);
@@ -57,12 +59,12 @@ export default function QAPage() {
         {/* MAIN */}
         <section className="mt-4 rounded-2xl bg-white p-8 shadow-sm">
 
-          <h1 className="text-3xl font-bold text-gray-900">
-            Câu hỏi thường gặp
+          <h1 className="text-3xl font-bold text-sv5t-blue">
+            CÂU HỎI THƯỜNG GẶP
           </h1>
 
           <p className="mt-2 text-gray-500">
-            Một số câu hỏi thường gặp trong quá trình sử dụng hệ thống SV5T.
+            Một số câu hỏi thường gặp trong quá trình sử dụng hệ thống.
           </p>
 
           {/* LOADING */}
@@ -89,7 +91,7 @@ export default function QAPage() {
                   onClick={() => setSelectedQA(qa)}
                   className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
                 >
-                  <span className="font-medium text-gray-800">
+                  <span className="font-medium text-sv5t-blue">
                     {qa.question}
                   </span>
 

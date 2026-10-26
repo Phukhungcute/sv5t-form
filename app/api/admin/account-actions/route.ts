@@ -651,102 +651,118 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // 6. TẠO HÀNG LOẠT
+    // 6. TẠO TÀI KHOẢN SINH VIÊN ĐƯỢC CHỌN
     // ==========================================
 
-    if (action === "create_all") {
-      const {
-        data: students,
-        error: studentsError,
-      } = await supabaseAdmin
-        .from("students")
-        .select("id, mssv, birth_date")
-        .not("birth_date", "is", null);
+    if (action === "create_selected") {
+      const rawMssvs: unknown = body.mssvs;
 
-      if (studentsError) {
-        throw studentsError;
+      const mssvs: string[] = Array.isArray(rawMssvs)
+        ? Array.from(
+            new Set(
+              (rawMssvs as unknown[])
+                .filter(
+                  (value): value is string =>
+                    typeof value === "string" &&
+                    value.trim() !== ""
+                )
+                .map((value) => value.trim())
+            )
+          )
+        : [];
+
+      if (mssvs.length === 0) {
+        return NextResponse.json(
+          { error: "Vui lòng chọn ít nhất một sinh viên." },
+          { status: 400 }
+        );
       }
 
       let created = 0;
       let skipped = 0;
       let failed = 0;
 
-      const total = students?.length ?? 0;
-
-      console.log(
-        `[CREATE_ALL] Bắt đầu tạo tài khoản. Tổng số: ${total}`
-      );
-
-      for (let i = 0; i < total; i++) {
-        const student = students![i];
-
-        console.log(
-          `[CREATE_ALL] [${i + 1}/${total}] Đang xử lý: ${student.mssv}`
-        );
+      for (const mssv of mssvs) {
+        let authUserId: string | null = null;
 
         try {
-          const email =
-            `${student.mssv}@sv5t.local`;
+          // 1. Lấy thông tin sinh viên
+          const { data: student, error: studentError } =
+            await supabaseAdmin
+              .from("students")
+              .select("id, mssv, birth_date")
+              .eq("mssv", mssv)
+              .maybeSingle();
 
-          const password =
-            formatPassword(student.birth_date);
+          if (studentError) {
+            throw studentError;
+          }
 
-          const {
-            data: authData,
-            error: authError,
-          } =
-            await supabaseAdmin.auth.admin.createUser(
-              {
-                email,
-                password,
-                email_confirm: true,
-              }
-            );
-
-          // ==========================================
-          // AUTH ERROR
-          // ==========================================
-
-          if (authError) {
-            if (
-              authError.message
-                .toLowerCase()
-                .includes("already")
-            ) {
-              skipped++;
-
-              console.log(
-                `[CREATE_ALL] [${i + 1}/${total}] Bỏ qua: ${student.mssv} — tài khoản đã tồn tại.`
-              );
-
-              continue;
-            }
-
+          if (!student) {
             failed++;
-
             console.error(
-              `[CREATE_ALL] [${i + 1}/${total}] LỖI AUTH: ${student.mssv}`,
-              {
-                studentId: student.id,
-                mssv: student.mssv,
-                email,
-                message: authError.message,
-                name: authError.name,
-                status: authError.status,
-                code: authError.code,
-              }
+              `[CREATE_SELECTED] Không tìm thấy MSSV: ${mssv}`
             );
-
             continue;
           }
 
-          // ==========================================
-          // PROFILE
-          // ==========================================
+          if (!student.birth_date) {
+            failed++;
+            console.error(
+              `[CREATE_SELECTED] Sinh viên chưa có ngày sinh: ${mssv}`
+            );
+            continue;
+          }
 
-          const {
-            error: profileError,
-          } =
+          // 2. Kiểm tra profile đã tồn tại chưa
+          const { data: existingProfile, error: profileCheckError } =
+            await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .eq("mssv", student.mssv)
+              .maybeSingle();
+
+          if (profileCheckError) {
+            throw profileCheckError;
+          }
+
+          if (existingProfile) {
+            skipped++;
+            console.log(
+              `[CREATE_SELECTED] Bỏ qua ${mssv}: profile đã tồn tại.`
+            );
+            continue;
+          }
+
+          // 3. Tạo tài khoản Auth
+          const email = `${student.mssv}@sv5t.local`;
+          const password = formatPassword(student.birth_date);
+
+          const { data: authData, error: authError } =
+            await supabaseAdmin.auth.admin.createUser({
+              email,
+              password,
+              email_confirm: true,
+            });
+
+          if (authError) {
+            if (
+              authError.message.toLowerCase().includes("already")
+            ) {
+              skipped++;
+              console.log(
+                `[CREATE_SELECTED] Bỏ qua ${mssv}: tài khoản Auth đã tồn tại.`
+              );
+              continue;
+            }
+
+            throw authError;
+          }
+
+          authUserId = authData.user.id;
+
+          // 4. Tạo profile
+          const { error: profileInsertError } =
             await supabaseAdmin
               .from("profiles")
               .insert({
@@ -756,138 +772,115 @@ export async function POST(request: Request) {
                 must_change_password: true,
               });
 
-          // ==========================================
-          // PROFILE ERROR
-          // ==========================================
-
-          if (profileError) {
-            console.error(
-              `[CREATE_ALL] [${i + 1}/${total}] LỖI PROFILE: ${student.mssv}`,
-              {
-                studentId: student.id,
-                mssv: student.mssv,
-                authUserId: authData.user.id,
-                email,
-                message: profileError.message,
-                details: profileError.details,
-                hint: profileError.hint,
-                code: profileError.code,
-              }
-            );
-
-            // Rollback Auth user
-            await supabaseAdmin.auth.admin.deleteUser(
-              authData.user.id
-            );
-
-            failed++;
-            continue;
+          if (profileInsertError) {
+            throw profileInsertError;
           }
-
-          // ==========================================
-          // SUCCESS
-          // ==========================================
 
           created++;
 
           console.log(
-            `[CREATE_ALL] [${i + 1}/${total}] Đã tạo: ${student.mssv}`
+            `[CREATE_SELECTED] Đã tạo tài khoản: ${mssv}`
           );
-
         } catch (error) {
           failed++;
 
           console.error(
-            `[CREATE_ALL] [${i + 1}/${total}] LỖI KHÔNG XÁC ĐỊNH: ${student.mssv}`,
+            `[CREATE_SELECTED] Lỗi khi xử lý ${mssv}:`,
             error
           );
 
-          continue;
+          // Nếu Auth đã tạo nhưng profile lỗi,
+          // xóa Auth để tránh tài khoản không có profile.
+          if (authUserId) {
+            const { error: rollbackError } =
+              await supabaseAdmin.auth.admin.deleteUser(
+                authUserId
+              );
+
+            if (rollbackError) {
+              console.error(
+                `[CREATE_SELECTED] Không thể rollback Auth của ${mssv}:`,
+                rollbackError
+              );
+            }
+          }
         }
       }
 
       console.log(
-        `[CREATE_ALL] HOÀN TẤT — Tạo: ${created}, bỏ qua: ${skipped}, lỗi: ${failed}.`
+        `[CREATE_SELECTED] HOÀN TẤT — Tạo: ${created}, bỏ qua: ${skipped}, lỗi: ${failed}.`
       );
 
       return NextResponse.json({
         success: true,
         message:
           `Hoàn tất: tạo ${created}, bỏ qua ${skipped}, lỗi ${failed}.`,
+        created,
+        skipped,
+        failed,
       });
     }
 
     // ==========================================
-    // 7. XÓA HÀNG LOẠT THEO KHÓA
+    // 7. XÓA TÀI KHOẢN SINH VIÊN ĐƯỢC CHỌN
     // ==========================================
 
-    if (action === "delete_cohort") {
-      if (!cohortKey) {
+    if (action === "delete_selected") {
+      const rawMssvs: unknown = body.mssvs;
+
+      const mssvs: string[] = Array.isArray(rawMssvs)
+        ? Array.from(
+            new Set(
+              (rawMssvs as unknown[])
+                .filter(
+                  (value): value is string =>
+                    typeof value === "string" &&
+                    value.trim() !== ""
+                )
+                .map((value) => value.trim())
+            )
+          )
+        : [];
+
+      if (mssvs.length === 0) {
         return NextResponse.json(
-          { error: "Vui lòng nhập khóa." },
+          { error: "Vui lòng chọn ít nhất một sinh viên." },
           { status: 400 }
         );
       }
-
-      const key = String(cohortKey).trim();
-
-      if (!/^\d{2}$/.test(key)) {
-        return NextResponse.json(
-          {
-            error:
-              "Khóa phải gồm đúng 2 chữ số.",
-          },
-          { status: 400 }
-        );
-      }
-
-      // Lấy sinh viên có lớp
-      const {
-        data: students,
-        error: studentsError,
-      } =
-        await supabaseAdmin
-          .from("students")
-          .select(
-            "mssv, class_name"
-          );
-
-      if (studentsError) {
-        throw studentsError;
-      }
-
-      const targets =
-        (students ?? []).filter(
-          (student) =>
-            getClassKey(
-              student.class_name ?? ""
-            ) === key
-        );
 
       let deleted = 0;
       let failed = 0;
 
-      for (const student of targets) {
+      for (const mssv of mssvs) {
         try {
-          await deleteStudentAccount(
-            student.mssv
-          );
+          await deleteStudentAccount(mssv);
 
           deleted++;
+
+          console.log(
+            `[DELETE_SELECTED] Đã xóa tài khoản: ${mssv}`
+          );
         } catch (error) {
+          failed++;
+
           console.error(
-            `DELETE COHORT ERROR ${student.mssv}:`,
+            `[DELETE_SELECTED] Lỗi khi xóa ${mssv}:`,
             error
           );
-
-          failed++;
         }
       }
+
+      console.log(
+        `[DELETE_SELECTED] HOÀN TẤT — Xóa: ${deleted}, lỗi: ${failed}.`
+      );
 
       return NextResponse.json({
         success: true,
         message:
-          `Đã xử lý khóa ${key}: xóa ${deleted} tài khoản, lỗi ${failed}.`,
+          `Hoàn tất: xóa ${deleted} tài khoản, lỗi ${failed}.`,
+        deleted,
+        failed,
       });
     }
 

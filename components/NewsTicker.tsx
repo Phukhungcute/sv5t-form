@@ -9,7 +9,7 @@ type NewsTickerProps = {
 };
 
 export default function NewsTicker({
-  message = "Thông báo về việc đăng ký và hoàn thiện hồ sơ Sinh viên 5 tốt năm học 2025–2026. Các bạn sinh viên vui lòng theo dõi thông báo để cập nhật thời hạn và hướng dẫn mới nhất.",
+  message = "Sinh viên Thành phố vươn mình thời đại số, chủ động làm chủ công nghệ, phát huy sức trẻ và bản lĩnh sáng tạo, tự tin vươn mình tiến vào kỷ nguyên mới.",
 }: NewsTickerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -150,7 +150,7 @@ export default function NewsTicker({
   }, [message]);
 
   return (
-    <div className="flex w-full overflow-hidden rounded-xl bg-white shadow-sm">
+    <div className="flex w-full overflow-hidden rounded-xl border-2 border-blue-300 bg-white shadow-sm">
       {/* Nhãn Tiêu điểm */}
       <div className="z-10 flex shrink-0 items-center gap-2 bg-sv5t-blue px-5 py-3 text-white">
 
@@ -171,14 +171,14 @@ export default function NewsTicker({
         >
           <span
             ref={messageRef}
-            className="ticker-text"
+            className="ticker-text font-bold !text-orange-400"
           >
             {message}
           </span>
 
           <span
             ref={secondMessageRef}
-            className="ticker-text"
+            className="ticker-text font-bold !text-orange-400"
             aria-hidden="true"
           >
             {message}

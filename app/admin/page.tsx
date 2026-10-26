@@ -172,19 +172,27 @@ export default function AdminPage() {
   const [resetError, setResetError] =
     useState("");
 
-  async function handleResetPassword() {
+    // Danh sách reset mật khẩu
+  const [resetListOpen, setResetListOpen] =
+    useState(false);
+
+  const [resetSearch, setResetSearch] =
+    useState("");
+
+  const [selectedResetMssv, setSelectedResetMssv] =
+    useState<string[]>([]);
+
+  async function handleResetSelectedPasswords() {
   setResetMessage("");
   setResetError("");
 
-  const mssv = resetMssv.trim();
-
-  if (!mssv) {
-    setResetError("Vui lòng nhập MSSV.");
+  if (selectedResetMssv.length === 0) {
+    setResetError("Vui lòng chọn ít nhất một sinh viên.");
     return;
   }
 
   const confirmed = window.confirm(
-    `Bạn có chắc muốn reset mật khẩu của sinh viên ${mssv} về ngày tháng năm sinh không?`
+    `Bạn có chắc muốn reset mật khẩu của ${selectedResetMssv.length} sinh viên về ngày tháng năm sinh không?\n\nSau khi reset, các sinh viên sẽ phải đổi mật khẩu khi đăng nhập.`
   );
 
   if (!confirmed) return;
@@ -192,6 +200,7 @@ export default function AdminPage() {
   setResetLoading(true);
 
   try {
+    // 1. Lấy access token của admin
     const {
       data: { session },
       error: sessionError,
@@ -204,41 +213,81 @@ export default function AdminPage() {
       return;
     }
 
-    const response = await fetch(
-      "/api/admin/reset-password",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ mssv }),
-      }
-    );
+    // 2. Gọi API một lần cho toàn bộ danh sách được chọn
+    const response = await fetch("/api/admin/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        mssvs: selectedResetMssv,
+      }),
+    });
 
     const result = await response.json();
 
     if (!response.ok) {
-      setResetError(
-        result?.error ?? "Không thể reset mật khẩu."
-      );
+      setResetError(result?.error ?? "Không thể reset mật khẩu.");
       return;
     }
 
+    const results = Array.isArray(result?.results)
+      ? result.results as {
+          mssv: string;
+          fullName: string | null;
+          success: boolean;
+          message: string;
+        }[]
+      : [];
+
+    const successCount =
+      typeof result?.successCount === "number"
+        ? result.successCount
+        : results.filter((item) => item.success).length;
+
+    const failedCount =
+      typeof result?.failedCount === "number"
+        ? result.failedCount
+        : results.filter((item) => !item.success).length;
+
     setResetMessage(
       result?.message ??
-        `Đã reset mật khẩu cho ${mssv}.`
+        `Hoàn tất: thành công ${successCount}, thất bại ${failedCount}.`
     );
 
-    setResetMssv("");
+    if (successCount > 0) {
+      alert(
+        `Đã reset mật khẩu thành công cho ${successCount} sinh viên.`
+      );
+    }
+
+    // 3. Nếu có sinh viên thất bại, giữ lại những MSSV đó
+    const failedMssvs = results
+      .filter((item) => !item.success)
+      .map((item) => item.mssv);
+
+    setSelectedResetMssv(failedMssvs);
+
+    // 4. Hiển thị chi tiết những trường hợp thất bại
+    if (failedMssvs.length > 0) {
+      const details = results
+        .filter((item) => !item.success)
+        .map((item) => `${item.mssv}: ${item.message}`)
+        .join("\n");
+
+      setResetError(
+        `Có ${failedCount} sinh viên chưa reset thành công:\n${details}`
+      );
+    }
+
+    // 5. Tải lại danh sách tài khoản
+    await loadStudentAccountLists();
   } catch (error) {
-    console.error(
-      "ADMIN RESET PASSWORD ERROR:",
-      error
-    );
+    console.error("ADMIN RESET PASSWORD ERROR:", error);
 
     setResetError(
-      "Không thể kết nối đến máy chủ."
+      "Không thể kết nối đến máy chủ. Nếu request bị gián đoạn, hãy kiểm tra trạng thái tài khoản trước khi thử lại."
     );
   } finally {
     setResetLoading(false);
@@ -662,6 +711,10 @@ async function toggleSchedule(
       const [qaLoading, setQaLoading] = useState(false);
       const [qaListOpen, setQaListOpen] = useState(false);
 
+      const [editingQA, setEditingQA] = useState<QA | null>(null);
+      const [editQAQuestion, setEditQAQuestion] = useState("");
+      const [editQAAnswer, setEditQAAnswer] = useState("");
+
       async function loadQA() {
         const { data, error } = await supabase
           .from("qa")
@@ -821,6 +874,77 @@ async function toggleSchedule(
         }
       }
 
+      function handleOpenEditQA(qa: QA) {
+        setEditingQA(qa);
+        setEditQAQuestion(qa.question);
+        setEditQAAnswer(qa.answer);
+      }
+
+      /* =================================================
+        CẬP NHẬT Q&A
+      ================================================= */
+
+      async function handleUpdateQA() {
+        if (!editingQA) {
+          return;
+        }
+
+        const question = editQAQuestion.trim();
+        const answer = editQAAnswer.trim();
+
+        if (!question) {
+          alert("Vui lòng nhập Question.");
+          return;
+        }
+
+        if (!answer) {
+          alert("Vui lòng nhập Answer.");
+          return;
+        }
+
+        setQaLoading(true);
+
+        try {
+          const { error } = await supabase
+            .from("qa")
+            .update({
+              question,
+              answer,
+            })
+            .eq("id", editingQA.id);
+
+          if (error) {
+            console.error("UPDATE QA ERROR:", error);
+            alert("Không thể cập nhật Q&A. Vui lòng thử lại.");
+            return;
+          }
+
+          // Cập nhật giao diện ngay sau khi Supabase xác nhận không có lỗi.
+          setQaList((prev) =>
+            prev.map((qa) =>
+              qa.id === editingQA.id
+                ? {
+                    ...qa,
+                    question,
+                    answer,
+                  }
+                : qa
+            )
+          );
+
+          setEditingQA(null);
+          setEditQAQuestion("");
+          setEditQAAnswer("");
+
+          alert("Đã cập nhật Q&A thành công.");
+        } catch (error: unknown) {
+          console.error("UPDATE QA ERROR:", error);
+          alert("Không thể kết nối tới máy chủ.");
+        } finally {
+          setQaLoading(false);
+        }
+      }
+
   const [loading, setLoading] = useState(true);
   const [adminName, setAdminName] =
   useState("Quản trị viên");
@@ -932,6 +1056,54 @@ async function toggleSchedule(
     }
 
     /* =================================================
+         Hiển thị trạng thái bảo trì
+      ================================================= */
+
+    async function loadMaintenanceStatus() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.access_token) {
+          throw new Error("Không thể xác thực phiên đăng nhập.");
+        }
+
+        const response = await fetch("/api/admin/account-actions", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        });
+
+        const result: {
+          maintenanceMode?: boolean;
+          error?: string;
+        } = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ?? "Không thể tải trạng thái bảo trì."
+          );
+        }
+
+        setMaintenanceMode(result.maintenanceMode ?? false);
+      } catch (error: unknown) {
+        console.error("LOAD MAINTENANCE STATUS ERROR:", error);
+
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
+      }
+    }
+
+    useEffect(() => {
+      void loadMaintenanceStatus();
+    }, []);
+
+    /* =================================================
          FILTER STUDENTS
       ================================================= */
 
@@ -951,6 +1123,19 @@ async function toggleSchedule(
     const filteredStudentsWithAccount = studentsWithAccount.filter(
       (student) => {
         const query = deleteSearch.trim().toLowerCase();
+
+        return (
+          !query ||
+          student.mssv.toLowerCase().includes(query) ||
+          (student.full_name ?? "").toLowerCase().includes(query) ||
+          (student.class_name ?? "").toLowerCase().includes(query)
+        );
+      }
+    );
+
+    const filteredStudentsForReset = studentsWithAccount.filter(
+      (student) => {
+        const query = resetSearch.trim().toLowerCase();
 
         return (
           !query ||
@@ -996,86 +1181,86 @@ async function toggleSchedule(
 
 
     async function runSelectedAccountAction(
-  action: "create_selected" | "delete_selected"
-) {
-  const selectedMssv =
-    action === "create_selected"
-      ? selectedCreateMssv
-      : selectedDeleteMssv;
+      action: "create_selected" | "delete_selected"
+    ) {
+      const selectedMssv =
+        action === "create_selected"
+          ? selectedCreateMssv
+          : selectedDeleteMssv;
 
-  if (!adminPassword.trim()) {
-    alert("Vui lòng nhập lại mật khẩu quản trị viên.");
-    return;
-  }
+      if (!adminPassword.trim()) {
+        alert("Vui lòng nhập lại mật khẩu quản trị viên.");
+        return;
+      }
 
-  if (selectedMssv.length === 0) {
-    alert("Vui lòng chọn ít nhất một sinh viên.");
-    return;
-  }
+      if (selectedMssv.length === 0) {
+        alert("Vui lòng chọn ít nhất một sinh viên.");
+        return;
+      }
 
-  const isCreate = action === "create_selected";
-  const actionLabel = isCreate ? "tạo tài khoản" : "xóa tài khoản";
+      const isCreate = action === "create_selected";
+      const actionLabel = isCreate ? "tạo tài khoản" : "xoá tài khoản";
 
-  const confirmed = window.confirm(
-    `Bạn đã chọn ${selectedMssv.length} sinh viên để ${actionLabel}.\n\n` +
-      (isCreate
-        ? "Tài khoản sẽ được tạo theo thông tin sinh viên trong database."
-        : "Tài khoản sinh viên và dữ liệu liên quan có thể bị xóa vĩnh viễn.") +
-      "\n\nBạn có chắc chắn muốn tiếp tục?"
-  );
+      const confirmed = window.confirm(
+        `Bạn đã chọn ${selectedMssv.length} sinh viên để ${actionLabel}.\n\n` +
+          (isCreate
+            ? "Tài khoản sẽ được tạo theo thông tin sinh viên trong database."
+            : "Tài khoản sinh viên và dữ liệu liên quan có thể bị xoá vĩnh viễn.") +
+          "\n\nBạn có chắc chắn muốn tiếp tục?"
+      );
 
-  if (!confirmed) return;
+      if (!confirmed) return;
 
-  setSelectedAccountActionLoading(true);
+      setSelectedAccountActionLoading(true);
 
-  try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-    if (sessionError || !session?.access_token) {
-      alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-      router.push("/");
-      return;
+        if (sessionError || !session?.access_token) {
+          alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+          router.push("/");
+          return;
+        }
+
+        const response = await fetch("/api/admin/account-actions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action,
+            mssvs: selectedMssv,
+            adminPassword,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          alert(result.error ?? "Không thể thực hiện thao tác.");
+          return;
+        }
+
+        alert(result.message ?? "Đã xử lý xong.");
+
+        if (isCreate) {
+          setSelectedCreateMssv([]);
+        } else {
+          setSelectedDeleteMssv([]);
+        }
+
+        await loadStudentAccountLists();
+      } catch (error) {
+        console.error("SELECTED ACCOUNT ACTION ERROR:", error);
+        alert("Không thể kết nối tới máy chủ.");
+      } finally {
+        setSelectedAccountActionLoading(false);
+      }
     }
-
-    const response = await fetch("/api/admin/account-actions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        action,
-        mssvs: selectedMssv,
-        adminPassword,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert(result.error ?? "Không thể thực hiện thao tác.");
-      return;
-    }
-
-    alert(result.message ?? "Đã xử lý xong.");
-
-    if (isCreate) {
-      setSelectedCreateMssv([]);
-    } else {
-      setSelectedDeleteMssv([]);
-    }
-
-    await loadStudentAccountLists();
-  } catch (error) {
-    console.error("SELECTED ACCOUNT ACTION ERROR:", error);
-    alert("Không thể kết nối tới máy chủ.");
-  } finally {
-    setSelectedAccountActionLoading(false);
-  }
-}
 
   /* =====================================================
      CHECK ADMIN
@@ -1858,9 +2043,18 @@ async function toggleSchedule(
 
                         <button
                           type="button"
+                          onClick={() => handleOpenEditQA(qa)}
+                          disabled={qaLoading}
+                          className="cursor-pointer whitespace-nowrap rounded-lg border-4 border-blue-200 px-2 py-1 text-xl font-medium text-blue-600 transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Chỉnh sửa
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => handleDeleteQA(qa.id)}
                           disabled={qaLoading}
-                          className="cursor-pointer rounded-lg border-4 border-red-200 px-4 py-2 text-xl font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          className="cursor-pointer rounded-lg border-4 border-red-200 px-2 py-1 text-xl font-medium text-red-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-red-300 hover:bg-red-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Xoá
                         </button>
@@ -1877,79 +2071,309 @@ async function toggleSchedule(
         </section>
 
         {/* =================================================
-           SECTION 5 - RESET MẬT KHẨU SINH VIÊN
+            SECTION 5 - CHỈNH SỬA THÔNG ĐIỆP
         ================================================= */}
 
-        <section className="mt-8 rounded-2xl bg-red-100 p-6 shadow-sm">
-
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-900">
-            5. Reset mật khẩu sinh viên
+            5. Chỉnh sửa thông điệp
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
-            Reset mật khẩu về ngày tháng năm sinh của sinh viên.
-            Sau khi reset, sinh viên sẽ được yêu cầu đổi mật khẩu.
+            Quản lý và chỉnh sửa thông điệp hiển thị trên hệ thống dành cho sinh viên.
           </p>
 
-          <div className="mt-5 max-w-xl">
-          <label
-            htmlFor="reset-mssv"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
-            Mã số sinh viên
-          </label>
+          <div className="mt-5 rounded-xl border border-gray-200 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Thông tin chức năng */}
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-blue-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 10h8M8 14h5m-8 6 3.5-3H19a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"
+                    />
+                  </svg>
+                </div>
 
-          <div className="flex gap-2">
-            <input
-              id="reset-mssv"
-              type="text"
-              value={resetMssv}
-              onChange={(e) =>
-                setResetMssv(e.target.value)
-              }
-              placeholder="Nhập MSSV cần reset"
-              disabled={resetLoading}
-              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
-              required
-            />
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    Thông điệp hệ thống
+                  </h3>
 
-            <div className="menu-btn-wrapper-inline">
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              disabled={resetLoading}
-              className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {resetLoading
-                ? "Đang reset..."
-                : "Reset mật khẩu"}
-            </button>
+                  <p className="mt-1 text-sm leading-6 text-gray-500">
+                    Chỉnh sửa nội dung thông báo để cập nhật thông tin đến sinh viên.
+                  </p>
+                </div>
+              </div>
+
+              {/* Nút chuyển trang */}
+                <div className="menu-btn-wrapper-inline">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = "/admin/editmessages";
+                    }}
+                    className="menu-btn menu-btn-blue"
+                  >
+                    Chỉnh sửa thông điệp →
+                  </button>
+                </div>
             </div>
           </div>
+        </section>
+
+        {/* =====================================================
+            SECTION 6 - RESET MẬT KHẨU SINH VIÊN
+        ===================================================== */}
+
+        <section className="mt-8 rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-red-700">
+                6. Reset mật khẩu sinh viên
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Reset mật khẩu của sinh viên về mật khẩu mặc định {" "}
+                <span className="font-medium">DDMMYYYY</span>.
+                Sau khi reset, sinh viên sẽ phải đổi mật khẩu khi đăng nhập.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const nextOpen = !resetListOpen;
+
+                setResetListOpen(nextOpen);
+                setResetMessage("");
+                setResetError("");
+
+                if (nextOpen && studentsWithAccount.length === 0) {
+                  void loadStudentAccountLists();
+                }
+              }}
+              className="cursor-pointer inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 transition hover:border-red-300 hover:bg-red-50"
+            >
+              {resetListOpen ? "Thu gọn danh sách" : "Chọn sinh viên"}
+
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${
+                  resetListOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Thông báo kết quả */}
+          {resetMessage && (
+            <div
+              role="status"
+              className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+            >
+              {resetMessage}
+            </div>
+          )}
 
           {resetError && (
-            <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div
+              role="alert"
+              className="mt-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
               {resetError}
             </div>
           )}
 
-          {resetMessage && (
-            <div className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-              {resetMessage}
+          {resetListOpen && (
+            <div className="mt-6 border-t border-gray-100 pt-5">
+              {/* Thanh công cụ */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium text-gray-800">
+                    Danh sách tài khoản sinh viên
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Đã chọn{" "}
+                    <span className="font-semibold text-red-600">
+                      {selectedResetMssv.length}
+                    </span>{" "}
+                    sinh viên
+                  </p>
+                </div>
+              </div>
+
+              {/* Tìm kiếm */}
+              <div className="mt-4">
+                <input
+                  type="text"
+                  value={resetSearch}
+                  onChange={(event) => setResetSearch(event.target.value)}
+                  placeholder="Tìm theo MSSV, họ tên hoặc lớp..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                />
+              </div>
+
+              {/* Chọn tất cả sinh viên đang hiển thị */}
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-4 py-3">
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredStudentsForReset.length > 0 &&
+                      filteredStudentsForReset.every((student) =>
+                        selectedResetMssv.includes(student.mssv)
+                      )
+                    }
+                    onChange={(event) => {
+                      toggleAllVisibleMssv(
+                        filteredStudentsForReset.map((student) => student.mssv),
+                        selectedResetMssv,
+                        setSelectedResetMssv
+                      );
+                    }}
+                    disabled={
+                      filteredStudentsForReset.length === 0 || resetLoading
+                    }
+                    className="h-4 w-4 rounded border-gray-300 accent-red-600"
+                  />
+
+                  <span>Chọn tất cả kết quả đang hiển thị</span>
+                </label>
+
+                <span className="shrink-0 text-xs text-gray-500">
+                  {filteredStudentsForReset.length} sinh viên
+                </span>
+              </div>
+
+              {/* Danh sách sinh viên */}
+              <div className="mt-3 overflow-hidden rounded-xl border border-gray-200">
+                {accountListLoading && studentsWithAccount.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-sm text-gray-500">
+                    Đang tải danh sách sinh viên...
+                  </div>
+                ) : filteredStudentsForReset.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-sm text-gray-500">
+                    {studentsWithAccount.length === 0
+                      ? "Chưa có sinh viên nào có tài khoản."
+                      : "Không tìm thấy sinh viên phù hợp."}
+                  </div>
+                ) : (
+                  <div className="max-h-[420px] divide-y divide-gray-100 overflow-y-auto">
+                    {filteredStudentsForReset.map((student) => {
+                      const selected = selectedResetMssv.includes(student.mssv);
+
+                      return (
+                        <label
+                          key={student.mssv}
+                          className={`flex cursor-pointer items-start gap-3 px-4 py-4 transition hover:bg-red-50/50 ${
+                            selected ? "bg-red-50/70" : "bg-white"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+
+                              setSelectedResetMssv((prev) =>
+                                checked
+                                  ? [...prev, student.mssv]
+                                  : prev.filter((mssv) => mssv !== student.mssv)
+                              );
+                            }}
+                            disabled={resetLoading}
+                            className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 accent-red-600"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="break-words font-medium text-gray-800">
+                                {student.full_name || "Chưa có họ tên"}
+                              </p>
+
+                              <span className="w-fit rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                                {student.class_name || "Chưa có lớp"}
+                              </span>
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                              <span>
+                                MSSV:{" "}
+                                <span className="font-medium text-gray-700">
+                                  {student.mssv}
+                                </span>
+                              </span>
+
+                              <span>
+                                Ngày sinh:{" "}
+                                {student.birth_date
+                                  ? formatDateDisplay(student.birth_date)
+                                  : "Chưa có"}
+                              </span>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Cảnh báo */}
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm leading-6 text-amber-800">
+                  <span className="font-semibold">Lưu ý:</span>{" "}
+                  Mật khẩu của tất cả sinh viên được chọn sẽ được đặt lại về ngày
+                  sinh. Hãy kiểm tra kỹ danh sách trước khi thực hiện.
+                </p>
+              </div>
+
+              {/* Nút reset */}
+              <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={() => void loadStudentAccountLists()}
+                  disabled={accountListLoading || resetLoading}
+                  className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {accountListLoading ? "Đang làm mới..." : "Làm mới danh sách"}
+                </button>
+
+                <div className="menu-btn-wrapper-inline">
+                  <button
+                    type="button"
+                    onClick={() => void handleResetSelectedPasswords()}
+                    disabled={resetLoading || selectedResetMssv.length === 0}
+                    className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resetLoading
+                      ? "Đang reset mật khẩu..."
+                      : `Reset mật khẩu (${selectedResetMssv.length})`}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-        </div>
-
         </section>
 
         {/* =====================================================
-            SECTION 6 — LỆNH QUẢN TRỊ ĐẶC BIỆT
+            SECTION 7 - LỆNH QUẢN TRỊ ĐẶC BIỆT
         ===================================================== */}
 
         <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
 
           <h2 className="text-2xl font-semibold text-gray-900">
-            6. Lệnh quản trị đặc biệt
+            7. Lệnh quản trị đặc biệt
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
@@ -1987,10 +2411,10 @@ async function toggleSchedule(
           </div>
 
           {/* ================================================
-              1. TẠO TÀI KHOẢN SINH VIÊN
+              7.1. TẠO TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
-          <div className="mt-8 overflow-hidden rounded-xl border border-gray-200">
+          <div className="mt-8 overflow-hidden rounded-xl border-2 border-blue-300">
             <button
               type="button"
               onClick={() => {
@@ -2006,7 +2430,7 @@ async function toggleSchedule(
             >
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  6.1. Tạo tài khoản sinh viên
+                  7.1. Tạo tài khoản sinh viên
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -2030,6 +2454,13 @@ async function toggleSchedule(
                   Chọn các sinh viên cần tạo tài khoản. Mật khẩu ban đầu được
                   tạo từ ngày sinh theo quy tắc hiện tại của hệ thống.
                 </p>
+
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Lưu ý: Với số lượng sinh viên đông, việc tạo tài khoản hàng
+                  loạt có thể diễn ra lâu hơn các thao tác khác (khoảng 2 → 5 phút)
+                  Trong thời gian đó, vui lòng không reload hay thoát trang cho đến
+                  khi hộp thoại xuất hiện.
+                </div>
 
                 <input
                   type="search"
@@ -2142,14 +2573,10 @@ async function toggleSchedule(
                   <button
                     type="button"
                     onClick={() => void loadStudentAccountLists()}
-                    disabled={
-                      accountListLoading ||
-                      selectedAccountActionLoading ||
-                      adminActionLoading
-                    }
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={accountListLoading || resetLoading}
+                    className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Làm mới danh sách
+                    {accountListLoading ? "Đang làm mới..." : "Làm mới danh sách"}
                   </button>
 
                   <div className="menu-btn-wrapper-inline">
@@ -2175,10 +2602,10 @@ async function toggleSchedule(
           </div>
 
           {/* ================================================
-              2. XOÁ TÀI KHOẢN SINH VIÊN
+              7.2. XOÁ TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-red-200">
+          <div className="mt-5 overflow-hidden rounded-xl border-2 border-red-300">
             <button
               type="button"
               onClick={() => {
@@ -2194,7 +2621,7 @@ async function toggleSchedule(
             >
               <div>
                 <h3 className="text-lg font-semibold text-red-800">
-                  6.2. Xóa tài khoản sinh viên
+                  7.2. Xoá tài khoản sinh viên
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -2215,9 +2642,10 @@ async function toggleSchedule(
             {deleteListOpen && (
               <div className="space-y-4 border-t border-red-100 p-5">
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  Cảnh báo: thao tác này có thể xóa tài khoản đăng nhập, hồ sơ,
+                  Cảnh báo: Thao tác này có thể xoá tài khoản đăng nhập, hồ sơ,
                   minh chứng và dữ liệu liên quan của các sinh viên đã chọn.
-                  Tài khoản có vai trò admin không được đưa vào danh sách này.
+                  Do đó các tài khoản sẽ không thể được tạo lại khi thực hiện
+                  thao tác xoá.
                 </div>
 
                 <input
@@ -2270,7 +2698,7 @@ async function toggleSchedule(
                 ) : filteredStudentsWithAccount.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
                     {studentsWithAccount.length === 0
-                      ? "Chưa có tài khoản sinh viên nào để xóa."
+                      ? "Chưa có tài khoản sinh viên nào để xoá."
                       : "Không tìm thấy sinh viên phù hợp."}
                   </div>
                 ) : (
@@ -2331,14 +2759,10 @@ async function toggleSchedule(
                   <button
                     type="button"
                     onClick={() => void loadStudentAccountLists()}
-                    disabled={
-                      accountListLoading ||
-                      selectedAccountActionLoading ||
-                      adminActionLoading
-                    }
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={accountListLoading || resetLoading}
+                    className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Làm mới danh sách
+                    {accountListLoading ? "Đang làm mới..." : "Làm mới danh sách"}
                   </button>
 
                   <div className="menu-btn-wrapper-inline">
@@ -2354,8 +2778,8 @@ async function toggleSchedule(
                       className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {selectedAccountActionLoading
-                        ? "Đang xóa tài khoản..."
-                        : `Xóa tài khoản (${selectedDeleteMssv.length})`}
+                        ? "Đang xoá tài khoản..."
+                        : `Xoá tài khoản (${selectedDeleteMssv.length})`}
                     </button>
                   </div>
                 </div>
@@ -2364,135 +2788,13 @@ async function toggleSchedule(
           </div>
 
           {/* ================================================
-              3. TẠO HÀNG LOẠT
-          ================================================ */}
-
-          <div className="mt-5 rounded-xl border border-gray-200 p-5">
-
-            <h3 className="text-lg font-semibold text-gray-800">
-              6.3. Tạo tài khoản hàng loạt
-            </h3>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Tạo tài khoản cho tất cả sinh viên trong database
-              có ngày sinh. Mật khẩu mặc định được tạo từ ngày sinh.
-            </p>
-
-            <div className="flex justify-start">
-            <div className="menu-btn-wrapper menu-btn-wrapper-footer">
-            <button
-              type="button"
-              disabled={adminActionLoading}
-              onClick={() => {
-                if (
-                  !confirm(
-                    "Bạn có chắc chắn muốn tạo tài khoản hàng loạt cho tất cả sinh viên có ngày sinh?"
-                  )
-                ) {
-                  return;
-                }
-
-                runAdminAction("create_all");
-              }}
-              className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {adminActionLoading
-                ? "Đang xử lý..."
-                : "Tạo tài khoản hàng loạt"}
-            </button>
-            </div>
-            </div>
-
-            <p className="mt-1 text-sl text-red-500">
-              Lưu ý: Với số lượng sinh viên đông, việc tạo tài khoản hàng loạt
-              có thể diễn ra lâu hơn các thao tác khác (khoảng 2 → 5 phút)
-              Trong thời gian đó, vui lòng không reload hay thoát trang cho
-              đến khi hộp thoại xuất hiện.
-            </p>
-
-          </div>
-
-          {/* ================================================
-              4. XOÁ HÀNG LOẠT THEO KHÓA
-          ================================================ */}
-
-          <div className="mt-5 rounded-xl border-2 border-red-300 bg-red-50 p-5">
-
-            <h3 className="text-lg font-semibold text-red-700">
-              6.4. XOÁ TÀI KHOẢN HÀNG LOẠT THEO KHÓA 
-            </h3>
-
-            <p className="mt-1 text-sm text-red-600">
-              CẢNH BÁO: Thao tác này sẽ xoá tài khoản Auth,
-              profile, hồ sơ, minh chứng và các dữ liệu liên quan
-              của tất cả sinh viên thuộc khóa được chọn.
-            </p>
-
-            <p className="mt-2 text-sm text-gray-600">
-              Ví dụ:
-              <span className="font-medium">
-                {" "}DGT1234 → khóa 23
-              </span>,
-              <span className="font-medium">
-                {" "}DGT1213 → khóa 21
-              </span>,
-              <span className="font-medium">
-                {" "}DGT1252 → khóa 25
-              </span>.
-            </p>
-
-            <div className="mt-4 flex gap-3">
-
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={2}
-                value={cohortKey}
-                onChange={(e) =>
-                  setCohortKey(
-                    e.target.value.replace(/\D/g, "")
-                  )
-                }
-                placeholder="Nhập khóa, VD: 23"
-                spellCheck={false}
-                className="flex-1 rounded-lg border border-red-300 bg-white px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
-              />
-
-              <div className="menu-btn-wrapper-inline">
-              <button
-                type="button"
-                disabled={adminActionLoading}
-                onClick={() => {
-                  if (
-                    !confirm(
-                      `CẢNH BÁO NGUY HIỂM!\n\nTất cả tài khoản và dữ liệu của khóa ${cohortKey} sẽ bị xoá.\n\nBạn có chắc chắn muốn tiếp tục?`
-                    )
-                  ) {
-                    return;
-                  }
-
-                  runAdminAction("delete_cohort");
-                }}
-                className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {adminActionLoading
-                  ? "Đang xử lý..."
-                  : "XOÁ TOÀN BỘ KHÓA"}
-              </button>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* ================================================
-              5.5. CẤP / THU HỒI THẺ VÀNG
+              6.3. CẤP / THU HỒI THẺ VÀNG
           ================================================ */}
 
           <div className="mt-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
 
             <h3 className="text-lg font-semibold text-amber-800">
-              6.5. CẤP / THU HỒI THẺ VÀNG VÀ KÍCH HOẠT BẢO TRÌ
+              6.3. CẤP / THU HỒI THẺ VÀNG VÀ KÍCH HOẠT BẢO TRÌ
             </h3>
 
             <p className="mt-1 text-sm text-amber-700">
@@ -2722,6 +3024,102 @@ async function toggleSchedule(
         </section>
 
       </div>
+
+      {/* POPUP CHỈNH SỬA Q&A */}
+      {editingQA && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingQA(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-qa-title"
+            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <h2
+                id="edit-qa-title"
+                className="text-xl font-bold text-gray-900"
+              >
+                Chỉnh sửa câu hỏi
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setEditingQA(null)}
+                aria-label="Đóng popup"
+                className="cursor-pointer rounded-lg px-3 py-1 text-2xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <label
+                htmlFor="edit-qa-question"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Question
+              </label>
+
+              <input
+                id="edit-qa-question"
+                type="text"
+                value={editQAQuestion}
+                onChange={(e) => setEditQAQuestion(e.target.value)}
+                placeholder="Nhập câu hỏi..."
+                disabled={qaLoading}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label
+                htmlFor="edit-qa-answer"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Answer
+              </label>
+
+              <textarea
+                id="edit-qa-answer"
+                value={editQAAnswer}
+                onChange={(e) => setEditQAAnswer(e.target.value)}
+                placeholder="Nhập câu trả lời..."
+                rows={6}
+                disabled={qaLoading}
+                className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setEditingQA(null)}
+                disabled={qaLoading}
+                className="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Huỷ
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleUpdateQA()}
+                disabled={qaLoading}
+                className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {qaLoading ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

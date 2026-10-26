@@ -14,11 +14,12 @@ import {
     getDateAfter,
 } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version"
+import ArticleImage from "@/components/ArticleImage";
 import FloatingBubbles from "@/components/FloatingBubbles";
 import MobileBubbles from "@/components/MobileBubbles";
 import NewsTicker from "@/components/NewsTicker";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
-import { Sun, Cloud, MoonStar, Star , Bell , House , Phone } from "lucide-react";
+import { Sun, Cloud, MoonStar, Star , Bell , House , Phone , Clock3 } from "lucide-react";
 
 type Student = {
   mssv: string;
@@ -848,27 +849,49 @@ const vietnamTime = currentTime
           </div>
         </section>
 
-
-              <div className="mb-8 flex justify-center">
-              {infoHeight > 0 && (
-                <div
-                  className="overflow-hidden rounded-2xl bg-white shadow"
-                  style={{ height: `${infoHeight}px` }}
-                >
-                  <img
-                    src="/images/Announcement1.jpg"
-                    alt="Banner SV5T"
-                    className="h-full w-auto object-contain"
-                  />
+            <>
+              <div className="hidden md:block">
+                {/* Giao diện desktop hiện tại */}
+                <div className="mb-8 flex justify-center">
+                  {infoHeight > 0 && (
+                    <div
+                      className="overflow-hidden rounded-2xl bg-white shadow"
+                      style={{ height: `${infoHeight}px` }}
+                    >
+                      <img
+                        src="/images/Announcement1.jpg"
+                        alt="Banner SV5T"
+                        className="h-full w-auto object-contain"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+
+              <div className="block md:hidden">
+                {/* Giao diện mobile */}
+                <div className="mb-8 flex justify-center">
+                  {infoHeight > 0 && (
+                    <div
+                      className="overflow-hidden rounded-2xl bg-white shadow"
+                      style={{ height: `${infoHeight}px` }}
+                    >
+                      <img
+                        src="/images/Announcement2.png"
+                        alt="Banner SV5T"
+                        className="h-full w-auto object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
 
               {/* Thông tin sinh viên */}
               <section
                 ref={infoSectionRef}
                 className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-                <h2 className="font-svn-internation text-sv5t-blue mb-5 text-5xl font-semibold">
+                <h2 className="text-sv5t-blue mb-5 text-4xl font-semibold"> {/* font-svn-internation */}
                   THÔNG TIN SINH VIÊN
                 </h2>
 
@@ -878,7 +901,7 @@ const vietnamTime = currentTime
                       Mã số sinh viên
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {student.mssv}
                     </p>
                   </div>
@@ -888,7 +911,7 @@ const vietnamTime = currentTime
                       Họ và tên
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {student.full_name}
                     </p>
                   </div>
@@ -898,7 +921,7 @@ const vietnamTime = currentTime
                       Ngày sinh
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {new Date(student.birth_date).toLocaleDateString("vi-VN")}
                     </p>
                   </div>
@@ -908,7 +931,7 @@ const vietnamTime = currentTime
                       Giới tính
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {student.gender}
                     </p>
                   </div>
@@ -918,7 +941,7 @@ const vietnamTime = currentTime
                       Lớp
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {student.class_name}
                     </p>
                   </div>
@@ -928,7 +951,7 @@ const vietnamTime = currentTime
                       Khoa
                     </p>
 
-                    <p className="mt-1 font-medium text-gray-900">
+                    <p className="mt-1 font-medium text-sv5t-blue">
                       {FACULTY_NAME_NORMAL}
                     </p>
                   </div>
@@ -940,7 +963,7 @@ const vietnamTime = currentTime
 
                 {/* Gửi hồ sơ */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                  <h3 className="text-sv5t-blue text-2xl font-semibold text-gray-900">
                     GỬI HỒ SƠ
                   </h3>
 
@@ -992,7 +1015,7 @@ const vietnamTime = currentTime
                 </div>
 
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                  <h3 className="text-sv5t-blue text-2xl font-semibold text-gray-900">
                     TẠO MINH CHỨNG
                   </h3>
 
@@ -1046,8 +1069,8 @@ const vietnamTime = currentTime
 
                 {/* Chỉnh sửa */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-orange text-3xl font-semibold text-gray-900">
-                    XEM YÊU CẦU CHỈNH SỬA
+                  <h3 className="text-sv5t-orange text-2xl font-semibold text-gray-900">
+                    XEM YÊU CẦU
                   </h3>
 
                   <p className="mt-2 text-gray-600">
@@ -1099,7 +1122,7 @@ const vietnamTime = currentTime
 
                 {/* Chỉnh sửa hồ sơ */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
+                  <h3 className="text-sv5t-blue text-2xl font-semibold text-gray-900">
                     CHỈNH SỬA HỒ SƠ
                   </h3>
 
@@ -1152,8 +1175,8 @@ const vietnamTime = currentTime
 
                 {/* Bổ sung hồ sơ */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-blue text-3xl font-semibold text-gray-900">
-                    BỔ SUNG MINH CHỨNG
+                  <h3 className="text-sv5t-blue text-2xl font-semibold text-gray-900">
+                    BỔ SUNG
                   </h3>
 
                   <p className="mt-2 text-gray-600">
@@ -1205,7 +1228,7 @@ const vietnamTime = currentTime
 
                 {/* Kết quả */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <h3 className="font-svn-internation text-sv5t-green text-3xl font-semibold text-gray-900">
+                  <h3 className="text-sv5t-green text-2xl font-semibold text-gray-900">
                     XEM KẾT QUẢ
                   </h3>
 
@@ -1261,19 +1284,200 @@ const vietnamTime = currentTime
       )}
 
       {activeTab === "introduction" && (
-        <>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Đây là một test page
-            </h2>
-        </>
-      )}
+        <article className="mx-auto w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
+          {/* Tiêu đề bài viết */}
+          <h2 className="text-2xl font-bold leading-relaxed text-orange-400 sm:text-3xl">
+            "SINH VIÊN 5 TỐT" - HƠN CẢ MỘT DANH HIỆU
+          </h2>
 
-      {activeTab === "notifications" && (
-        <>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Hiện chưa có thông báo.
-            </h2>
-        </>
+          {/* Thời gian đăng */}
+          <div className="mt-4 flex items-center gap-2 font-semibold text-gray-500">
+            <Clock3 className="h-4 w-4 shrink-0" />
+            <time dateTime="2026-10-26T11:11:00">
+              11:11 26/10/2026
+            </time>
+          </div>
+
+          {/* Nội dung bài viết */}
+          <div className="mt-8 space-y-8 text-justify text-base leading-8 text-gray-700">
+            {/* Mở đầu */}
+            <p className="first-letter:float-left first-letter:mr-1 first-letter:mt-1 first-letter:text-6xl first-letter:font-bold first-letter:leading-[0.8] first-letter:text-sv5t-blue">
+              Trong hành trình thanh xuân dưới mái trường đại học, mỗi sinh viên
+              đều có cơ hội học hỏi, trải nghiệm và từng bước hoàn thiện bản thân.
+              Phong trào “Sinh viên 5 tốt” chính là một trong những môi trường để
+              sinh viên phát huy năng lực, nuôi dưỡng lý tưởng sống và khẳng định
+              giá trị của tuổi trẻ thông qua quá trình học tập, rèn luyện và cống hiến.
+            </p>
+
+            {/* Phần 1 */}
+            <section>
+              <h3 className="mb-3 border-l-4 border-sv5t-blue pl-4 text-xl font-bold leading-8 text-blue-400">
+                Từ phong trào thành phố đến hành trình của sinh viên cả nước
+              </h3>
+
+              <p>
+                Phong trào “Sinh viên 5 tốt” được phát triển từ phong trào
+                “Sinh viên 3 tốt” của Hội Sinh viên TP. Hồ Chí Minh, sau đó được
+                Trung ương Hội Sinh viên Việt Nam nhân rộng trong sinh viên cả nước.
+                Tại Đại hội đại biểu Hội Sinh viên TP. Hồ Chí Minh lần thứ IV năm 2010,
+                cuộc vận động “Sinh viên 5 tốt” được chính thức phát động tại Thành phố,
+                với năm tiêu chí gồm: Đạo đức tốt - Học tập tốt - Thể lực tốt -
+                Tình nguyện tốt - Hội nhập tốt.
+              </p>
+
+              <ArticleImage
+                src="/images/SV5T1.jpg"
+                alt="Sinh viên tham gia phong trào Sinh viên 5 tốt"
+                description="Lễ tuyên dương Danh hiệu “Sinh viên 5 tốt” khoa Giáo dục Tiểu học năm học 2023 - 2024"
+              />
+
+              <p className="mt-4">
+                Đây không chỉ là Danh hiệu ghi nhận những nỗ lực nổi bật của sinh viên
+                mà còn là mục tiêu để mỗi bạn chủ động xây dựng kế hoạch phát triển
+                toàn diện, từ phẩm chất đạo đức, kiến thức chuyên môn đến sức khỏe,
+                tinh thần trách nhiệm với cộng đồng và năng lực hội nhập. Danh hiệu
+                “Sinh viên 5 tốt” cũng là sự ghi nhận đáng tự hào cho quá trình phấn đấu,
+                góp phần tạo thêm lợi thế để sinh viên phát triển bản thân và chuẩn bị
+                hành trang cho tương lai.
+              </p>
+
+              <ArticleImage
+                src="/images/SV5T2.jpg"
+                alt="Sinh viên tham gia phong trào Sinh viên 5 tốt"
+                description="Lễ tuyên dương Danh hiệu “Sinh viên 5 tốt” khoa Giáo dục Tiểu học năm học 2024 - 2025"
+              />
+
+            </section>
+
+            {/* Phần 2 */}
+            <section>
+              <h3 className="mb-3 border-l-4 border-sv5t-blue pl-4 text-xl font-bold leading-8 text-sv5t-blue">
+                Năm tiêu chí - Một hành trình trưởng thành
+              </h3>
+
+              <p>
+                Để đạt Danh hiệu “Sinh viên 5 tốt”, sinh viên cần đáp ứng đầy đủ các
+                tiêu chuẩn theo quy định xét chọn của từng cấp. Hành trình ấy đòi hỏi
+                sự kiên trì, tinh thần tự giác và khả năng cân bằng giữa học tập,
+                rèn luyện thể chất, hoạt động tình nguyện và trau dồi kỹ năng hội nhập.
+              </p>
+
+              <p className="mt-4">
+                Hằng năm, Liên chi Hội Sinh viên khoa sẽ triển khai thông tin về
+                tiêu chuẩn xét chọn, hướng dẫn sinh viên tìm hiểu các tiêu chí,
+                tiếp nhận và đánh giá hồ sơ theo quy định. Sau quá trình xét chọn,
+                những cá nhân tiêu biểu được tuyên dương ở các cấp tương ứng, đồng thời
+                tiếp tục được khuyến khích phát huy vai trò, lan tỏa những giá trị tích
+                cực trong cộng đồng sinh viên.
+              </p>
+
+              <ArticleImage
+                src="/images/EX-SV5T/11.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/12.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/13.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/14.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/15.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/16.png"
+                alt=""
+                description=""
+              />
+              
+              <ArticleImage
+                src="/images/EX-SV5T/17.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/18.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/19.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/20.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/21.png"
+                alt=""
+                description=""
+              />
+
+              <ArticleImage
+                src="/images/EX-SV5T/22.png"
+                alt=""
+                description={`12 gương "Sinh viên 5 tốt tiêu biểu" khoa Giáo dục Tiểu học năm học 2024 - 2025, đại diện cho những sinh viên năng động, bản lĩnh và không ngừng hoàn thiện bản thân trên hành trình phát triển toàn diện.`}
+              />
+
+              <ArticleImage
+                src="/images/SV5Ts.png"
+                alt=""
+                description={`Các anh, chị là cựu sinh viên khoa Giáo dục Tiểu học đạt danh hiệu “Sinh viên 5 tốt” TP. Hồ Chí Minh năm 2025 chia sẻ hành trình phấn đấu, nguồn cảm hứng, kinh nghiệm học tập và rèn luyện đến các bạn sinh viên tại Talkshow “Sow the Light - Chase the Dream”.`}
+              />
+
+            </section>
+
+            {/* Phần 3 */}
+            <section>
+              <h3 className="mb-3 border-l-4 border-sv5t-blue pl-4 text-xl font-bold leading-8 text-sv5t-blue">
+                Bắt đầu từ hôm nay, viết nên phiên bản tốt hơn của chính mình
+              </h3>
+
+              <p>
+                “Sinh viên 5 tốt” không phải là hành trình chỉ dành cho những người
+                đã xuất sắc, mà còn là cơ hội để mỗi sinh viên xác định mục tiêu,
+                nhận ra điểm cần cải thiện và nỗ lực tiến bộ từng ngày. Một giờ học
+                tập nghiêm túc, một buổi tập thể thao, một hoạt động tình nguyện hay
+                một lần chủ động trau dồi ngoại ngữ đều có thể trở thành những bước
+                đi ý nghĩa trên hành trình ấy.
+              </p>
+
+              <p className="mt-4">
+                Với tinh thần chủ động, bản lĩnh và khát vọng cống hiến, sinh viên
+                Trường Đại học Sài Gòn nói chung và sức trẻ khoa Giáo dục Tiểu học
+                nói riêng, hãy tích cực tìm hiểu, tham gia phong trào “Sinh viên 5 tốt”,
+                không ngừng hoàn thiện bản thân và lan tỏa những giá trị tốt đẹp đến
+                cộng đồng. Bởi thành quả đáng tự hào không chỉ nằm ở Danh hiệu đạt được,
+                mà còn ở những thay đổi tích cực mà mỗi người tạo nên trong suốt hành
+                trình trưởng thành của mình.
+              </p>
+            </section>
+          </div>
+        </article>
       )}
 
       {activeTab === "contact" && (
@@ -1282,11 +1486,11 @@ const vietnamTime = currentTime
           <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900">
                   LIÊN HỆ HỖ TRỢ
                 </h3>
 
-                <p className="mt-1 text-gray-500">
+                <p className="text-sm mt-1 text-gray-500">
                   Nếu gặp vấn đề trong quá trình sử dụng hệ thống, hãy liên hệ BCH Liên Chi hội Sinh viên khoa hoặc Ban Chủ nhiệm Câu lạc bộ "Sinh viên 5 tốt" khoa Giáo dục Tiểu học.
                 </p>
               </div>
@@ -1294,10 +1498,10 @@ const vietnamTime = currentTime
               <div className="font-medium text-sv5t-blue">
                 <div>
                   Email:{" "}
-                  <p className="font-medium text-gray-800">
+                  <p className="text-sm font-medium text-gray-800">
                     Liên Chi hội Sinh viên khoa: <span className="font-normal">hsv.gdth@sgu.edu.vn</span>
                   </p>
-                  <p className="font-medium text-gray-800">
+                  <p className="text-sm font-medium text-gray-800">
                     Câu lạc bộ "Sinh viên 5 tốt": <span className="font-normal">sv5t.gdth.sgu@gmail.com</span>
                   </p>
                 </div>
@@ -1306,7 +1510,7 @@ const vietnamTime = currentTime
                   Số điện thoại:{" "}
                   <div className="font-normal">
                     <>
-                      <div className="hidden md:block">
+                      <div className="text-sm hidden md:block">
                         {/* Giao diện desktop hiện tại */}
                         <p className="text-gray-800">
                           <span>090.673.9434</span> (Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa)
@@ -1325,41 +1529,41 @@ const vietnamTime = currentTime
                         </p>
                       </div>
 
-                      <div className="block md:hidden">
+                      <div className="text-sm block md:hidden">
                         {/* Giao diện mobile */}
                         <p className="text-gray-800">
-                          090.673.9434
+                          <span className="font-semibold text-gray-500">090.673.9434</span>
                         </p>
-                        <p className="text-gray-800">
-                          👉 Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa
-                        </p>
-
-                        <p className="text-gray-800">
-                          <span>078.599.6575</span>
-                        </p>
-                        <p className="text-gray-800">
-                          👉 Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB
+                        <p className="mb-2 text-gray-800">
+                          • Đ/c Trần Thanh Tâm - Liên Chi hội Trưởng LCH SV khoa
                         </p>
 
                         <p className="text-gray-800">
-                          <span>098.732.7862</span>
+                          <span className="font-semibold text-gray-500">078.599.6575</span>
                         </p>
-                        <p className="text-gray-800">
-                          👉 Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa
-                        </p>
-
-                        <p className="text-gray-800">
-                          <span>087.913.9129</span>
-                        </p>
-                        <p className="text-gray-800">
-                          👉 Đ/c Võ Minh Quyền - Chủ nhiệm CLB
+                        <p className="mb-2 text-gray-800">
+                          • Đ/c Trần Phương Trường Thư - Liên Chi hội Phó LCH SV khoa, Phó Chủ nhiệm CLB
                         </p>
 
                         <p className="text-gray-800">
-                          <span>034.829.6097</span>
+                          <span className="font-semibold text-gray-500">098.732.7862</span>
                         </p>
+                        <p className="mb-2 text-gray-800">
+                          • Đ/c Nguyễn Dương Nam - Liên Chi hội Phó LCH SV khoa
+                        </p>
+
                         <p className="text-gray-800">
-                          👉 Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB
+                          <span className="font-semibold text-gray-500">087.913.9129</span>
+                        </p>
+                        <p className="mb-2 text-gray-800">
+                          • Đ/c Võ Minh Quyền - Chủ nhiệm CLB
+                        </p>
+
+                        <p className="text-gray-800">
+                          <span className="font-semibold text-gray-500">034.829.6097</span>
+                        </p>
+                        <p className="mb-2 text-gray-800">
+                          • Đ/c Thái Kiên Giang - Phó Chủ nhiệm CLB
                         </p>
 
                       </div>
@@ -1375,7 +1579,7 @@ const vietnamTime = currentTime
         {/* Help Center */}
         <section className="mt-10 rounded-2xl bg-white p-6 shadow-sm">
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-sv5t-blue">
               Cần trợ giúp?
             </h2>
             <p className="mt-1 text-sm text-gray-500">
@@ -1393,7 +1597,7 @@ const vietnamTime = currentTime
                   ❓
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Câu hỏi thường gặp</h3>
+                  <h3 className="font-semibold text-sv5t-blue">Câu hỏi thường gặp</h3>
                   <p className="mt-1 text-sm text-gray-500">Q&A về hệ thống và hồ sơ</p>
                 </div>
               </div>
@@ -1408,7 +1612,7 @@ const vietnamTime = currentTime
                   📖
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Giới thiệu</h3>
+                  <h3 className="font-semibold text-sv5t-blue">Giới thiệu</h3>
                   <p className="mt-1 text-sm text-gray-500">Tổng quan về hệ thống</p>
                 </div>
               </div>
@@ -1423,8 +1627,8 @@ const vietnamTime = currentTime
                   📄
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Hướng dẫn xét chọn</h3>
-                  <p className="mt-1 text-sm text-gray-500">Quy định về bộ tiêu chí SV5T</p>
+                  <h3 className="font-semibold text-sv5t-blue">Hướng dẫn xét chọn</h3>
+                  <p className="mt-1 text-sm text-gray-500">Quy định về bộ tiêu chí</p>
                 </div>
               </div>
             </button>
