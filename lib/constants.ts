@@ -36,7 +36,7 @@ export const STANDARD = {
 
   ETHIC5: {
     CONTENT:
-      "5. Đạt danh hiệu “Thanh niên tiên tiến làm theo lời Bác” các cấp, Sao tháng “Thanh niên SGU nghĩ đúng – sống đẹp” hoặc là điển hình được biểu dương trong việc thực hiện “Đẩy mạnh học tập và làm theo tư tưởng, đạo đức, phong cách Hồ Chí Minh” từ cấp khoa trở lên",
+      "5. Đạt danh hiệu Thanh niên tiên tiến làm theo lời Bác các cấp hoặc là điển hình được biểu dương trong việc thực hiện học tập và làm theo tư tưởng, tấm gương đạo đức, phong cách Chủ tịch Hồ Chí Minh",
     DESC:
       "(Ghi rõ danh hiệu, cấp tổ chức và thời gian tuyên dương)",
   },
@@ -50,57 +50,57 @@ export const STANDARD = {
 
   ETHIC7: {
     CONTENT:
-      "7. Tham gia các chương trình hoặc cuộc thi tìm hiểu về lịch sử, truyền thống của Đảng, Nhà nước, chủ quyền biển đảo và tổ chức Đoàn Thanh niên, Hội Sinh viên,... được tổ chức từ cấp khoa trở lên",
+      "7. Tham gia và đạt giải Khuyến khích trở lên trong các cuộc thi tìm hiểu về lịch sử, quê hương, đất nước, chủ quyền biển đảo Việt Nam",
+    DESC: "",
+  },
+
+  ETHIC8: {
+    CONTENT:
+      "8. Tham gia và đạt giấy chứng nhận các chương trình tìm hiểu về lịch sử từ cấp khoa trở lên",
     DESC: "",
   },
 
   GPA: {
-    CONTENT: `1. Điểm trung bình chung học tập năm học ${ACADEMIC_YEAR}`,
+    CONTENT: `1. Điểm trung bình học tập năm học ${ACADEMIC_YEAR}`,
     DESC: "(Không ghi xếp loại)",
   },
 
   STUDY2: {
     CONTENT:
-      "2. Có đề tài nghiên cứu khoa học sinh viên hoặc khóa luận Tốt nghiệp trong năm học được hội đồng khoa học từ cấp khoa trở lên nghiệm thu đánh giá",
+      "2. Có chứng nhận tham gia tích cực ít nhất 01 Câu lạc bộ về học thuật từ cấp khoa (Câu lạc bộ Sách “Ươm mầm tri thức”, Câu lạc bộ “Sinh viên 5 tốt”, Câu lạc bộ Học thuật “Tôi - Người Giáo viên Tiểu học”) trở lên",
     DESC: "",
   },
 
   STUDY3: {
     CONTENT:
-      "3. Có ít nhất 01 bài viết về lĩnh vực chuyên môn đang theo học, đăng tải trên các sản phẩm của các cơ quan truyền thông uy tín hoặc các bài báo, tạp chí khoa học chuyên ngành của trường hoặc có bài tham luận tham gia các hội thảo khoa học cấp khoa trở lên",
+      "3. Có đề tài nghiên cứu khoa học (tham gia với tư cách là chủ nhiệm đề tài hoặc đồng tác giả của đề tài hoặc thành viên nhóm nghiên cứu đề tài) trong năm học được hội đồng khoa học cấp khoa nghiệm thu đánh giá từ loại Đạt trở lên",
     DESC:
-      "(Ghi rõ tên bài viết, tên - số báo hoặc tạp chí và ngày phát hành)",
+      "",
   },
 
   STUDY4: {
     CONTENT:
-      "4. Đạt giải thưởng trong nghiên cứu khoa học, giải thưởng trong các cuộc thi học thuật và ý tưởng sáng tạo từ cấp khoa trở lên",
+      "4. Có ít nhất 01 bài viết về lĩnh vực chuyên môn đang theo học, đăng tải trên các sản phẩm của các cơ quan truyền thông uy tín hoặc các báo, tạp chí khoa học chuyên ngành của trường hoặc có bài tham luận tham gia các hội thảo khoa học cấp khoa trở lên",
     DESC:
-      "(Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được)",
+      "(Ghi rõ tên bài viết, tên - số báo hoặc tạp chí và ngày phát hành)",
   },
-
+  
   STUDY5: {
     CONTENT:
-      "5. Đạt giải khuyến khích trở lên trong các cuộc thi chuyên môn cấp Thành do các hiệp hội ngành nghề, các trường đại học, học viện, các cơ quan thông tấn hoặc báo chí tổ chức",
+      "5. Tham gia và đạt giải Khuyến khích trở lên trong các cuộc thi học thuật từ cấp khoa trở lên",
     DESC:
-      "(Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được)",
-  },
-
-  STUDY6: {
-    CONTENT:
-      "6. Tham gia và có chứng nhận hoạt động tích cực ít nhất 01 CLB về học thuật từ cấp khoa trở lên",
-    DESC: "",
+      "",
   },
 
   PHYSICAL1: {
     CONTENT:
-      "1. Tham gia các hoạt động sát hạch thể lực và đạt danh hiệu “Sinh viên khỏe”; “Thanh niên khỏe” từ cấp trường trở lên",
-    DESC: "",
+      "1. Đạt danh hiệu “Thanh niên khỏe” của năm học",
+    DESC: "(tiêu chuẩn cụ thể theo Hướng dẫn liên tịch số 87/2006/HDLT-ĐTN-TDTT về tiêu chuẩn thi đua và rèn luyện thể dục thể thao của các cấp bộ Đoàn và đoàn viên, thanh niên do Trung ương Đoàn TNCS Hồ Chí Minh và Ủy ban Thể dục - Thể thao ban hành)",
   },
 
   PHYSICAL2: {
     CONTENT:
-      "2. Đạt giải khuyến khích trở lên trong các hội thao từ cấp khoa trở lên",
+      "2. Đạt giải khuyến khích trở lên các hội thao cấp khoa trong năm trở lên",
     DESC: "(Ghi rõ tên hội thao, đơn vị tổ chức và giải thưởng đạt được)",
   },
 
@@ -112,7 +112,25 @@ export const STANDARD = {
 
   PHYSICAL4: {
     CONTENT:
-      "4. Đối với những sinh viên khuyết tật, tiêu chuẩn về thể lực bao gồm tập thể dục hằng ngày và rèn luyện ít nhất 01 môn thể thao dành cho người khuyết tật",
+      "4. Có chứng nhận tham gia rèn luyện thể thao định kỳ tại 01 câu lạc bộ, tổ, đội, nhóm thể thao",
+    DESC: "",
+  },
+
+  PHYSICAL5: {
+    CONTENT:
+      "5. Là thành viên và đạt chứng nhận của câu lạc bộ Văn nghệ xung kích cấp khoa",
+    DESC: "",
+  },
+
+  PHYSICAL6: {
+    CONTENT:
+      "6. Điểm trung bình các học phần Giáo dục Thể chất đã hoàn thành là từ 7.0/10 trở lên",
+    DESC: "",
+  },
+
+  PHYSICAL7: {
+    CONTENT:
+      "7. Đối với những sinh viên khuyết tật, tiêu chuẩn về thể lực bao gồm tập thể dục hằng ngày và rèn luyện ít nhất 01 môn thể thao dành cho người khuyết tật",
     DESC: "(Ghi rõ tên môn thể thao và thời gian tập luyện)",
   },
 
@@ -124,7 +142,7 @@ export const STANDARD = {
 
   VOLUNTEER2: {
     CONTENT:
-      "2. Tham gia và được cấp giấy chứng nhận hoàn thành một trong các chiến dịch, chương trình tình nguyện",
+      "2. Tham gia và được cấp giấy chứng nhận hoàn thành một trong các chiến dịch, chương trình tình nguyện trong năm học",
     DESC: "(Ghi rõ tên chiến dịch hoặc chương trình và thời gian tham gia)",
   },
 
@@ -137,7 +155,7 @@ export const STANDARD = {
 
   VOLUNTEER4: {
     CONTENT:
-      "4. Tham gia các hoạt động đặc biệt do Nhà trường huy động",
+      "4. Tham gia và được chứng nhận là thành viên của câu lạc bộ tình nguyện cấp khoa trở lên",
     DESC: "",
   },
 
@@ -150,96 +168,115 @@ export const STANDARD = {
 
   FOREIGNLANGUAGE2: {
     CONTENT:
-      "2. Điểm trung bình các học phần Ngoại ngữ",
+      "2. Điểm trung bình các học phần Tiếng Anh I, II, III",
     DESC:
       "(Không bao gồm môn Ngoại ngữ chuyên ngành)",
   },
 
   FOREIGNLANGUAGE3: {
     CONTENT:
-      "3. Tham gia và đạt giải khuyến khích trở lên các cuộc thi Ngoại ngữ từ cấp khoa trở lên",
+      "3. Tham gia và đạt giải khuyến khích trở lên các cuộc thi ngoại ngữ từ cấp khoa trở lên",
     DESC:
       "(Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được)",
   },
 
   SKILL4: {
     CONTENT:
-      "4. Tham gia và có giấy chứng nhận hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội từ cấp khoa trở lên",
+      "4. Tham gia và được chứng nhận hoàn thành ít nhất 01 khóa huấn luyện kỹ năng.",
     DESC:
       "(Ghi rõ số lượng, nội dung kỹ năng và xếp loại nếu có)",
   },
 
   SKILL5: {
     CONTENT:
-      "5. Tham gia và có giấy chứng nhận hoàn thành ít nhất 01 hoạt động trang bị kỹ năng đúng với chuyên ngành của sinh viên",
+      "5. Đạt chứng chỉ Tin học",
     DESC:
-      "(Ghi rõ số lượng, nội dung kỹ năng và xếp loại nếu có)",
+      "",
   },
 
   SKILL6: {
     CONTENT:
-      "6. Được Đoàn Thanh niên - Hội Sinh viên từ cấp trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn, phong trào thanh niên hoặc công tác Hội, phong trào sinh viên",
-    DESC:
-      "(Ghi rõ hình thức, nội dung và cấp khen thưởng)",
-  },
-
-  SKILL7: {
-    CONTENT:
-      "7. Đạt thành tích trong các cuộc thi về kỹ năng từ cấp khoa trở lên",
+      "6. Đạt thành tích trong các cuộc thi về kỹ năng từ cấp khoa trở lên",
     DESC:
       "(Ghi rõ tên cuộc thi, đơn vị tổ chức, xếp loại, xếp hạng và giải thưởng đạt được)",
   },
 
+  SKILL7: {
+    CONTENT:
+      "7. Là báo cáo viên các lớp huấn luyện kỹ năng từ cấp khoa trở lên",
+    DESC:
+      "",
+  },
+  
+  SKILL8: {
+    CONTENT:
+      "8. Được Đoàn Thanh niên - Hội Sinh viên từ cấp trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn, phong trào thanh niên hoặc công tác Hội, phong trào sinh viên",
+    DESC:
+      "(Ghi rõ hình thức, nội dung và cấp khen thưởng)",
+  },
+
   INTEGRATION8: {
     CONTENT:
-      "8. Tham gia tích cực ít nhất 01 hoạt động về hội nhập do cấp khoa trở lên tổ chức",
+      "9. Tham gia tích cực ít nhất 01 hoạt động về hội nhập do cấp khoa trở lên tổ chức",
     DESC:
       "(Ghi rõ tên hoạt động, đơn vị tổ chức, địa điểm, thời gian tổ chức và vai trò khi tham gia)",
   },
 
   INTEGRATION9: {
     CONTENT:
-      "9. Tham gia ít nhất 01 hoạt động giao lưu quốc tế",
+      "10. Tham gia và được chứng nhận hoàn thành ít nhất 01 hoạt động giao lưu quốc tế",
     DESC:
       "(Ghi rõ tên hoạt động, đơn vị tổ chức, địa điểm, thời gian tổ chức, giao lưu với ai và vai trò khi tham gia)",
   },
 
   PRIORITY1: {
     CONTENT:
-      "1. Có đề tài nghiên cứu khoa học sinh viên trong năm học được hội đồng khoa học từ cấp khoa trở lên nghiệm thu đánh giá từ 8.0 điểm hoặc loại Tốt trở lên",
+      "1. Điểm rèn luyện trung bình năm học đạt từ 90/100 trở lên",
     DESC: "",
   },
 
   PRIORITY2: {
     CONTENT:
-      "2. Đạt chứng chỉ tiếng Anh trình độ B1 hoặc tương đương B1 hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên",
+      "2. Điểm trung bình học tập cả năm học đạt từ 3.0/4.0 trở lên",
     DESC:
-      "(Không xét thời hạn của chứng chỉ. Đối với sinh viên chuyên ngành Ngoại ngữ, chứng chỉ được áp dụng với môn Ngoại ngữ 2)",
+      "",
   },
 
   PRIORITY3: {
     CONTENT:
-      "3. Được khen thưởng từ cấp trường trở lên về hoạt động tình nguyện hoặc tham gia hiến máu tình nguyện",
-    DESC: "",
+      "3. Đạt chứng chỉ tiếng Anh trình độ B1 (theo khung tham chiếu châu Âu) hoặc tương đương B1 hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên",
+    DESC: "(không xét thời hạn của chứng chỉ; việc áp dụng quy đổi giá trị tương đương chứng chỉ IELTS, TOEFL, TOEIC và một số chứng chỉ khác thì áp dụng theo Thông tư số 01/2014/TT-BGDĐT ngày 24/01/2014 của Bộ Giáo dục và Đào tạo và Thông tư 66/2008/QĐ-BGDĐT ngày 02/12/2008)",
   },
 
   PRIORITY4: {
     CONTENT:
-      "4. Được nêu gương, khen thưởng tại địa phương hoặc đơn vị trên các phương tiện truyền thông đại chúng vì là thanh niên tiêu biểu trên các lĩnh vực",
+      "4. Điểm trung bình học phần Tiếng Anh I, II hoặc III đã hoàn thành đạt từ 8.5 trở lên (tính điểm học phần tích lũy)",
     DESC: "",
   },
 
   PRIORITY5: {
     CONTENT:
-      "5. Tham gia và đạt giải ba trở lên trong các cuộc thi từ cấp trường trở lên",
+      "5. Có thành tích nổi bật trong các hoạt động Đoàn - Hội của khoa, trường",
     DESC:
-      "(Ghi rõ tên cuộc thi, thời gian, đơn vị tổ chức và giải thưởng đạt được)",
+      "(Ghi rõ nội dung và cấp khen thưởng)",
   },
 
   PRIORITY6: {
     CONTENT:
-      "6. Các thành tích nổi bật trong công tác Đoàn – Hội cấp khoa trở lên",
+      "6. Tham gia tích cực các hoạt động tình nguyện và được giấy khen từ Đoàn Thanh niên - Hội Sinh viên trường trở lên",
     DESC: "(Ghi rõ nội dung và cấp khen thưởng)",
+  },
+
+  PRIORITY7: {
+    CONTENT:
+      "7. Là thanh niên tiêu biểu được biểu dương, khen thưởng trên các lĩnh vực tại địa phương, đơn vị hoặc được nêu gương trên các phương tiện truyền thông đại chúng",
+    DESC: "",
+  },
+
+  PRIORITY8: {
+    CONTENT:
+      "8. Tham gia và đạt từ giải Ba trở lên giải trong các cuộc thi tìm hiểu về văn hóa, lịch sử, xã hội trong nước và thế giới từ cấp trường trở lên",
+    DESC: "",
   },
 } as const;
 

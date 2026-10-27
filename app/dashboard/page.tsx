@@ -959,9 +959,17 @@ const vietnamTime = currentTime
               </section>
 
               {/* Menu */}
-              <section className="grid gap-6 md:grid-cols-3">
+            <section>
+
+                {/* Tiêu đề */}
+              <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="text-sv5t-blue text-4xl font-semibold flex justify-center"> {/* font-svn-internation */}
+                  DANH MỤC QUẢN LÝ HỒ SƠ
+                </h2>
+              </div>
 
                 {/* Gửi hồ sơ */}
+              <div className="grid gap-6 md:grid-cols-3">
                 <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
                   <h3 className="text-sv5t-blue text-2xl font-semibold text-gray-900">
                     GỬI HỒ SƠ
@@ -1278,8 +1286,8 @@ const vietnamTime = currentTime
                   </button>
                   </div>
                 </div>     
-
-              </section>
+              </div>
+            </section>
         </>
       )}
 
@@ -1478,6 +1486,38 @@ const vietnamTime = currentTime
             </section>
           </div>
         </article>
+      )}
+
+      {activeTab === "notifications" && (
+        <>
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  THÔNG BÁO
+                </h3>
+
+                <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center sm:py-20">
+                  {/* Biểu tượng */}
+                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+                    <Bell className="h-8 w-8 text-orange-400" />
+                  </div>
+
+                  {/* Tiêu đề trạng thái */}
+                  <h3 className="text-lg font-semibold text-gray-800 sm:text-xl">
+                    Chưa có thông báo
+                  </h3>
+
+                  {/* Mô tả */}
+                  <p className="mt-2 max-w-md text-sm leading-6 text-gray-500 sm:text-base">
+                    Hiện tại chưa có thông báo mới. Vui lòng quay lại sau để cập nhật
+                    những thông tin mới nhất từ hệ thống.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {activeTab === "contact" && (

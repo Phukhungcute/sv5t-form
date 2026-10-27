@@ -89,6 +89,7 @@ const SUBMISSION_FIELD_ORDER = [
   "ethics5",
   "ethics6",
   "ethics7",
+  "ethics8",
 
   // =====================================================
   // BƯỚC 3 — HỌC TẬP TỐT
@@ -98,7 +99,6 @@ const SUBMISSION_FIELD_ORDER = [
   "study3",
   "study4",
   "study5",
-  "study6",
 
   // =====================================================
   // BƯỚC 4 — THỂ LỰC TỐT
@@ -107,6 +107,9 @@ const SUBMISSION_FIELD_ORDER = [
   "physical2",
   "physical3",
   "physical4",
+  "physical5",
+  "physical6",
+  "physical7",
 
   // =====================================================
   // BƯỚC 5 — TÌNH NGUYỆN TỐT
@@ -126,6 +129,7 @@ const SUBMISSION_FIELD_ORDER = [
   "skill5",
   "skill6",
   "skill7",
+  "skill8",
   "integration8",
   "integration9",
 
@@ -138,6 +142,8 @@ const SUBMISSION_FIELD_ORDER = [
   "priority4",
   "priority5",
   "priority6",
+  "priority7",
+  "priority8",
 ];
 
 function getSubmissionFieldOrder(key: string) {
@@ -873,18 +879,21 @@ export default function SubmissionsPage() {
     ethics5: STANDARD.ETHIC5.CONTENT,
     ethics6: STANDARD.ETHIC6.CONTENT,
     ethics7: STANDARD.ETHIC7.CONTENT,
+    ethics8: STANDARD.ETHIC8.CONTENT,
 
     gpa: STANDARD.GPA.CONTENT,
     study2: STANDARD.STUDY2.CONTENT,
     study3: STANDARD.STUDY3.CONTENT,
     study4: STANDARD.STUDY4.CONTENT,
     study5: STANDARD.STUDY5.CONTENT,
-    study6: STANDARD.STUDY6.CONTENT,
 
     physical1: STANDARD.PHYSICAL1.CONTENT,
     physical2: STANDARD.PHYSICAL2.CONTENT,
     physical3: STANDARD.PHYSICAL3.CONTENT,
     physical4: STANDARD.PHYSICAL4.CONTENT,
+    physical5: STANDARD.PHYSICAL5.CONTENT,
+    physical6: STANDARD.PHYSICAL6.CONTENT,
+    physical7: STANDARD.PHYSICAL7.CONTENT,
 
     volunteer1: STANDARD.VOLUNTEER1.CONTENT,
     volunteer2: STANDARD.VOLUNTEER2.CONTENT,
@@ -902,6 +911,7 @@ export default function SubmissionsPage() {
     skill5: STANDARD.SKILL5.CONTENT,
     skill6: STANDARD.SKILL6.CONTENT,
     skill7: STANDARD.SKILL7.CONTENT,
+    skill8: STANDARD.SKILL8.CONTENT,
 
     integration8:
       STANDARD.INTEGRATION8.CONTENT,
@@ -914,6 +924,8 @@ export default function SubmissionsPage() {
     priority4: STANDARD.PRIORITY4.CONTENT,
     priority5: STANDARD.PRIORITY5.CONTENT,
     priority6: STANDARD.PRIORITY6.CONTENT,
+    priority7: STANDARD.PRIORITY7.CONTENT,
+    priority8: STANDARD.PRIORITY8.CONTENT,
   };
 
   if (standardMap[normalizedKey]) {
@@ -1975,6 +1987,12 @@ function exportToExcel() {
                             description={STANDARD.ETHIC7.DESC}
                             value={data.ethics7}
                           />
+
+                          <ReviewField
+                            label={STANDARD.ETHIC8.CONTENT}
+                            description={STANDARD.ETHIC8.DESC}
+                            value={data.ethics8}
+                          />
                         </div>
                       </div>
 
@@ -2015,12 +2033,6 @@ function exportToExcel() {
                             description={STANDARD.STUDY5.DESC}
                             value={data.study5}
                           />
-
-                          <ReviewField
-                            label={STANDARD.STUDY6.CONTENT}
-                            description={STANDARD.STUDY6.DESC}
-                            value={data.study6}
-                          />
                         </div>
                       </div>
 
@@ -2055,6 +2067,24 @@ function exportToExcel() {
                             label={STANDARD.PHYSICAL4.CONTENT}
                             description={STANDARD.PHYSICAL4.DESC}
                             value={data.physical4}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL5.CONTENT}
+                            description={STANDARD.PHYSICAL5.DESC}
+                            value={data.physical5}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL6.CONTENT}
+                            description={STANDARD.PHYSICAL6.DESC}
+                            value={data.physical6}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PHYSICAL7.CONTENT}
+                            description={STANDARD.PHYSICAL7.DESC}
+                            value={data.physical7}
                           />
                         </div>
                       </div>
@@ -2159,6 +2189,12 @@ function exportToExcel() {
                               description={STANDARD.SKILL7.DESC}
                               value={data.skill7}
                             />
+
+                            <ReviewField
+                              label={STANDARD.SKILL8.CONTENT}
+                              description={STANDARD.SKILL8.DESC}
+                              value={data.skill8}
+                            />
                           </div>
                         </div>
 
@@ -2227,6 +2263,18 @@ function exportToExcel() {
                             label={STANDARD.PRIORITY6.CONTENT}
                             description={STANDARD.PRIORITY6.DESC}
                             value={data.priority6}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY7.CONTENT}
+                            description={STANDARD.PRIORITY7.DESC}
+                            value={data.priority7}
+                          />
+
+                          <ReviewField
+                            label={STANDARD.PRIORITY8.CONTENT}
+                            description={STANDARD.PRIORITY8.DESC}
+                            value={data.priority8}
                           />
                         </div>
                       </div>

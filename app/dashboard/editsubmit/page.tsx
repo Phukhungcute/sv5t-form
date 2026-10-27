@@ -44,18 +44,21 @@ type SubmissionData = {
   ethics5: string;
   ethics6: string;
   ethics7: string;
+  ethics8: string;
 
   gpa: string;
   study2: string;
   study3: string;
   study4: string;
   study5: string;
-  study6: string;
 
   physical1: string;
   physical2: string;
   physical3: string;
   physical4: string;
+  physical5: string;
+  physical6: string;
+  physical7: string;
 
   volunteer1: string;
   volunteer2: string;
@@ -69,6 +72,7 @@ type SubmissionData = {
   skill5: string;
   skill6: string;
   skill7: string;
+  skill8: string;
   integration8: string;
   integration9: string;
 
@@ -78,6 +82,8 @@ type SubmissionData = {
   priority4: string;
   priority5: string;
   priority6: string;
+  priority7: string;
+  priority8: string;
 };
 
 type TextFieldProps = {
@@ -118,7 +124,7 @@ function TextField({
         className="mt-4 w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
       />
 
-      <p className="mt-2 text-xs text-gray-400">
+      <p className="mt-2 text-xs text-red-400">
         Để trống nếu không có thông tin.
       </p>
     </div>
@@ -1217,6 +1223,14 @@ function isStep1Complete() {
                   onChange={(value) => setAnswer("ethics7", value)}
                 />
 
+                <TextField
+                  field="ethics8"
+                  title={`${STANDARD.ETHIC8.CONTENT}`}
+                  description={`${STANDARD.ETHIC8.DESC}`}
+                  value={answers.ethics8 ?? ""}
+                  onChange={(value) => setAnswer("ethics8", value)}
+                />
+
               </div>
             </div>
 
@@ -1251,7 +1265,7 @@ function isStep1Complete() {
                 <input
                   type="number"
                   min="0"
-                  max="10"
+                  max="4"
                   step="0.01"
                   value={answers.gpa ?? ""}
                   onChange={(e) => {
@@ -1268,16 +1282,16 @@ function isStep1Complete() {
                       return;
                     }
 
-                    // Không cho vượt quá 10
+                    // Không cho vượt quá 4
                     const num = Number(value);
 
-                    if (num > 10) {
+                    if (num > 4) {
                       return;
                     }
 
                     setAnswer("gpa", value);
                   }}
-                  placeholder="Ví dụ: 8.55"
+                  placeholder="Ví dụ: 2.72"
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
@@ -1322,14 +1336,6 @@ function isStep1Complete() {
                   description={`${STANDARD.STUDY5.DESC}`}
                   value={answers.study5 ?? ""}
                   onChange={(value) => setAnswer("study5", value)}
-                />
-
-                <TextField
-                  field="study6"
-                  title={`${STANDARD.STUDY6.CONTENT}`}
-                  description={`${STANDARD.STUDY6.DESC}`}
-                  value={answers.study6 ?? ""}
-                  onChange={(value) => setAnswer("study6", value)}
                 />
 
               </div>
@@ -1381,6 +1387,66 @@ function isStep1Complete() {
                 value={answers.physical4 ?? ""}
                 onChange={(value) => setAnswer("physical4", value)}
               />
+
+              <TextField
+                field="physical5"
+                title={`${STANDARD.PHYSICAL5.CONTENT}`}
+                description={`${STANDARD.PHYSICAL5.DESC}`}
+                value={answers.physical5 ?? ""}
+                onChange={(value) => setAnswer("physical5", value)}
+              />
+
+              <div className="rounded-xl border border-gray-200 p-5">
+              <div className="mt-5">
+                <label className="mb-2 block font-medium leading-7 text-gray-700">
+                   {STANDARD.PHYSICAL6.CONTENT}
+                      <span className="ml-1 text-sm text-gray-500">
+                        {STANDARD.PHYSICAL6.DESC}
+                      </span>
+                </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.01"
+                value={answers.physical6 ?? ""}
+                onChange={(e) => {
+                const value = e.target.value;
+
+                // Cho phép xóa ô
+                if (value === "") {
+                  setAnswer("physical6", "");
+                  return;
+                }
+
+                // Chỉ cho số và tối đa 2 số sau dấu .
+                if (!/^\d*\.?\d{0,2}$/.test(value)) {
+                  return;
+                }
+
+                // Không cho vượt quá 10
+                const num = Number(value);
+
+                if (num > 10) {
+                  return;
+                }
+
+                  setAnswer("physical6", value);
+                }}
+                  placeholder="Ví dụ: 7.56"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+              </div>
+            </div>
+
+              <TextField
+                field="physical7"
+                title={`${STANDARD.PHYSICAL7.CONTENT}`}
+                description={`${STANDARD.PHYSICAL7.DESC}`}
+                value={answers.physical7 ?? ""}
+                onChange={(value) => setAnswer("physical7", value)}
+              />
+
             </div>
           </section>
         )}
@@ -1550,6 +1616,15 @@ function isStep1Complete() {
                   value={answers.skill7 ?? ""}
                   onChange={(value) => setAnswer("skill7", value)}
                 />
+
+                <TextField
+                  field="skill8"
+                  title={`${STANDARD.SKILL8.CONTENT}`}
+                  description={`${STANDARD.SKILL8.DESC}`}
+                  value={answers.skill8 ?? ""}
+                  onChange={(value) => setAnswer("skill8", value)}
+                />
+
               </div>
             </div>
 
@@ -1592,21 +1667,85 @@ function isStep1Complete() {
     </h2>
 
     <div className="mt-8 space-y-5">
-      <TextField
-        field="priority1"
-        title={`${STANDARD.PRIORITY1.CONTENT}`}
-        description={`${STANDARD.PRIORITY1.DESC}`}
-        value={answers.priority1 ?? ""}
-        onChange={(value) => setAnswer("priority1", value)}
-      />
+      <div>
+        <label className="mb-2 block font-medium leading-7 text-gray-700">
+            {STANDARD.PRIORITY1.CONTENT}
+          <span className="ml-1 text-sm text-gray-500">
+            {STANDARD.PRIORITY1.DESC}
+          </span>
+        </label>
 
-      <TextField
-        field="priority2"
-        title={`${STANDARD.PRIORITY2.CONTENT}`}
-        description={`${STANDARD.PRIORITY2.DESC}`}
-        value={answers.priority2 ?? ""}
-        onChange={(value) => setAnswer("priority2", value)}
-      />
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          value={answers.priority1 ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+
+            if (value === "") {
+              setAnswer("priority1", "");
+              return;
+            }
+
+            // Chỉ cho phép số nguyên, không cho dấu . hoặc -
+            if (!/^\d+$/.test(value)) {
+              return;
+            }
+
+            const num = Number(value);
+
+            if (num >= 0 && num <= 100) {
+              setAnswer("priority1", value);
+            }
+          }}
+          placeholder="Nhập điểm rèn luyện"
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        />
+      </div>
+
+      <div className="mt-5">
+        <label className="mb-2 block font-medium leading-7 text-gray-700">
+            {STANDARD.PRIORITY2.CONTENT}
+          <span className="ml-1 text-sm text-gray-500">
+            {STANDARD.PRIORITY2.DESC}
+          </span>
+        </label>
+
+        <input
+          type="number"
+          min="0"
+          max="4"
+          step="0.01"
+          value={answers.priority2 ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+
+            // Cho phép xóa ô
+            if (value === "") {
+              setAnswer("priority2", "");
+              return;
+            }
+
+            // Chỉ cho số và tối đa 2 số sau dấu .
+            if (!/^\d*\.?\d{0,2}$/.test(value)) {
+              return;
+            }
+
+            // Không cho vượt quá 4
+            const num = Number(value);
+
+            if (num > 4) {
+              return;
+            }
+
+            setAnswer("priority2", value);
+          }}
+          placeholder="Ví dụ: 2.72"
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        />
+      </div>
 
       <TextField
         field="priority3"
@@ -1616,13 +1755,49 @@ function isStep1Complete() {
         onChange={(value) => setAnswer("priority3", value)}
       />
 
-      <TextField
-        field="priority4"
-        title={`${STANDARD.PRIORITY4.CONTENT}`}
-        description={`${STANDARD.PRIORITY4.DESC}`}
-        value={answers.priority4 ?? ""}
-        onChange={(value) => setAnswer("priority4", value)}
-      />
+      <div className="rounded-xl border border-gray-200 p-5">
+        <div className="mt-5">
+            <label className="mb-2 block font-medium leading-7 text-gray-700">
+                {STANDARD.PRIORITY4.CONTENT}
+              <span className="ml-1 text-sm text-gray-500">
+                {STANDARD.PRIORITY4.DESC}
+              </span>
+            </label>
+
+            <input
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              value={answers.priority4 ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+
+                // Cho phép xóa ô
+                if (value === "") {
+                  setAnswer("priority4", "");
+                  return;
+                }
+
+                // Chỉ cho số và tối đa 2 số sau dấu .
+                if (!/^\d*\.?\d{0,2}$/.test(value)) {
+                  return;
+                }
+
+                // Không cho vượt quá 10
+                const num = Number(value);
+
+                if (num > 10) {
+                  return;
+                }
+
+                setAnswer("priority4", value);
+              }}
+              placeholder="Ví dụ: 9.20"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+        </div>
+      </div>
 
       <TextField
         field="priority5"

@@ -283,9 +283,10 @@ export default function Home() {
 
   return (
     <>
+    <DisableBrowserZoom />
     {/*
       <>
-      <DisableBrowserZoom />
+      
         <div className="hidden md:block">
           {/* Giao diện desktop hiện tại *\}
           <FloatingBubbles left="left-[400px]"/>
@@ -306,6 +307,13 @@ export default function Home() {
 
       <div className="hidden md:block">
         <main className="flex min-h-screen items-center px-40 bg-gray-100">
+            <div className="flex flex-1 items-center">
+            <img
+              src="/images/Logo.png"
+              alt="Thông báo Sinh viên 5 tốt"
+              className="h-auto max-h-[80vh] w-full max-w-3xl object-contain"
+            />
+            </div>
           <div className="flex min-h-screen items-center justify-center gap-10 bg-gray-100 px-10 py-8">
             <div className="w-full max-w-md shrink-0 rounded-2xl bg-white p-8 shadow-lg">
 
