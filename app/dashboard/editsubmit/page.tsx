@@ -565,11 +565,11 @@ function isStep1Complete() {
     major.trim() !== "" &&
     className.trim() !== "" &&
     faculty.trim() !== "" &&
-    phone.trim() !== "" &&
+    // phone.trim() !== "" &&
     studentYear !== "" &&
     position.trim() !== "" &&
     unionDate !== "" &&
-    email.trim() !== "" &&
+    // email.trim() !== "" &&
     address.trim() !== ""
   );
 }
@@ -868,6 +868,7 @@ function isStep1Complete() {
                   />
               </div>
 
+              {/*
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
                   Số điện thoại <span className="text-red-500">*</span>
@@ -882,6 +883,7 @@ function isStep1Complete() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
+              */}
 
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
@@ -1044,7 +1046,7 @@ function isStep1Complete() {
             {/* Liên hệ */}
 
             <div className="mt-8 grid gap-5 border-t border-gray-200 pt-8">
-
+              {/*
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
                   Email <span className="text-red-500">*</span>
@@ -1059,6 +1061,7 @@ function isStep1Complete() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
+              */}
 
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
