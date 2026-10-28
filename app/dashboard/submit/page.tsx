@@ -955,8 +955,8 @@ function isStep1Complete() {
               )}
             </div>
 
-  </div>
-</div>
+        </div>
+      </div>
             </div>
 
             {/* Liên hệ */}

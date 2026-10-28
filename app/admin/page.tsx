@@ -141,6 +141,7 @@ type AccountStudent = {
   birth_date: string | null;
   gender: string | null;
   class_name: string | null;
+  must_change_password: boolean | null;
 };
 
 export default function AdminPage() {
@@ -2470,7 +2471,7 @@ async function saveMaintenanceChanges() {
                               </span>
                             </div>
 
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
                               <span>
                                 MSSV:{" "}
                                 <span className="font-medium text-gray-700">
@@ -2484,6 +2485,22 @@ async function saveMaintenanceChanges() {
                                   ? formatDateDisplay(student.birth_date)
                                   : "Chưa có"}
                               </span>
+                            </div>
+
+                            <div className="mt-2">
+                              {student.must_change_password === true ? (
+                                <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">
+                                  Chưa đổi mật khẩu
+                                </span>
+                              ) : student.must_change_password === false ? (
+                                <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-200">
+                                  Đã đổi mật khẩu
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                                  Chưa xác định trạng thái
+                                </span>
+                              )}
                             </div>
                           </div>
                         </label>
@@ -2952,7 +2969,7 @@ async function saveMaintenanceChanges() {
           </div>
 
           {/* ================================================
-              6.3. CẤP / THU HỒI THẺ VÀNG
+              7.3. CẤP / THU HỒI THẺ VÀNG
           ================================================ */}
 
           <div className="mt-5 overflow-hidden rounded-xl border-2 border-amber-300">
@@ -2972,7 +2989,7 @@ async function saveMaintenanceChanges() {
             >
               <div>
                 <h3 className="text-lg font-semibold text-amber-800">
-                  6.3. Cấp / thu hồi thẻ vàng
+                  7.3. Cấp / thu hồi thẻ vàng
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -3147,6 +3164,49 @@ async function saveMaintenanceChanges() {
                 )}
               </div>
             )}
+          </div>
+
+          <div
+            className={`mt-5 rounded-xl border p-5 ${
+              maintenanceMode
+                ? "border-green-200 bg-green-50"
+                : "border-amber-200 bg-amber-50"
+            }`}
+          >
+            <div className="mb-4 text-center">
+              <p
+                className={`text-sm font-semibold ${
+                  maintenanceMode ? "text-green-800" : "text-amber-800"
+                }`}
+              >
+                {maintenanceMode
+                  ? "CHẾ ĐỘ BẢO TRÌ ĐANG BẬT"
+                  : "CHẾ ĐỘ BẢO TRÌ ĐANG TẮT"}
+              </p>
+
+              <p className="mt-1 text-sm text-gray-600">
+                {maintenanceMode
+                  ? "Hệ thống đang ở chế độ bảo trì."
+                  : "Bật chế độ này khi cần tạm ngưng quyền truy cập thông thường."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleMaintenance}
+              disabled={maintenanceToggleLoading}
+              className={`w-full cursor-pointer rounded-xl px-5 py-5 text-lg font-extrabold tracking-wide text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 ${
+                maintenanceMode
+                  ? "bg-green-700 hover:bg-green-800"
+                  : "bg-amber-500 hover:bg-amber-600"
+              }`}
+            >
+              {maintenanceToggleLoading
+                ? "ĐANG CẬP NHẬT..."
+                : maintenanceMode
+                  ? "GỠ BẢO TRÌ"
+                  : "BẮT ĐẦU BẢO TRÌ"}
+            </button>
           </div>
 
         </section>

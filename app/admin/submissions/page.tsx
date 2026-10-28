@@ -177,9 +177,14 @@ function ReviewField({
   description?: string;
   value: unknown;
 }) {
+  const isEmpty =
+    value === null ||
+    value === undefined ||
+    value === "";
+
   let displayValue: string;
 
-  if (value === null || value === undefined || value === "") {
+  if (isEmpty) {
     displayValue = "Không có";
   } else if (typeof value === "object") {
     displayValue = JSON.stringify(value, null, 2);
@@ -199,7 +204,11 @@ function ReviewField({
         )}
       </p>
 
-      <p className="whitespace-pre-wrap break-words text-gray-800">
+      <p
+        className={`whitespace-pre-wrap break-words ${
+          isEmpty ? "text-red-500" : "text-gray-800"
+        }`}
+      >
         {displayValue}
       </p>
     </div>
