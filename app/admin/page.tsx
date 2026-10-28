@@ -542,6 +542,21 @@ async function toggleSchedule(
     // THẺ VÀNG - MAINTENANCE ACCESS
     // ==========================================
 
+    type MaintenanceStudent = {
+      mssv: string;
+      full_name: string | null;
+      birth_date: string | null;
+      gender: string | null;
+      class_name: string | null;
+      maintenance_access: boolean;
+    };
+
+    const [maintenanceSearch, setMaintenanceSearch] =
+      useState("");
+
+    const [originalMaintenanceAccess, setOriginalMaintenanceAccess] =
+      useState<Record<string, boolean>>({});
+    
     const [maintenanceMssv, setMaintenanceMssv] =
       useState("");
 
@@ -554,10 +569,81 @@ async function toggleSchedule(
     const [maintenanceListOpen, setMaintenanceListOpen] =
       useState(false);
 
+    const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+
     // Mode bảo trì
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceToggleLoading, setMaintenanceToggleLoading] =
       useState(false);
+    
+    // Tải danh sách thẻ vàng
+    async function loadMaintenanceStudents() {
+      setMaintenanceLoading(true);
+
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.access_token) {
+          throw new Error("Phiên đăng nhập đã hết hạn.");
+        }
+
+        const response = await fetch("/api/admin/maintenance-access", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ?? "Không thể tải danh sách thẻ vàng."
+          );
+        }
+
+        const students: MaintenanceStudent[] = result.students ?? [];
+
+        setMaintenanceStudents(students);
+
+        setOriginalMaintenanceAccess(
+          Object.fromEntries(
+            students.map((student) => [
+              student.mssv,
+              student.maintenance_access,
+            ])
+          )
+        );
+      } catch (error) {
+        console.error("LOAD MAINTENANCE STUDENTS ERROR:", error);
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách thẻ vàng."
+        );
+      } finally {
+        setMaintenanceLoading(false);
+      }
+    }
+
+    // Toggle trạng thái bảo trì cho SV
+    function toggleMaintenanceAccess(mssv: string) {
+      setMaintenanceStudents((previous) =>
+        previous.map((student) =>
+          student.mssv === mssv
+            ? {
+                ...student,
+                maintenance_access: !student.maintenance_access,
+              }
+            : student
+        )
+      );
+    }
 
     /* =====================================================
       QUYỀN ADMIN CỰC HẠN
@@ -570,7 +656,8 @@ async function toggleSchedule(
     | "create_all"
     | "delete_cohort"
     | "grant_maintenance"
-    | "revoke_maintenance",
+    | "revoke_maintenance"
+    | "update_maintenance_bulk",
   targetMssv?: string
 ) {
   const maintenanceTargetMssv =
@@ -993,6 +1080,83 @@ async function toggleSchedule(
     );
   } finally {
     setMaintenanceLoading(false);
+  }
+}
+
+async function saveMaintenanceChanges() {
+  if (!adminPassword.trim()) {
+    alert("Vui lòng nhập lại mật khẩu quản trị viên.");
+    return;
+  }
+
+  const changes = maintenanceStudents
+    .filter(
+      (student) =>
+        originalMaintenanceAccess[student.mssv] !==
+        student.maintenance_access
+    )
+    .map((student) => ({
+      mssv: student.mssv,
+      maintenance_access: student.maintenance_access,
+    }));
+
+  if (changes.length === 0) {
+    alert("Không có thay đổi nào cần lưu.");
+    return;
+  }
+
+  setAdminActionLoading(true);
+
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      alert("Phiên đăng nhập đã hết hạn.");
+      router.push("/");
+      return;
+    }
+
+    const response = await fetch(
+      "/api/admin/account-actions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: "update_maintenance_bulk",
+          changes,
+          adminPassword,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(
+        result.error ??
+          "Không thể cập nhật quyền thẻ vàng."
+      );
+      return;
+    }
+
+    alert(result.message);
+
+    // Tải lại trạng thái thực tế từ cơ sở dữ liệu
+    await loadMaintenanceAccess();
+  } catch (error) {
+    console.error(
+      "SAVE MAINTENANCE ACCESS ERROR:",
+      error
+    );
+
+    alert("Không thể kết nối tới máy chủ.");
+  } finally {
+    setAdminActionLoading(false);
   }
 }
 
@@ -2791,234 +2955,198 @@ async function toggleSchedule(
               6.3. CẤP / THU HỒI THẺ VÀNG
           ================================================ */}
 
-          <div className="mt-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+          <div className="mt-5 overflow-hidden rounded-xl border-2 border-amber-300">
+            <button
+              type="button"
+              onClick={() => {
+                const nextOpen = !maintenanceListOpen;
 
-            <h3 className="text-lg font-semibold text-amber-800">
-              6.3. CẤP / THU HỒI THẺ VÀNG VÀ KÍCH HOẠT BẢO TRÌ
-            </h3>
+                setMaintenanceListOpen(nextOpen);
 
-            <p className="mt-1 text-sm text-amber-700">
-              Cấp quyền truy cập trong thời gian bảo trì cho các
-              sinh viên được lựa chọn. Thao tác yêu cầu xác thực
-              lại mật khẩu quản trị viên.
-            </p>
-
-            {/* CẤP THẺ VÀNG */}
-
-            <div className="mt-4">
-              <label
-                htmlFor="maintenance-mssv"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Mã số sinh viên
-              </label>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-
-                <input
-                  id="maintenance-mssv"
-                  type="text"
-                  value={maintenanceMssv}
-                  onChange={(e) =>
-                    setMaintenanceMssv(e.target.value)
-                  }
-                  placeholder="Nhập MSSV cần cấp thẻ vàng"
-                  spellCheck={false}
-                  disabled={adminActionLoading}
-                  className="min-w-0 flex-1 rounded-lg border border-amber-300 bg-white px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 disabled:bg-gray-100"
-                />
-
-                <div className="menu-btn-wrapper-inline">
-                  <button
-                    type="button"
-                    disabled={
-                      adminActionLoading ||
-                      !maintenanceMssv.trim()
-                    }
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          `Bạn có chắc muốn cấp thẻ vàng cho sinh viên ${maintenanceMssv.trim()}?`
-                        )
-                      ) {
-                        return;
-                      }
-
-                      runAdminAction("grant_maintenance");
-                    }}
-                    className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {adminActionLoading
-                      ? "Đang xử lý..."
-                      : "Cấp thẻ vàng"}
-                  </button>
-                </div>
-
-              </div>
-            </div>
-
-            {/* DANH SÁCH THẺ VÀNG CÓ THỂ THU GỌN */}
-
-            <div className="mt-6 overflow-hidden rounded-xl border border-amber-200 bg-white">
-
-              <button
-                type="button"
-                onClick={() =>
-                  setMaintenanceListOpen((prev) => !prev)
+                if (nextOpen) {
+                  void loadMaintenanceStudents();
                 }
-                aria-expanded={maintenanceListOpen}
-                className="flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left transition hover:bg-gray-50"
-              >
-
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Danh sách sinh viên có thẻ vàng
-                  </h4>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    {maintenanceLoading
-                      ? "Đang tải danh sách..."
-                      : `${maintenanceStudents.length} sinh viên được cấp quyền`}
-                  </p>
-                </div>
-
-                <span
-                  className={`inline-flex transition-transform duration-200 ${
-                    maintenanceListOpen ? "rotate-180" : ""
-                  }`}
-                >
-                  <ChevronDown
-                    size={18}
-                    className={`transition-transform duration-200 ${
-                      maintenanceListOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </span>
-
-              </button>
-              
-              {maintenanceListOpen && (
-                <div className="border-t border-amber-100 p-4">
-
-                  {maintenanceLoading ? (
-                    <p className="py-4 text-center text-sm text-gray-500">
-                      Đang tải danh sách thẻ vàng...
-                    </p>
-                  ) : maintenanceStudents.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
-                      Chưa có sinh viên nào được cấp thẻ vàng.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-
-                      {maintenanceStudents.map((student) => (
-                        <div
-                          key={student.mssv}
-                          className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between"
-                        >
-
-                          <div className="min-w-0">
-                            <p className="font-semibold text-gray-900">
-                              {student.full_name}
-                            </p>
-
-                            <p className="mt-1 text-sm text-gray-500">
-                              MSSV: {student.mssv}
-                            </p>
-
-                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                              <span aria-hidden="true">★</span>
-                              Thẻ vàng
-                            </span>
-                          </div>
-
-                          <div className="menu-btn-wrapper-inline">
-                            <button
-                              type="button"
-                              disabled={adminActionLoading}
-                              onClick={() => {
-                                if (
-                                  !window.confirm(
-                                    `Bạn có chắc muốn thu hồi thẻ vàng của ${student.full_name} (${student.mssv})?`
-                                  )
-                                ) {
-                                  return;
-                                }
-
-                                runAdminAction(
-                                  "revoke_maintenance",
-                                  student.mssv
-                                );
-                              }}
-                              className="menu-btn menu-btn-red disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {adminActionLoading
-                                ? "Đang xử lý..."
-                                : "Thu hồi thẻ"}
-                            </button>
-                          </div>
-
-                        </div>
-                      ))}
-
-                    </div>
-                  )}
-
-                </div>
-              )}
-
-            </div>
-
-            <p className="mt-3 text-xs leading-5 text-amber-800">
-              Lưu ý: Admin mặc định được miễn chế độ bảo trì theo
-              role. Danh sách trên chỉ hiển thị sinh viên có
-              maintenance_access = TRUE.
-            </p>
-            
-            <div
-              className={`mt-5 rounded-xl border p-5 ${
-                maintenanceMode
-                  ? "border-green-200 bg-green-50"
-                  : "border-amber-200 bg-amber-50"
-              }`}
+              }}
+              aria-expanded={maintenanceListOpen}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 bg-amber-50 px-5 py-4 text-left transition hover:bg-amber-100"
             >
-              <div className="mb-4 text-center">
-                <p
-                  className={`text-sm font-semibold ${
-                    maintenanceMode ? "text-green-800" : "text-amber-800"
-                  }`}
-                >
-                  {maintenanceMode
-                    ? "CHẾ ĐỘ BẢO TRÌ ĐANG BẬT"
-                    : "CHẾ ĐỘ BẢO TRÌ ĐANG TẮT"}
-                </p>
+              <div>
+                <h3 className="text-lg font-semibold text-amber-800">
+                  6.3. Cấp / thu hồi thẻ vàng
+                </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  {maintenanceMode
-                    ? "Hệ thống đang ở chế độ bảo trì."
-                    : "Bật chế độ này khi cần tạm ngưng quyền truy cập thông thường."}
+                  {maintenanceLoading
+                    ? "Đang tải danh sách..."
+                    : `${maintenanceStudents.filter((student) => student.maintenance_access).length} sinh viên đang có thẻ vàng`}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={toggleMaintenance}
-                disabled={maintenanceToggleLoading}
-                className={`w-full cursor-pointer rounded-xl px-5 py-5 text-lg font-extrabold tracking-wide text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 ${
-                  maintenanceMode
-                    ? "bg-green-700 hover:bg-green-800"
-                    : "bg-amber-500 hover:bg-amber-600"
+              <ChevronDown
+                size={20}
+                className={`shrink-0 transition-transform duration-200 ${
+                  maintenanceListOpen ? "rotate-180" : ""
                 }`}
-              >
-                {maintenanceToggleLoading
-                  ? "ĐANG CẬP NHẬT..."
-                  : maintenanceMode
-                  ? "GỠ BẢO TRÌ"
-                  : "BẮT ĐẦU BẢO TRÌ"}
-              </button>
-            </div>
+              />
+            </button>
 
+            {maintenanceListOpen && (
+              <div className="space-y-4 border-t border-amber-200 p-5">
+                <p className="text-sm leading-6 text-gray-600">
+                  Bật hoặc tắt thẻ vàng cho từng sinh viên. Các thay đổi chỉ được
+                  lưu vào hệ thống sau khi bạn nhấn nút Lưu thay đổi.
+                </p>
 
+                <input
+                  type="search"
+                  value={maintenanceSearch}
+                  onChange={(event) => setMaintenanceSearch(event.target.value)}
+                  placeholder="Tìm theo MSSV, họ tên hoặc lớp..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                />
+
+                {maintenanceLoading ? (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    Đang tải danh sách sinh viên...
+                  </p>
+                ) : (
+                  <>
+                    {(() => {
+                      const normalizedSearch = maintenanceSearch
+                        .trim()
+                        .toLocaleLowerCase("vi");
+
+                      const filteredStudents = maintenanceStudents.filter(
+                        (student) =>
+                          student.mssv.toLocaleLowerCase("vi").includes(normalizedSearch) ||
+                          (student.full_name ?? "")
+                            .toLocaleLowerCase("vi")
+                            .includes(normalizedSearch) ||
+                          (student.class_name ?? "")
+                            .toLocaleLowerCase("vi")
+                            .includes(normalizedSearch)
+                      );
+
+                      if (filteredStudents.length === 0) {
+                        return (
+                          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                            {maintenanceStudents.length === 0
+                              ? "Chưa có dữ liệu sinh viên."
+                              : "Không tìm thấy sinh viên phù hợp."}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="max-h-[480px] space-y-2 overflow-y-auto pr-1">
+                          {filteredStudents.map((student) => (
+                            <div
+                              key={student.mssv}
+                              className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 transition hover:border-amber-300 hover:bg-amber-50/50 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <span className="font-semibold text-gray-900">
+                                    {student.full_name || "Chưa có họ tên"}
+                                  </span>
+
+                                  <span className="text-sm font-medium text-amber-700">
+                                    {student.mssv}
+                                  </span>
+                                </div>
+
+                                <div className="mt-1 grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-gray-500 sm:grid-cols-3">
+                                  <span>
+                                    Ngày sinh:{" "}
+                                    {student.birth_date
+                                      ? formatDateDisplay(student.birth_date)
+                                      : "Chưa có"}
+                                  </span>
+
+                                  <span>
+                                    Giới tính: {student.gender || "Chưa có"}
+                                  </span>
+
+                                  <span>
+                                    Lớp: {student.class_name || "Chưa có"}
+                                  </span>
+                                </div>
+
+                                <span
+                                  className={`mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                    student.maintenance_access
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  {student.maintenance_access
+                                    ? "★ Đang có thẻ vàng"
+                                    : "Chưa có thẻ vàng"}
+                                </span>
+                              </div>
+
+                              <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                                <span className="text-sm font-medium text-gray-600">
+                                  {student.maintenance_access ? "Đang bật" : "Đang tắt"}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={student.maintenance_access}
+                                  aria-label={`Thẻ vàng của ${student.full_name || student.mssv}`}
+                                  onClick={() =>
+                                    toggleMaintenanceAccess(student.mssv)
+                                  }
+                                  disabled={maintenanceSaving}
+                                  className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    student.maintenance_access
+                                      ? "bg-amber-500"
+                                      : "bg-gray-300"
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                      student.maintenance_access
+                                        ? "translate-x-6"
+                                        : "translate-x-1"
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <button
+                        type="button"
+                        onClick={() => void loadMaintenanceStudents()}
+                        disabled={maintenanceLoading || maintenanceSaving}
+                        className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Làm mới danh sách
+                      </button>
+
+                      <div className="menu-btn-wrapper-inline">
+                        <button
+                          type="button"
+                          onClick={() => void saveMaintenanceChanges()}
+                          disabled={maintenanceSaving || maintenanceLoading}
+                          className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {maintenanceSaving
+                            ? "Đang lưu thay đổi..."
+                            : "Lưu thay đổi"}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
         </section>
