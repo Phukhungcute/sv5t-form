@@ -675,6 +675,11 @@ async function cleanupOldSubmissions(
               value={display(submission.ethics7)}
             />
 
+            <ReviewItem
+              label={`${STANDARD.ETHIC8.CONTENT} ${STANDARD.ETHIC8.DESC}`}
+              value={display(submission.ethics8)}
+            />
+
           </div>
         </section>
 
@@ -720,11 +725,6 @@ async function cleanupOldSubmissions(
               label={`${STANDARD.STUDY5.CONTENT} ${STANDARD.STUDY5.DESC}`}
               value={display(submission.study5)}
             />
-            
-            <ReviewItem
-              label={`${STANDARD.STUDY6.CONTENT} ${STANDARD.STUDY6.DESC}`}
-              value={display(submission.study6)}
-            />
           
           </div>
         </section>
@@ -757,6 +757,21 @@ async function cleanupOldSubmissions(
             <ReviewItem
               label={`${STANDARD.PHYSICAL4.CONTENT} ${STANDARD.PHYSICAL4.DESC}`}
               value={display(submission.physical4)}
+            />
+
+            <ReviewItem
+              label={`${STANDARD.PHYSICAL5.CONTENT} ${STANDARD.PHYSICAL5.DESC}`}
+              value={display(submission.physical5)}
+            />
+
+            <ReviewItem
+              label={`${STANDARD.PHYSICAL6.CONTENT} ${STANDARD.PHYSICAL6.DESC}`}
+              value={display(submission.physical6)}
+            />
+
+            <ReviewItem
+              label={`${STANDARD.PHYSICAL7.CONTENT} ${STANDARD.PHYSICAL7.DESC}`}
+              value={display(submission.physical7)}
             />
                   
           </div>
@@ -839,6 +854,11 @@ async function cleanupOldSubmissions(
               label={`${STANDARD.SKILL7.CONTENT} ${STANDARD.SKILL7.DESC}`}
               value={display(submission.skill7)}
             />
+
+            <ReviewItem
+              label={`${STANDARD.SKILL8.CONTENT} ${STANDARD.SKILL8.DESC}`}
+              value={display(submission.skill8)}
+            />
             
             <ReviewItem
               label={`${STANDARD.INTEGRATION8.CONTENT} ${STANDARD.INTEGRATION8.DESC}`}
@@ -891,6 +911,16 @@ async function cleanupOldSubmissions(
             <ReviewItem
               label={`${STANDARD.PRIORITY6.CONTENT} ${STANDARD.PRIORITY6.DESC}`}
               value={display(submission.priority6)}
+            />
+
+            <ReviewItem
+              label={`${STANDARD.PRIORITY7.CONTENT} ${STANDARD.PRIORITY7.DESC}`}
+              value={display(submission.priority7)}
+            />
+
+            <ReviewItem
+              label={`${STANDARD.PRIORITY8.CONTENT} ${STANDARD.PRIORITY8.DESC}`}
+              value={display(submission.priority8)}
             />
             
           </div>
