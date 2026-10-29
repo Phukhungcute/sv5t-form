@@ -859,7 +859,7 @@ const vietnamTime = currentTime
                       style={{ height: `${infoHeight}px` }}
                     >
                       <img
-                        src="/images/Announcement1.jpg"
+                        src="/images/Announcement1.png"
                         alt="Banner SV5T"
                         className="h-full w-auto object-contain"
                       />
