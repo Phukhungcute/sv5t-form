@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
+import LoginFloatingBubbles from "@/components/LoginFloatingBubbles";
 
 type LoginMode = "student" | "admin";
 
@@ -239,7 +240,7 @@ export default function Home() {
           return;
         }
 
-        router.replace("/admin");
+        window.location.assign("/admin");
       } else {
         /*
           Đang ở tab Sinh viên nhưng account
@@ -261,11 +262,11 @@ export default function Home() {
         // ========================================
 
         if (profile.must_change_password) {
-          router.replace("/change-password");
+          window.location.assign("/change-password");
           return;
         }
 
-        router.replace("/dashboard");
+        window.location.assign("/dashboard");
       }
     } catch (err) {
       console.error(
@@ -537,20 +538,20 @@ export default function Home() {
 
           </div>
 
-          <div className="flex flex-1 items-center">
-          <img
-            src="/images/Login.png"
-            alt="Thông báo Sinh viên 5 tốt"
-            className="h-auto max-h-[80vh] w-full max-w-3xl object-contain"
-          />
-          </div>
-          
-          
-        
+            <div className="flex flex-1 items-center justify-center">
+              <div className="w-full max-w-3xl">
+                <img
+                  src="/images/Login.png"
+                  alt="Thông báo Sinh viên 5 tốt"
+                  className="block h-auto max-h-[80vh] w-full object-contain"
+                />
+              </div>
+            </div>
           </div>
         </main>
-      </div>
 
+        <LoginFloatingBubbles />
+      </div>
 
       {/* =====================================================
           GIAO DIỆN MOBILE
@@ -785,7 +786,7 @@ export default function Home() {
           </div>
         </main>
       </div>
-    </>
+     </>
     </>
   );
 }

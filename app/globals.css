@@ -114,6 +114,34 @@ body {
   transition: 0.15s ease-in-out;
 }
 
+/* =========================
+   BUTTON TRÒN
+   ========================= */
+
+.menu-btn-round {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px solid white;
+  border-radius: 50%;
+
+  color: white;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+  flex-shrink: 0;
+
+  transition: 0.15s ease-in-out;
+}
+
 
 /* =========================
    BLUE

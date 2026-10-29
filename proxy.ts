@@ -1,4 +1,3 @@
-
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,6 +5,11 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request,
   });
+
+  // FAQ được phép truy cập mà không cần đăng nhập
+  if (request.nextUrl.pathname === "/dashboard/qa") {
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -82,7 +86,6 @@ export async function proxy(request: NextRequest) {
       .maybeSingle();
 
     if (settingsError || !settings) {
-      // Không thể xác minh trạng thái: không cho truy cập dashboard
       const url = request.nextUrl.clone();
       url.pathname = "/";
       url.searchParams.set("reason", "maintenance_check_error");
@@ -96,7 +99,7 @@ export async function proxy(request: NextRequest) {
       return redirectResponse;
     }
 
-    // Chỉ chặn sinh viên không có thẻ vàng khi đang bảo trì
+    // Chỉ chặn sinh viên không có quyền truy cập khi đang bảo trì
     if (
       settings.maintenance_mode &&
       !profile.maintenance_access
