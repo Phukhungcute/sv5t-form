@@ -490,7 +490,117 @@ export async function POST(request: Request) {
     }
 
     // ==========================================
-    // 4.3. BẢO TRÌ
+// 4.3. CẬP NHẬT HÀNG LOẠT THẺ VÀNG
+// ==========================================
+
+if (action === "update_maintenance_bulk") {
+  const rawChanges: unknown = body.changes;
+
+  if (!Array.isArray(rawChanges) || rawChanges.length === 0) {
+    return NextResponse.json(
+      { error: "Không có thay đổi nào cần lưu." },
+      { status: 400 }
+    );
+  }
+
+  const changes = rawChanges as unknown[];
+
+  // Kiểm tra toàn bộ dữ liệu trước khi cập nhật
+  for (const item of changes) {
+    if (
+      typeof item !== "object" ||
+      item === null ||
+      !("mssv" in item) ||
+      !("maintenance_access" in item)
+    ) {
+      return NextResponse.json(
+        { error: "Dữ liệu cập nhật thẻ vàng không hợp lệ." },
+        { status: 400 }
+      );
+    }
+
+    const change = item as {
+      mssv: unknown;
+      maintenance_access: unknown;
+    };
+
+    if (
+      typeof change.mssv !== "string" ||
+      !change.mssv.trim() ||
+      typeof change.maintenance_access !== "boolean"
+    ) {
+      return NextResponse.json(
+        { error: "MSSV hoặc trạng thái thẻ vàng không hợp lệ." },
+        { status: 400 }
+      );
+    }
+  }
+
+  let updated = 0;
+  const failed: string[] = [];
+
+  for (const item of changes) {
+    const change = item as {
+      mssv: string;
+      maintenance_access: boolean;
+    };
+
+    const studentMssv = change.mssv.trim();
+
+    try {
+      const { data: target, error: targetError } =
+        await supabaseAdmin
+          .from("profiles")
+          .select("id, mssv, role")
+          .eq("mssv", studentMssv)
+          .maybeSingle();
+
+      if (targetError) {
+        throw targetError;
+      }
+
+      if (!target || target.role !== "student") {
+        failed.push(studentMssv);
+        continue;
+      }
+
+      const { error: updateError } =
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            maintenance_access: change.maintenance_access,
+          })
+          .eq("id", target.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      updated++;
+    } catch (error) {
+      console.error(
+        `[UPDATE_MAINTENANCE_BULK] Lỗi MSSV ${studentMssv}:`,
+        error
+      );
+
+      failed.push(studentMssv);
+    }
+  }
+
+  return NextResponse.json({
+    success: failed.length === 0,
+    message:
+      `Đã cập nhật ${updated}/${changes.length} sinh viên.` +
+      (failed.length > 0
+        ? ` Không cập nhật được các MSSV: ${failed.join(", ")}.`
+        : ""),
+    updated,
+    failed,
+  });
+}
+
+    // ==========================================
+    // 4.4. BẢO TRÌ
     // ==========================================    
     
       if (action === "set_maintenance") {

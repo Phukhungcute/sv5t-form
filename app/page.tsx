@@ -307,7 +307,7 @@ export default function Home() {
       ===================================================== */}
 
       <div className="hidden md:block">
-        <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-100 px-4 py-8">
+        <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-100 px-4 py-8 border-2">
           <div className="flex items-center justify-center gap-10 bg-gray-100">
             <div className="w-full max-w-md shrink-0 rounded-2xl bg-white p-8 shadow-lg">
 

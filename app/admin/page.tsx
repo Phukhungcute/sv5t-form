@@ -3210,8 +3210,20 @@ async function saveMaintenanceChanges() {
           </div>
 
         </section>
-
+          
+          {/* SECTION 8 - KHO LƯU TRỮ HỒ SƠ */}
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">8. Kho lưu trữ hồ sơ</h2>
+              <p className="mt-1 text-sm text-gray-600">Tìm kiếm, chọn sinh viên và xuất hồ sơ JSON cùng PDF minh chứng để lưu trữ dài hạn.</p>
+            </div>
+            <button type="button" onClick={() => router.push("/admin/archive")} className="cursor-pointer rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800">Mở kho lưu trữ →</button>
+          </div>
+        </section>
       </div>
+
+      
 
       {/* POPUP CHỈNH SỬA Q&A */}
       {editingQA && (
