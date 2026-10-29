@@ -357,7 +357,7 @@ const vietnamTime = currentTime
   return (
     <>
     <DisableBrowserZoom />
-    <main className="min-h-screen bg-white p-6">
+    <main className="min-h-screen bg-white p-6 px-40">
       
       {showPasswordSuccess && (
           <div
