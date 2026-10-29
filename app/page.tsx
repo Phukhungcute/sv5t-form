@@ -307,7 +307,7 @@ export default function Home() {
 
       <div className="hidden md:block">
         <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-100 px-4 py-8">
-          <div className="flex items-center justify-center gap-10 bg-gray-100 border-2">
+          <div className="flex items-center justify-center gap-10 bg-gray-100">
             <div className="w-full max-w-md shrink-0 rounded-2xl bg-white p-8 shadow-lg">
 
             {/* TIÊU ĐỀ */}
@@ -537,13 +537,15 @@ export default function Home() {
 
           </div>
 
-          <div className="flex flex-1 items-center border-2">
+          <div className="flex flex-1 items-center">
           <img
             src="/images/Login.png"
             alt="Thông báo Sinh viên 5 tốt"
             className="h-auto max-h-[80vh] w-full max-w-3xl object-contain"
           />
           </div>
+          
+          
         
           </div>
         </main>
