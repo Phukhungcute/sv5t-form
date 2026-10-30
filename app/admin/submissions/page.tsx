@@ -737,55 +737,37 @@ export default function SubmissionsPage() {
 
   async function openAwardPhoto(filePath: string) {
   try {
-    // 1. Lấy phiên đăng nhập
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    // 1. Chuẩn hóa đường dẫn ảnh
+    let path = filePath.trim();
 
-    if (sessionError || !session) {
-      throw new Error(
-        "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-      );
+    if (path.startsWith("/")) {
+      path = path.slice(1);
     }
 
-    // 2. Gọi API tạo signed URL
-    const response = await fetch("/api/admin/award-photos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        filePath: filePath.trim(),
-      }),
-    });
-
-    const result = await response.json();
-
-    console.log("AWARD PHOTO URL STATUS:", response.status);
-
-    if (!response.ok) {
-      throw new Error(
-        result.error || "Không thể tạo đường dẫn xem ảnh."
-      );
+    if (path.startsWith("student-awards/")) {
+      path = path.slice("student-awards/".length);
     }
 
-    if (!result.signedUrl) {
-      throw new Error("API không trả về signed URL.");
+    console.log("AWARD PHOTO PATH:", path);
+
+    // 2. Tạo signed URL trực tiếp từ Supabase Storage
+    const { data, error } = await supabase.storage
+      .from("student-awards")
+      .createSignedUrl(path, 60 * 60);
+
+    if (error) {
+      console.error("AWARD PHOTO URL ERROR:", error);
+      alert(`Không thể tạo đường dẫn ảnh: ${error.message}`);
+      return;
     }
 
-    // 3. Mở ảnh trực tiếp trong tab mới
-    const newTab = window.open(
-      result.signedUrl,
-      "_blank"
-    );
-
-    if (!newTab) {
-      alert(
-        "Trình duyệt đã chặn cửa sổ mới. Hãy cho phép pop-up rồi thử lại."
-      );
+    if (!data?.signedUrl) {
+      alert("Không tạo được đường dẫn ảnh.");
+      return;
     }
+
+    // 3. Mở ảnh trong tab mới
+    window.open(data.signedUrl, "_blank");
   } catch (error) {
     console.error("OPEN AWARD PHOTO ERROR:", error);
 
@@ -1637,7 +1619,7 @@ function exportToExcel() {
         </section>
 
         {/* ============================================
-            LIST — EXPAND / COLLAPSE
+            LIST — HỒ SƠ SINH VIÊN
         ============================================ */}
 
         <section className="mt-6 overflow-hidden rounded-xl border-2 border-blue-300 bg-white shadow-sm">
@@ -1671,347 +1653,367 @@ function exportToExcel() {
           {/* BODY */}
           {submissionsListOpen && (
             <div className="border-t border-blue-200">
-              {/* HEADER CÁC CỘT */}
-              <div className="grid grid-cols-[180px_150px_180px_110px_130px_150px_150px_150px] items-center border-b bg-gray-50 px-6 py-4 text-sm font-semibold text-gray-700">
-                <div>MSSV</div>
-                <div>Họ và tên</div>
-                <div className="text-center">Trạng thái</div>
+              {/* KHUNG CUỘN */}
+              <div className="max-h-[600px] overflow-auto">
+                <table className="w-full min-w-[1200px] border-collapse text-sm">
+                  {/* HEADER CỘT */}
+                  <thead className="sticky top-0 z-10 bg-gray-50">
+                    <tr className="border-b border-gray-200 text-left font-semibold text-gray-700">
+                      <th className="whitespace-nowrap px-6 py-4">
+                        MSSV
+                      </th>
 
-                <div className="text-center">
-                  <div>Version</div>
-                  <div>(Hồ sơ)</div>
-                </div>
+                      <th className="whitespace-nowrap px-6 py-4">
+                        Họ và tên
+                      </th>
 
-                <div className="text-center">
-                  <div>Version</div>
-                  <div>(Minh chứng)</div>
-                </div>
+                      <th className="whitespace-nowrap px-6 py-4 text-center">
+                        Trạng thái
+                      </th>
 
-                <div className="text-center">
-                  <div>Version</div>
-                  <div>(Minh chứng - edited)</div>
-                </div>
+                      <th className="whitespace-nowrap px-4 py-4 text-center">
+                        <div>Version</div>
+                        <div>(Hồ sơ)</div>
+                      </th>
 
-                <div className="text-center">PDF</div>
+                      <th className="whitespace-nowrap px-4 py-4 text-center">
+                        <div>Version</div>
+                        <div>(Minh chứng)</div>
+                      </th>
 
-                <div className="text-center">
-                  <div>PDF</div>
-                  <div>(edited)</div>
-                </div>
-              </div>
+                      <th className="whitespace-nowrap px-4 py-4 text-center">
+                        <div>Version</div>
+                        <div>(Minh chứng - edited)</div>
+                      </th>
 
-              {/* BODY DANH SÁCH */}
-              {filteredStudents.length === 0 ? (
-                <div className="px-6 py-14 text-center text-gray-500">
-                  Không tìm thấy sinh viên.
-                </div>
-              ) : (
-                filteredStudents.map((item) => {
-                  const status = getStatusLabel(item.submission);
+                      <th className="whitespace-nowrap px-4 py-4 text-center">
+                        PDF
+                      </th>
 
-                  return (
-                    <div
-                      key={item.student.mssv}
-                      onClick={() => openStudent(item)}
-                      className="grid grid-cols-[180px_150px_180px_110px_130px_150px_150px_150px] cursor-pointer items-center border-b bg-white px-6 py-4 text-sm transition hover:bg-blue-50"
-                    >
-                      {/* MSSV */}
-                      <div className="font-medium text-gray-800">
-                        {item.student.mssv}
-                      </div>
+                      <th className="whitespace-nowrap px-4 py-4 text-center">
+                        <div>PDF</div>
+                        <div>(edited)</div>
+                      </th>
+                    </tr>
+                  </thead>
 
-                      {/* HỌ VÀ TÊN */}
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {item.student.full_name}
-                        </p>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                          {item.student.class_name}
-                        </p>
-                      </div>
-
-                      {/* TRẠNG THÁI */}
-                      <div className="text-center">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
+                  {/* BODY DANH SÁCH */}
+                  <tbody>
+                    {filteredStudents.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          className="px-6 py-14 text-center text-gray-500"
                         >
-                          {status.text}
-                        </span>
-                      </div>
+                          Không tìm thấy sinh viên.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStudents.map((item) => {
+                        const status = getStatusLabel(item.submission);
 
-                      {/* VERSION HỒ SƠ */}
-                      <div className="text-center text-gray-600">
-                        {item.submission
-                          ? `v${item.submission.version}${
-                              item.submission.is_edit ? "*" : ""
-                            }`
-                          : "—"}
-                      </div>
-
-                      {/* VERSION MINH CHỨNG */}
-                      <div className="text-center text-gray-600">
-                        {item.proof
-                          ? `v${item.proof.version}`
-                          : "—"}
-                      </div>
-
-                      {/* VERSION MINH CHỨNG EDITED */}
-                      <div className="text-center text-gray-600">
-                        {item.proofEdit
-                          ? `v${item.proofEdit.version}*`
-                          : "—"}
-                      </div>
-
-                      {/* PDF */}
-                      <div
-                        className="text-center"
-                        onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-                          e.stopPropagation()
-                        }
-                      >
-                        {item.proof ? (
-                          <button
-                            type="button"
-                            onClick={() => openPDF(item.proof!.file_path)}
-                            className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
+                        return (
+                          <tr
+                            key={item.student.mssv}
+                            onClick={() => openStudent(item)}
+                            className="cursor-pointer border-b border-gray-100 transition hover:bg-blue-50"
                           >
-                            📄 PDF
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-300">
-                            —
-                          </span>
-                        )}
-                      </div>
+                            {/* MSSV */}
+                            <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-800">
+                              {item.student.mssv}
+                            </td>
 
-                      {/* PDF EDIT */}
-                      <div
-                        className="text-center"
-                        onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-                          e.stopPropagation()
-                        }
-                      >
-                        {item.proofEdit ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openPDF(item.proofEdit!.file_path)
-                            }
-                            className="cursor-pointer text-sm font-medium text-blue-600 hover:underline"
-                          >
-                            📄 PDF edit
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-300">
-                            —
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                            {/* HỌ VÀ TÊN */}
+                            <td className="px-6 py-4">
+                              <p className="font-medium text-gray-800">
+                                {item.student.full_name}
+                              </p>
+
+                              <p className="mt-1 text-xs text-gray-400">
+                                {item.student.class_name}
+                              </p>
+                            </td>
+
+                            {/* TRẠNG THÁI */}
+                            <td className="whitespace-nowrap px-6 py-4 text-center">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
+                              >
+                                {status.text}
+                              </span>
+                            </td>
+
+                            {/* VERSION HỒ SƠ */}
+                            <td className="whitespace-nowrap px-4 py-4 text-center text-gray-600">
+                              {item.submission
+                                ? `v${item.submission.version}${
+                                    item.submission.is_edit ? "*" : ""
+                                  }`
+                                : "—"}
+                            </td>
+
+                            {/* VERSION MINH CHỨNG */}
+                            <td className="whitespace-nowrap px-4 py-4 text-center text-gray-600">
+                              {item.proof
+                                ? `v${item.proof.version}`
+                                : "—"}
+                            </td>
+
+                            {/* VERSION MINH CHỨNG EDITED */}
+                            <td className="whitespace-nowrap px-4 py-4 text-center text-gray-600">
+                              {item.proofEdit
+                                ? `v${item.proofEdit.version}*`
+                                : "—"}
+                            </td>
+
+                            {/* PDF */}
+                            <td
+                              className="whitespace-nowrap px-4 py-4 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.proof ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openPDF(item.proof!.file_path)
+                                  }
+                                  className="cursor-pointer font-medium text-blue-600 hover:underline"
+                                >
+                                  📄 PDF
+                                </button>
+                              ) : (
+                                <span className="text-gray-300">—</span>
+                              )}
+                            </td>
+
+                            {/* PDF EDIT */}
+                            <td
+                              className="whitespace-nowrap px-4 py-4 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.proofEdit ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openPDF(item.proofEdit!.file_path)
+                                  }
+                                  className="cursor-pointer font-medium text-blue-600 hover:underline"
+                                >
+                                  📄 PDF edit
+                                </button>
+                              ) : (
+                                <span className="text-gray-300">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
 
         {/* =====================================================
-    DANH SÁCH PHẢN HỒI CỦA SINH VIÊN ĐẠT
-===================================================== */}
+            DANH SÁCH PHẢN HỒI CỦA SINH VIÊN ĐẠT
+        ===================================================== */}
 
-<section className="mt-8 overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-sm">
-  {/* HEADER ĐÓNG / MỞ */}
-  <button
-    type="button"
-    onClick={() => setAwardListOpen((prev) => !prev)}
-    aria-expanded={awardListOpen}
-    className="flex w-full cursor-pointer items-center justify-between gap-3 bg-green-50 px-5 py-4 text-left transition hover:bg-green-100"
-  >
-    <div>
-      <h3 className="text-lg font-semibold text-green-900">
-        Danh sách phản hồi của các sinh viên Đạt
-      </h3>
+        <section className="mt-8 overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-sm">
+          {/* HEADER ĐÓNG / MỞ */}
+          <button
+            type="button"
+            onClick={() => setAwardListOpen((prev) => !prev)}
+            aria-expanded={awardListOpen}
+            className="flex w-full cursor-pointer items-center justify-between gap-3 bg-green-50 px-5 py-4 text-left transition hover:bg-green-100"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-green-900">
+                Danh sách phản hồi của các sinh viên Đạt
+              </h3>
 
-      <p className="mt-1 text-sm text-gray-600">
-        {awardStudents.length} sinh viên
-      </p>
-    </div>
-
-    <ChevronDown
-      size={20}
-      className={`shrink-0 transition-transform duration-200 ${
-        awardListOpen ? "rotate-180" : ""
-      }`}
-    />
-  </button>
-
-  {awardListOpen && (
-    <div className="border-t border-green-200">
-      {awardPhotosLoading ? (
-        <div className="px-6 py-10 text-center text-gray-500">
-          Đang tải ảnh tuyên dương...
-        </div>
-      ) : (
-        <>
-          {/* CHỌN TẤT CẢ / BỎ CHỌN TẤT CẢ */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-5 py-4">
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
-              <input
-                type="checkbox"
-                checked={
-                  awardStudents.length > 0 &&
-                  awardStudents.every((item) =>
-                    selectedAwardMssv.includes(item.mssv)
-                  )
-                }
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedAwardMssv(
-                      awardStudents.map((item) => item.mssv)
-                    );
-                  } else {
-                    setSelectedAwardMssv([]);
-                  }
-                }}
-                className="h-4 w-4 cursor-pointer rounded border-gray-300"
-              />
-              Chọn tất cả
-            </label>
-
-            <span className="text-sm text-gray-500">
-              Đã chọn{" "}
-              {
-                awardStudents.filter((item) =>
-                  selectedAwardMssv.includes(item.mssv)
-                ).length
-              }{" "}
-              / {awardStudents.length} sinh viên
-            </span>
-          </div>
-
-          {/* HEADER CỘT */}
-          <div className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b bg-gray-50 px-5 py-4 text-sm font-semibold text-gray-700">
-            <div></div>
-            <div>MSSV</div>
-            <div>Họ và tên</div>
-            <div className="text-center">Tham gia LTD</div>
-            <div className="text-center">Ảnh tuyên dương</div>
-          </div>
-
-          {/* BODY */}
-          {awardStudents.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-500">
-              Chưa có sinh viên nào đạt.
+              <p className="mt-1 text-sm text-gray-600">
+                {awardStudents.length} sinh viên
+              </p>
             </div>
-          ) : (
-            awardStudents.map((item) => {
-              const isSelected = selectedAwardMssv.includes(item.mssv);
 
-              const participationStatus =
-                item.participation === true
-                  ? {
-                      text: "ĐƯỢC",
-                      className: "bg-green-100 text-green-700",
-                    }
-                  : item.participation === false
-                    ? {
-                        text: "KHÔNG",
-                        className: "bg-red-100 text-red-700",
-                      }
-                    : {
-                        text: "CHƯA PHẢN HỒI",
-                        className: "bg-blue-100 text-blue-700",
-                      };
+            <ChevronDown
+              size={20}
+              className={`shrink-0 transition-transform duration-200 ${
+                awardListOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
 
-              return (
-                <div
-                  key={item.mssv}
-                  className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b px-5 py-4 text-sm transition hover:bg-green-50"
-                >
-                  {/* CHECKBOX */}
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={(e) => {
-                        setSelectedAwardMssv((prev) =>
-                          e.target.checked
-                            ? [...prev, item.mssv]
-                            : prev.filter(
-                                (mssv) => mssv !== item.mssv
-                              )
+          {awardListOpen && (
+            <div className="border-t border-green-200">
+                {awardPhotosLoading ? (
+                  <div className="px-6 py-10 text-center text-gray-500">
+                    Đang tải ảnh tuyên dương...
+                  </div>
+                ) : (
+                  <>
+                    {/* CHỌN TẤT CẢ / BỎ CHỌN TẤT CẢ */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-5 py-4">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={
+                            awardStudents.length > 0 &&
+                            awardStudents.every((item) =>
+                              selectedAwardMssv.includes(item.mssv)
+                            )
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAwardMssv(
+                                awardStudents.map((item) => item.mssv)
+                              );
+                            } else {
+                              setSelectedAwardMssv([]);
+                            }
+                          }}
+                          className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        />
+                        Chọn tất cả
+                      </label>
+
+                      <span className="text-sm text-gray-500">
+                        Đã chọn{" "}
+                        {
+                          awardStudents.filter((item) =>
+                            selectedAwardMssv.includes(item.mssv)
+                          ).length
+                        }{" "}
+                        / {awardStudents.length} sinh viên
+                      </span>
+                    </div>
+
+                    {/* HEADER CỘT */}
+                    <div className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b bg-gray-50 px-5 py-4 text-sm font-semibold text-gray-700">
+                      <div></div>
+                      <div>MSSV</div>
+                      <div>Họ và tên</div>
+                      <div className="text-center">Tham gia LTD</div>
+                      <div className="text-center">Ảnh tuyên dương</div>
+                    </div>
+
+                    {/* BODY */}
+                    <div className="max-h-[600px] overflow-y-auto">
+                    {awardStudents.length === 0 ? (
+                      <div className="px-6 py-12 text-center text-gray-500">
+                        Chưa có sinh viên nào đạt.
+                      </div>
+                    ) : (
+                      awardStudents.map((item) => {
+                        const isSelected = selectedAwardMssv.includes(item.mssv);
+
+                        const participationStatus =
+                          item.participation === true
+                            ? {
+                                text: "ĐƯỢC",
+                                className: "bg-green-100 text-green-700",
+                              }
+                            : item.participation === false
+                              ? {
+                                  text: "KHÔNG",
+                                  className: "bg-red-100 text-red-700",
+                                }
+                              : {
+                                  text: "CHƯA PHẢN HỒI",
+                                  className: "bg-blue-100 text-blue-700",
+                                };
+
+                        return (
+                          <div
+                            key={item.mssv}
+                            className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b px-5 py-4 text-sm transition hover:bg-green-50"
+                          >
+                            {/* CHECKBOX */}
+                            <div>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  setSelectedAwardMssv((prev) =>
+                                    e.target.checked
+                                      ? [...prev, item.mssv]
+                                      : prev.filter(
+                                          (mssv) => mssv !== item.mssv
+                                        )
+                                  );
+                                }}
+                                aria-label={`Chọn ${item.full_name}`}
+                                className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                              />
+                            </div>
+
+                            {/* MSSV */}
+                            <div className="font-medium text-gray-800">
+                              {item.mssv}
+                            </div>
+
+                            {/* HỌ VÀ TÊN */}
+                            <div className="font-medium text-gray-800">
+                              {item.full_name}
+                            </div>
+
+                            {/* THAM GIA LTD */}
+                            <div className="text-center">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${participationStatus.className}`}
+                              >
+                                {participationStatus.text}
+                              </span>
+                            </div>
+
+                            {/* ẢNH TUYÊN DƯƠNG */}
+                            <div className="text-center">
+                              {item.file_path ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openAwardPhoto(item.file_path!)
+                                  }
+                                  className="cursor-pointer font-medium text-blue-600 hover:underline"
+                                >
+                                  🖼️ Xem
+                                </button>
+                              ) : (
+                                <span className="text-sm text-gray-300">
+                                  —
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         );
-                      }}
-                      aria-label={`Chọn ${item.full_name}`}
-                      className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                    />
-                  </div>
+                      })
+                    )}
 
-                  {/* MSSV */}
-                  <div className="font-medium text-gray-800">
-                    {item.mssv}
-                  </div>
+                    {/* FOOTER */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 px-5 py-4">
+                      <p className="text-sm text-gray-500">
+                        Chọn sinh viên để chuẩn bị tải ảnh tuyên dương.
+                      </p>
 
-                  {/* HỌ VÀ TÊN */}
-                  <div className="font-medium text-gray-800">
-                    {item.full_name}
-                  </div>
-
-                  {/* THAM GIA LTD */}
-                  <div className="text-center">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${participationStatus.className}`}
-                    >
-                      {participationStatus.text}
-                    </span>
-                  </div>
-
-                  {/* ẢNH TUYÊN DƯƠNG */}
-                  <div className="text-center">
-                    {item.file_path ? (
                       <button
                         type="button"
-                        onClick={() =>
-                          openAwardPhoto(item.file_path!)
-                        }
-                        className="cursor-pointer font-medium text-blue-600 hover:underline"
+                        disabled={selectedAwardMssv.length === 0}
+                        onClick={() => {
+                          alert("Chức năng tải ZIP sẽ được bổ sung ở bước tiếp theo.");
+                        }}
+                        className="cursor-pointer rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        🖼️ Xem
+                        Tải ảnh đã chọn
                       </button>
-                    ) : (
-                      <span className="text-sm text-gray-300">
-                        —
-                      </span>
-                    )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                  </>
+                )}
+              </div>
           )}
-
-          {/* FOOTER */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 px-5 py-4">
-            <p className="text-sm text-gray-500">
-              Chọn sinh viên để chuẩn bị tải ảnh tuyên dương.
-            </p>
-
-            <button
-              type="button"
-              disabled={selectedAwardMssv.length === 0}
-              onClick={() => {
-                alert("Chức năng tải ZIP sẽ được bổ sung ở bước tiếp theo.");
-              }}
-              className="cursor-pointer rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Tải ảnh đã chọn
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  )}
-</section>
+        </section>
 
       </div>
 

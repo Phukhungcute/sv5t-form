@@ -683,10 +683,52 @@ export default function ArchivePage() {
         <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Xuất bản lưu trữ</h2>
           <p className="mt-1 text-sm text-gray-600">Các tệp được đóng gói thành ZIP. Hồ sơ JSON tổng hợp dữ liệu sinh viên, submissions và metadata của hai loại PDF.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button disabled={!!exporting || !selectedMssv.length} onClick={() => void exportArchive("json")} className="cursor-pointer rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">{exporting === "json" ? "ĐANG TẠO JSON..." : "Tải JSON hồ sơ"}</button>
-            <button disabled={!!exporting || !selectedMssv.length} onClick={() => void exportArchive("pdf")} className="cursor-pointer rounded-xl bg-emerald-700 px-5 py-3 font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">{exporting === "pdf" ? "ĐANG TẢI PDF..." : "Tải PDF minh chứng"}</button>
-            <button disabled={!!exporting || !selectedMssv.length} onClick={() => void exportArchive("all")} className="cursor-pointer rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50">{exporting === "all" ? "ĐANG TẠO GÓI..." : "Tải toàn bộ (JSON + PDF)"}</button>
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-4">
+            {/* TẢI JSON */}
+            <div className="menu-btn-wrapper-inline">
+              <button
+                type="button"
+                disabled={!!exporting || !selectedMssv.length}
+                onClick={() => void exportArchive("json")}
+                className={`menu-btn menu-btn-inline ${
+                  exporting === "json"
+                    ? "menu-btn-blue"
+                    : "menu-btn-blue"
+                } ${!!exporting || !selectedMssv.length ? "menu-btn-disabled" : ""}`}
+              >
+                {exporting === "json" ? "ĐANG TẠO JSON..." : "Tải JSON hồ sơ"}
+              </button>
+            </div>
+
+            {/* TẢI PDF */}
+            <div className="menu-btn-wrapper-inline">
+              <button
+                type="button"
+                disabled={!!exporting || !selectedMssv.length}
+                onClick={() => void exportArchive("pdf")}
+                className={`menu-btn menu-btn-inline menu-btn-green ${
+                  !!exporting || !selectedMssv.length ? "menu-btn-disabled" : ""
+                }`}
+              >
+                {exporting === "pdf" ? "ĐANG TẢI PDF..." : "Tải PDF minh chứng"}
+              </button>
+            </div>
+
+            {/* TẢI TOÀN BỘ */}
+            <div className="menu-btn-wrapper-inline">
+              <button
+                type="button"
+                disabled={!!exporting || !selectedMssv.length}
+                onClick={() => void exportArchive("all")}
+                className={`menu-btn menu-btn-inline menu-btn-gray ${
+                  !!exporting || !selectedMssv.length ? "menu-btn-disabled" : ""
+                }`}
+              >
+                {exporting === "all"
+                  ? "ĐANG TẠO GÓI..."
+                  : "Tải toàn bộ (JSON + PDF)"}
+              </button>
+            </div>
           </div>
           <p className="mt-3 text-xs leading-5 text-amber-700">Trước khi xóa dữ liệu gốc, hãy mở ZIP để kiểm tra export-errors.txt (nếu có), xác minh đủ hồ sơ và PDF, rồi thử đọc lại bản lưu trữ. Không xóa dữ liệu chỉ vì ZIP đã được tạo.</p>
         </section>

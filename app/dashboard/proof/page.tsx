@@ -201,8 +201,8 @@ function fileToDataURL(file: File): Promise<string> {
    Tính dung lượng
 ========================================================= */
 
-const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB / ảnh
-const MAX_TOTAL_SIZE = 1000 * 1024 * 1024; // 1000 MB tổng
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB / ảnh
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB tổng
 
 function getDataUrlSize(dataUrl: string): number {
   if (!dataUrl) return 0;
@@ -493,7 +493,7 @@ export default function ProofPage() {
       if (newTotal > MAX_TOTAL_SIZE) {
         alert(
           `Không thể thêm ảnh này.\n\n` +
-            `Tổng dung lượng minh chứng không được vượt quá 1000 MB.\n` +
+            `Tổng dung lượng minh chứng không được vượt quá 100 MB.\n` +
             `Hiện tại: ${formatFileSize(
               currentTotal
             )}\n` +
@@ -599,7 +599,7 @@ export default function ProofPage() {
 
     if (totalSize > MAX_TOTAL_SIZE) {
       alert(
-        `Tổng dung lượng minh chứng vượt quá 1000 MB.\n` +
+        `Tổng dung lượng minh chứng vượt quá 100 MB.\n` +
           `Hiện tại: ${formatFileSize(totalSize)}`
       );
       return;
@@ -731,7 +731,7 @@ export default function ProofPage() {
               {formatFileSize(
                 getTotalProofSize(proofData)
               )}{" "}
-              / 1000 MB
+              / 100 MB
             </span>
           </div>
 
@@ -750,7 +750,7 @@ export default function ProofPage() {
           </div>
 
           <p className="mt-2 text-sm text-gray-500">
-            Mỗi ảnh tối đa 15 MB. Tổng tất cả minh chứng tối đa 1000 MB.
+            Mỗi ảnh tối đa 5 MB. Tổng tất cả minh chứng tối đa 100 MB.
           </p>
         </div>
 

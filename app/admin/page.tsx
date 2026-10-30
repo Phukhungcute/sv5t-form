@@ -3197,8 +3197,8 @@ async function saveMaintenanceChanges() {
               disabled={maintenanceToggleLoading}
               className={`w-full cursor-pointer rounded-xl px-5 py-5 text-lg font-extrabold tracking-wide text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 ${
                 maintenanceMode
-                  ? "bg-green-700 hover:bg-green-800"
-                  : "bg-amber-500 hover:bg-amber-600"
+                  ? "menu-btn menu-btn-green"
+                  : "menu-btn menu-btn-red"
               }`}
             >
               {maintenanceToggleLoading
@@ -3218,12 +3218,10 @@ async function saveMaintenanceChanges() {
               <h2 className="text-xl font-bold text-gray-900">8. Kho lưu trữ hồ sơ</h2>
               <p className="mt-1 text-sm text-gray-600">Tìm kiếm, chọn sinh viên và xuất hồ sơ JSON cùng PDF minh chứng để lưu trữ dài hạn.</p>
             </div>
-            <button type="button" onClick={() => router.push("/admin/archive")} className="cursor-pointer rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800">Mở kho lưu trữ →</button>
+            <button type="button" onClick={() => router.push("/admin/archive")} className="menu-btn menu-btn-inline menu-btn-blue">Mở kho lưu trữ →</button>
           </div>
         </section>
       </div>
-
-      
 
       {/* POPUP CHỈNH SỬA Q&A */}
       {editingQA && (
