@@ -29,6 +29,8 @@ type ScheduleSettings = {
   submission_enabled: boolean;
   addition_enabled: boolean;
   result_enabled: boolean;
+
+  test_schedule_enabled: boolean;
 };
 
 function ScheduleDaysRow({
@@ -445,6 +447,48 @@ async function toggleSchedule(
   }
 
   setSchedule(data);
+}
+
+async function toggleTestSchedule(): Promise<void> {
+  if (!schedule) return;
+
+  const newValue = !schedule.test_schedule_enabled;
+
+  // Xác nhận trước khi bật chế độ kiểm thử
+  if (newValue) {
+    const confirmed = window.confirm(
+      "Bạn có chắc muốn bật chế độ kiểm thử?\n\n" +
+        "Chế độ này sẽ mở tất cả các giai đoạn trong ngày hiện tại " +
+        "và ảnh hưởng đến lịch trình toàn hệ thống."
+    );
+
+    if (!confirmed) return;
+  }
+
+  const { data, error } = await supabase
+    .from("schedule_settings")
+    .update({
+      test_schedule_enabled: newValue,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("TOGGLE TEST SCHEDULE ERROR:", error);
+
+    alert("Không thể thay đổi chế độ kiểm thử.");
+    return;
+  }
+
+  setSchedule(data);
+
+  alert(
+    newValue
+      ? "Đã bật chế độ kiểm thử!"
+      : "Đã tắt chế độ kiểm thử!"
+  );
 }
 
   // Quyền cực hạn của admin
@@ -1874,159 +1918,194 @@ async function saveMaintenanceChanges() {
               Đang tải lịch trình...
             </p>
           ) : (
-            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-
+            <>
               {/* ======================================
-                  NGÀY BẮT ĐẦU
+                  GRID QUẢN LÝ LỊCH TRÌNH
               ====================================== */}
 
-              <div className="rounded-xl border border-gray-200 p-5">
+              <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 
-                <h3 className="font-bold text-gray-800">
-                  Ngày bắt đầu
-                </h3>
+                {/* ======================================
+                    NGÀY BẮT ĐẦU
+                ====================================== */}
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Ngày bắt đầu nộp hồ sơ: {formatDateDisplay(startDateInput)}
-                </p>
+                <div className="rounded-xl border border-gray-200 p-5">
+                  <h3 className="font-bold text-gray-800">
+                    Ngày bắt đầu
+                  </h3>
 
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={startDateInput}
-                    onChange={(e) =>
-                      setStartDateInput(e.target.value)
-                    }
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                  />
-                  
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateStartDate(startDateInput)
-                    }
-                    className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600  transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
-                  >
-                    Xác nhận
-                  </button>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Ngày bắt đầu nộp hồ sơ:{" "}
+                    {formatDateDisplay(startDateInput)}
+                  </p>
 
-                  <span className="text-xs text-gray-400">
-                    VN
-                  </span>
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={startDateInput}
+                      onChange={(e) =>
+                        setStartDateInput(e.target.value)
+                      }
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateStartDate(startDateInput)
+                      }
+                      className="cursor-pointer rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition hover:-translate-y-0.5 active:translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm"
+                    >
+                      Xác nhận
+                    </button>
+
+                    <span className="text-xs text-gray-400">
+                      VN
+                    </span>
+                  </div>
                 </div>
 
+                {/* ======================================
+                    GỬI HỒ SƠ
+                ====================================== */}
+
+                <ScheduleDaysRow
+                  title="Gửi hồ sơ"
+                  label="Số ngày gửi hồ sơ:"
+                  value={schedule.submission_days}
+                  enabled={schedule.submission_enabled}
+                  onToggle={() =>
+                    toggleSchedule("submission_enabled")
+                  }
+                  onSave={(value) =>
+                    updateDays("submission_days", value)
+                  }
+                />
+
+                {/* ======================================
+                    DUYỆT LẦN 1
+                ====================================== */}
+
+                <ScheduleDaysRow
+                  title="Duyệt hồ sơ lần 1"
+                  label="Số ngày duyệt hồ sơ lần 1:"
+                  value={schedule.review1_days}
+                  onSave={(value) =>
+                    updateDays("review1_days", value)
+                  }
+                />
+
+                {/* ======================================
+                    CHỈNH SỬA
+                ====================================== */}
+
+                <ScheduleDaysRow
+                  title="Chỉnh sửa hồ sơ"
+                  label="Số ngày chỉnh sửa hồ sơ:"
+                  value={schedule.addition_days}
+                  enabled={schedule.addition_enabled}
+                  onToggle={() =>
+                    toggleSchedule("addition_enabled")
+                  }
+                  onSave={(value) =>
+                    updateDays("addition_days", value)
+                  }
+                />
+
+                {/* ======================================
+                    DUYỆT LẦN 2
+                ====================================== */}
+
+                <ScheduleDaysRow
+                  title="Duyệt hồ sơ lần 2"
+                  label="Số ngày duyệt hồ sơ lần 2:"
+                  value={schedule.review2_days}
+                  onSave={(value) =>
+                    updateDays("review2_days", value)
+                  }
+                />
+
+                {/* ======================================
+                    KẾT QUẢ
+                ====================================== */}
+
+                <ScheduleDaysRow
+                  title="Kết quả"
+                  label="Số ngày xem kết quả:"
+                  value={schedule.result_days}
+                  enabled={schedule.result_enabled}
+                  onToggle={() =>
+                    toggleSchedule("result_enabled")
+                  }
+                  onSave={(value) =>
+                    updateDays("result_days", value)
+                  }
+                />
               </div>
 
-
               {/* ======================================
-                  GỬI HỒ SƠ
+                  CHẾ ĐỘ KIỂM THỬ
               ====================================== */}
 
-              <ScheduleDaysRow
-                title="Gửi hồ sơ"
-                label="Số ngày gửi hồ sơ:"
-                value={schedule.submission_days}
-                enabled={
-                  schedule.submission_enabled
-                }
-                onToggle={() =>
-                  toggleSchedule(
-                    "submission_enabled"
-                  )
-                }
-                onSave={(value) =>
-                  updateDays(
-                    "submission_days",
-                    value
-                  )
-                }
-              />
+              <div className="mt-6 w-full rounded-xl border border-amber-200 bg-amber-50 p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-900">
+                      Chế độ kiểm thử lịch trình
+                    </h3>
 
+                    <p className="mt-1 text-sm text-gray-600">
+                      Khi bật, tất cả các giai đoạn được mở trong ngày
+                      hiện tại và kết thúc vào đầu ngày hôm sau.
+                    </p>
 
-              {/* ======================================
-                  DUYỆT LẦN 1
-              ====================================== */}
+                    <p className="mt-2 text-sm font-medium">
+                      Trạng thái hiện tại:{" "}
+                      <span
+                        className={
+                          schedule.test_schedule_enabled
+                            ? "text-amber-700"
+                            : "text-gray-600"
+                        }
+                      >
+                        {schedule.test_schedule_enabled
+                          ? "Đang bật chế độ kiểm thử"
+                          : "Đang sử dụng lịch trình thực tế"}
+                      </span>
+                    </p>
+                  </div>
 
-              <ScheduleDaysRow
-                title="Duyệt hồ sơ lần 1"
-                label="Số ngày duyệt hồ sơ lần 1:"
-                value={schedule.review1_days}
-                onSave={(value) =>
-                  updateDays(
-                    "review1_days",
-                    value
-                  )
-                }
-              />
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-label="Bật hoặc tắt chế độ kiểm thử lịch trình"
+                    aria-checked={schedule.test_schedule_enabled}
+                    onClick={toggleTestSchedule}
+                    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                      schedule.test_schedule_enabled
+                        ? "bg-amber-500"
+                        : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        schedule.test_schedule_enabled
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
 
-
-              {/* ======================================
-                  CHỈNH SỬA
-              ====================================== */}
-
-              <ScheduleDaysRow
-                title="Chỉnh sửa hồ sơ"
-                label="Số ngày chỉnh sửa hồ sơ:"
-                value={schedule.addition_days}
-                enabled={
-                  schedule.addition_enabled
-                }
-                onToggle={() =>
-                  toggleSchedule(
-                    "addition_enabled"
-                  )
-                }
-                onSave={(value) =>
-                  updateDays(
-                    "addition_days",
-                    value
-                  )
-                }
-              />
-
-
-              {/* ======================================
-                  DUYỆT LẦN 2
-              ====================================== */}
-
-              <ScheduleDaysRow
-                title="Duyệt hồ sơ lần 2"
-                label="Số ngày duyệt hồ sơ lần 2:"
-                value={schedule.review2_days}
-                onSave={(value) =>
-                  updateDays(
-                    "review2_days",
-                    value
-                  )
-                }
-              />
-
-
-              {/* ======================================
-                  KẾT QUẢ
-              ====================================== */}
-
-              <ScheduleDaysRow
-                title="Kết quả"
-                label="Số ngày xem kết quả:"
-                value={schedule.result_days}
-                enabled={
-                  schedule.result_enabled
-                }
-                onToggle={() =>
-                  toggleSchedule(
-                    "result_enabled"
-                  )
-                }
-                onSave={(value) =>
-                  updateDays(
-                    "result_days",
-                    value
-                  )
-                }
-              />
-
-            </div>
+                {schedule.test_schedule_enabled && (
+                  <p className="mt-4 rounded-lg bg-amber-100 p-3 text-sm text-amber-800">
+                    ⚠️ Chế độ kiểm thử đang ảnh hưởng đến lịch trình
+                    toàn hệ thống. Hãy tắt chế độ này sau khi hoàn tất
+                    kiểm tra.
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
         </section>

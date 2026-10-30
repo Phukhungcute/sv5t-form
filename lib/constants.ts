@@ -305,8 +305,139 @@ export type ScheduleSettings = {
   submission_enabled: boolean;
   addition_enabled: boolean;
   result_enabled: boolean;
+
+  test_schedule_enabled: boolean;
 };
 
+// CHỨC NĂNG TEST PAGE
+
+/**
+ * CHẾ ĐỘ KIỂM THỬ LỊCH TRÌNH
+ *
+ * true: Cho phép kiểm thử ngoài thời gian quy định.
+ * false: Sử dụng lịch trình bình thường.
+ *
+ * Chỉ bật trong môi trường local.
+ */
+export function TEST_SCHEDULE_MODE(
+  settings: ScheduleSettings
+): boolean {
+  return settings.test_schedule_enabled;
+}
+
+// Hàm tự tính start - end
+
+export type SchedulePeriodType =
+  | "submission"
+  | "review1"
+  | "addition"
+  | "review2"
+  | "result";
+
+export type SchedulePeriod = {
+  start: Date;
+  end: Date;
+  enabled: boolean;
+};
+
+export function getSchedulePeriod(
+  settings: ScheduleSettings,
+  period: SchedulePeriodType,
+  referenceDate: Date = new Date()
+): SchedulePeriod {
+  let startOffset = 0;
+  let endOffset = 0;
+
+  let enabled = true;
+
+  switch (period) {
+    case "submission":
+      startOffset = 0;
+      endOffset = settings.submission_days;
+      enabled = settings.submission_enabled;
+      break;
+
+    case "review1":
+      startOffset = settings.submission_days;
+      endOffset =
+        settings.submission_days +
+        settings.review1_days;
+      break;
+
+    case "addition":
+      startOffset =
+        settings.submission_days +
+        settings.review1_days;
+
+      endOffset =
+        settings.submission_days +
+        settings.review1_days +
+        settings.addition_days;
+
+      enabled = settings.addition_enabled;
+      break;
+
+    case "review2":
+      startOffset =
+        settings.submission_days +
+        settings.review1_days +
+        settings.addition_days;
+
+      endOffset =
+        settings.submission_days +
+        settings.review1_days +
+        settings.addition_days +
+        settings.review2_days;
+      break;
+
+    case "result":
+      startOffset =
+        settings.submission_days +
+        settings.review1_days +
+        settings.addition_days +
+        settings.review2_days;
+
+      endOffset =
+        settings.submission_days +
+        settings.review1_days +
+        settings.addition_days +
+        settings.review2_days +
+        settings.result_days;
+
+      enabled = settings.result_enabled;
+      break;
+  }
+
+  if (TEST_SCHEDULE_MODE(settings)) {
+    const start = new Date(referenceDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    return {
+      start,
+      end,
+      enabled: true,
+    };
+  }
+
+  const start = getDateAfter(
+    settings.start_date,
+    startOffset
+  );
+
+  const end = getDateAfter(
+    settings.start_date,
+    endOffset
+  );
+
+  return {
+    start,
+    end,
+    enabled,
+  };
+}
 
 /* =====================================================
    DATE FUNCTIONS
@@ -326,6 +457,13 @@ export function formatDateVN(
   );
 }
 
+function formatDateISO(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 export function getDateAfter(
   date: string,
@@ -373,6 +511,44 @@ export function buildSchedule(
   const start =
     new Date(settings.start_date);
 
+    if (TEST_SCHEDULE_MODE(settings)) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todayLabel = formatDateVN(today);
+
+      return {
+        startDate: todayLabel,
+
+        submission: {
+          start: todayLabel,
+          end: todayLabel,
+          enabled: true,
+        },
+
+        review1: {
+          start: todayLabel,
+          end: todayLabel,
+        },
+
+        addition: {
+          start: todayLabel,
+          end: todayLabel,
+          enabled: true,
+        },
+
+        review2: {
+          start: todayLabel,
+          end: todayLabel,
+        },
+
+        result: {
+          start: todayLabel,
+          end: todayLabel,
+          enabled: true,
+        },
+      };
+    }
 
   /*
     Mỗi period dùng:
@@ -395,7 +571,6 @@ export function buildSchedule(
       settings.start_date,
       settings.submission_days
     );
-
 
   const review1Start =
     getDateAfter(
@@ -578,73 +753,51 @@ export function buildSchedule(
 export function isSubmissionPeriod(
   settings: ScheduleSettings
 ): boolean {
+  const period = getSchedulePeriod(
+    settings,
+    "submission"
+  );
 
-  const start =
-    new Date(settings.start_date);
-
-  const end =
-    getDateAfter(
-      settings.start_date,
-      settings.submission_days
-    );
-
-  return isWithinPeriod(
-    start.toISOString(),
-    end.toISOString()
+  return (
+    period.enabled &&
+    isWithinPeriod(
+      period.start.toISOString(),
+      period.end.toISOString()
+    )
   );
 }
 
 export function isAdditionPeriod(
   settings: ScheduleSettings
 ): boolean {
+  const period = getSchedulePeriod(
+    settings,
+    "addition"
+  );
 
-  const start =
-    getDateAfter(
-      settings.start_date,
-      settings.submission_days +
-        settings.review1_days
-    );
-
-  const end =
-    getDateAfter(
-      settings.start_date,
-      settings.submission_days +
-        settings.review1_days +
-        settings.addition_days
-    );
-
-  return isWithinPeriod(
-    start.toISOString(),
-    end.toISOString()
+  return (
+    period.enabled &&
+    isWithinPeriod(
+      period.start.toISOString(),
+      period.end.toISOString()
+    )
   );
 }
 
 export function isResultPeriod(
   settings: ScheduleSettings
 ): boolean {
+  const period = getSchedulePeriod(
+    settings,
+    "result"
+  );
 
-  const start =
-    getDateAfter(
-      settings.start_date,
-      settings.submission_days +
-        settings.review1_days +
-        settings.addition_days +
-        settings.review2_days
-    );
-
-  const end =
-    getDateAfter(
-      settings.start_date,
-      settings.submission_days +
-        settings.review1_days +
-        settings.addition_days +
-        settings.review2_days +
-        settings.result_days
-    );
-
-  return isWithinPeriod(
-    start.toISOString(),
-    end.toISOString()
+  return (
+    period.enabled &&
+    isWithinPeriod(
+      period.start.toISOString(),
+      period.end.toISOString()
+    )
   );
 }
 

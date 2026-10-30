@@ -1,5 +1,10 @@
 import { supabase } from "@/lib/supabase";
 
+import {
+  getSchedulePeriod,
+  type SchedulePeriodType,
+} from "@/lib/constants";
+
 type StudentPageType =
   | "submission"
   | "addition"
@@ -95,19 +100,7 @@ export async function initializeStudentPage(
       error: scheduleError,
     } = await supabase
       .from("schedule_settings")
-      .select(
-        `
-        start_date,
-        submission_days,
-        review1_days,
-        addition_days,
-        review2_days,
-        result_days,
-        submission_enabled,
-        addition_enabled,
-        result_enabled
-        `
-      )
+      .select("*")
       .eq("id", 1)
       .single();
 
@@ -121,94 +114,16 @@ export async function initializeStudentPage(
     }
 
     // =================================================
-    // 5. TÍNH CÁC MỐC THỜI GIAN
+    // 5. TÍNH VÀ CHỌN KHOẢNG THỜI GIAN
     // =================================================
 
-    const submissionStart =
-      new Date(settings.start_date);
+    const period = getSchedulePeriod(
+    settings,
+    pageType as SchedulePeriodType,
+    now
+  );
 
-    const submissionEnd =
-      new Date(submissionStart);
-
-    submissionEnd.setDate(
-      submissionEnd.getDate() +
-        settings.submission_days
-    );
-
-    const review1Start =
-      new Date(submissionEnd);
-
-    const review1End =
-      new Date(review1Start);
-
-    review1End.setDate(
-      review1End.getDate() +
-        settings.review1_days
-    );
-
-    const additionStart =
-      new Date(review1End);
-
-    const additionEnd =
-      new Date(additionStart);
-
-    additionEnd.setDate(
-      additionEnd.getDate() +
-        settings.addition_days
-    );
-
-    const review2Start =
-      new Date(additionEnd);
-
-    const review2End =
-      new Date(review2Start);
-
-    review2End.setDate(
-      review2End.getDate() +
-        settings.review2_days
-    );
-
-    const resultStart =
-      new Date(review2End);
-
-    const resultEnd =
-      new Date(resultStart);
-
-    resultEnd.setDate(
-      resultEnd.getDate() +
-        settings.result_days
-    );
-
-    // =================================================
-    // 6. CHỌN KHOẢNG THỜI GIAN
-    // =================================================
-
-    let start: Date;
-    let end: Date;
-    let enabled: boolean;
-
-    switch (pageType) {
-      case "submission":
-        start = submissionStart;
-        end = submissionEnd;
-        enabled =
-          settings.submission_enabled;
-        break;
-
-      case "addition":
-        start = additionStart;
-        end = additionEnd;
-        enabled =
-          settings.addition_enabled;
-        break;
-
-      case "result":
-        start = resultStart;
-        end = resultEnd;
-        enabled =
-          settings.result_enabled;
-        break;
-    }
+    const { start, end, enabled } = period;
 
     // =================================================
     // 7. CHECK THỜI GIAN

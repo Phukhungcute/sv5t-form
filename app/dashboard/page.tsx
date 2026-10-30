@@ -5,13 +5,14 @@ import confetti from "canvas-confetti";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-    FACULTY_NAME,
-    FACULTY_NAME_NORMAL,
-    ACADEMIC_YEAR,
-    buildSchedule,
-    type ScheduleSettings,
-    isWithinPeriod,
-    getDateAfter,
+  FACULTY_NAME,
+  FACULTY_NAME_NORMAL,
+  ACADEMIC_YEAR,
+  buildSchedule,
+  type ScheduleSettings,
+  isSubmissionPeriod,
+  isAdditionPeriod,
+  isResultPeriod,
 } from "@/lib/constants";
 import { APP_VERSION } from "@/lib/version"
 import ArticleImage from "@/components/ArticleImage";
@@ -214,57 +215,17 @@ export default function Dashboard() {
     loadSchedule();
   }, [router]);
 
-  const submissionOpen =
-    schedule
-      ? schedule.submission_enabled &&
-        isWithinPeriod(
-          schedule.start_date,
-          getDateAfter(
-            schedule.start_date,
-            schedule.submission_days
-          ).toISOString()
-        )
-      : false;
+  const submissionOpen = schedule
+  ? isSubmissionPeriod(schedule)
+  : false;
 
-  const additionOpen =
-    schedule
-      ? schedule.addition_enabled &&
-        isWithinPeriod(
-          getDateAfter(
-            schedule.start_date,
-            schedule.submission_days +
-              schedule.review1_days
-          ).toISOString(),
-          getDateAfter(
-            schedule.start_date,
-            schedule.submission_days +
-              schedule.review1_days +
-              schedule.addition_days
-          ).toISOString()
-        )
-      : false;
+const additionOpen = schedule
+  ? isAdditionPeriod(schedule)
+  : false;
 
-  const resultOpen =
-    schedule
-      ? schedule.result_enabled &&
-        isWithinPeriod(
-          getDateAfter(
-            schedule.start_date,
-            schedule.submission_days +
-              schedule.review1_days +
-              schedule.addition_days +
-              schedule.review2_days
-          ).toISOString(),
-          getDateAfter(
-            schedule.start_date,
-            schedule.submission_days +
-              schedule.review1_days +
-              schedule.addition_days +
-              schedule.review2_days +
-              schedule.result_days
-          ).toISOString()
-        )
-      : false;
+const resultOpen = schedule
+  ? isResultPeriod(schedule)
+  : false;
 
   const infoSectionRef = useRef<HTMLElement>(null);
   const [infoHeight, setInfoHeight] = useState(0);

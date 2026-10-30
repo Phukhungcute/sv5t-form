@@ -2003,7 +2003,7 @@ function exportToExcel() {
                         onClick={() => {
                           alert("Chức năng tải ZIP sẽ được bổ sung ở bước tiếp theo.");
                         }}
-                        className="cursor-pointer rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="menu-btn menu-btn-inline menu-btn-green"
                       >
                         Tải ảnh đã chọn
                       </button>
@@ -2099,7 +2099,7 @@ function exportToExcel() {
                       Ngày sinh
                     </p>
 
-                    <p className="mt-1 text-gray-800">
+                    <p className="mt-1  font-medium text-gray-800">
                       {
                         selected.student
                           .birth_date
@@ -2112,7 +2112,7 @@ function exportToExcel() {
                       Giới tính
                     </p>
 
-                    <p className="mt-1 text-gray-800">
+                    <p className="mt-1 font-medium text-gray-800">
                       {
                         selected.student
                           .gender
@@ -2125,7 +2125,7 @@ function exportToExcel() {
                       Lớp
                     </p>
 
-                    <p className="mt-1 text-gray-800">
+                    <p className="mt-1 font-medium text-gray-800">
                       {
                         selected.student
                           .class_name
@@ -2135,14 +2135,15 @@ function exportToExcel() {
 
                   <div>
                   <p className="text-sm text-gray-500">
-                      Khoa
+                      Khoa/Ngành
                     </p>
 
-                    <p className="mt-1 text-gray-800">
+                    <p className="mt-1 font-medium text-gray-800">
                       {FACULTY_NAME_NORMAL}
                     </p>
                   </div>
-
+                  
+                  {/*
                   <div>
                   <p className="text-sm text-gray-500">
                       Dân tộc
@@ -2262,6 +2263,7 @@ function exportToExcel() {
                       }
                     </p>
                   </div>
+                  */}
 
                 </div>
 
