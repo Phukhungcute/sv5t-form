@@ -613,7 +613,7 @@ const vietnamTime = currentTime
                       <>
                       <span className="flex items-center gap-2">
                         <Phone className="h-5 w-5 shrink-0" fill="currentColor"/>
-                        <span>LIÊN HỆ"</span>
+                        <span>LIÊN HỆ</span>
                       </span>
                       </>
                     ),
