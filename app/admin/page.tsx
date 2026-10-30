@@ -3135,7 +3135,7 @@ async function saveMaintenanceChanges() {
               8.2. TẠO TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
-          <div className="mt-8 overflow-hidden rounded-xl border-2 border-blue-300">
+          <div className="mt-5 overflow-hidden rounded-xl border-2 border-blue-300">
             <button
               type="button"
               onClick={() => {

@@ -115,8 +115,8 @@ function TextField({
       )}
 
       <textarea
-        rows={4}
-        maxLength={5000}
+        rows={30}
+        maxLength={1000}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
