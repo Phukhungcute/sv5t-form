@@ -116,7 +116,7 @@ function TextField({
 
       <textarea
         rows={4}
-        maxLength={1000}
+        maxLength={5000}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -956,7 +956,7 @@ function isStep1Complete() {
 
         </div>
       </div>
-            </div>
+            </div>  
             
             <div className="mt-8 grid gap-5 border-t border-gray-200 pt-8">
               {/*

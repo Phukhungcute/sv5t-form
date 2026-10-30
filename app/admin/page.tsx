@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState , useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { ACADEMIC_YEAR } from "@/lib/constants";
 import { ADMIN_NAMES } from "@/lib/constants";
 import { ArrowUp , ArrowDown , ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
+import Papa from "papaparse";
 
 type StudentStats = {
   total: number;
@@ -15,6 +16,20 @@ type StudentStats = {
   passed: number;
   failed: number;
   consider: number;
+};
+
+type CsvStudent = {
+  mssv: string;
+  full_name: string;
+  birth_date: string;
+  gender: string;
+  class_name: string;
+};
+
+type CsvPreviewRow = {
+  rowNumber: number;
+  student: CsvStudent;
+  errors: string[];
 };
 
 type ScheduleSettings = {
@@ -163,8 +178,157 @@ export default function AdminPage() {
   router.push("/");
 }
 
-  const [resetMssv, setResetMssv] =
-    useState("");
+  const [importStudentsOpen, setImportStudentsOpen] =
+    useState<boolean>(false);
+
+  const [csvFileName, setCsvFileName] = useState<string>("");
+
+  const [csvPreviewRows, setCsvPreviewRows] =
+    useState<CsvPreviewRow[]>([]);
+
+  const [csvImportErrors, setCsvImportErrors] =
+    useState<string[]>([]);
+
+  const [csvImportLoading, setCsvImportLoading] =
+    useState<boolean>(false);
+
+  const [csvImportSuccess, setCsvImportSuccess] =
+    useState<string>("");
+
+  const csvInputRef = useRef<HTMLInputElement>(null);
+
+  function handleCsvFile(file: File | undefined): void {
+    if (!file) return;
+
+    setCsvFileName("");
+    setCsvPreviewRows([]);
+    setCsvImportErrors([]);
+    setCsvImportSuccess("");
+
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setCsvImportErrors(["Chỉ chấp nhận file có định dạng .csv."]);
+      return;
+    }
+
+    setCsvImportLoading(true);
+    setCsvFileName(file.name);
+
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: "greedy",
+      transformHeader: (header: string) => header.trim(),
+
+      complete: (results) => {
+        const requiredColumns: string[] = [
+          "mssv",
+          "full_name",
+          "birth_date",
+          "gender",
+          "classname",
+        ];
+
+        const actualColumns: string[] = results.meta.fields ?? [];
+
+        const missingColumns: string[] = requiredColumns.filter(
+          (column) => !actualColumns.includes(column),
+        );
+
+        if (missingColumns.length > 0) {
+          setCsvImportErrors([
+            `Thiếu cột bắt buộc: ${missingColumns.join(", ")}.`,
+            `Các cột cần có: ${requiredColumns.join(", ")}.`,
+          ]);
+
+          setCsvImportLoading(false);
+          return;
+        }
+
+        const seenMssv = new Set<string>();
+
+        const previewRows: CsvPreviewRow[] = results.data.map(
+          (record, index) => {
+            const student: CsvStudent = {
+              mssv: (record.mssv ?? "").trim(),
+              full_name: (record.full_name ?? "").trim(),
+              birth_date: (record.birth_date ?? "").trim(),
+              gender: (record.gender ?? "").trim(),
+              class_name: (record.classname ?? "").trim(),
+            };
+
+            const errors: string[] = [];
+
+            if (!student.mssv) {
+              errors.push("Thiếu MSSV");
+            } else if (seenMssv.has(student.mssv)) {
+              errors.push("MSSV bị trùng trong file");
+            } else {
+              seenMssv.add(student.mssv);
+            }
+
+            if (!student.full_name) {
+              errors.push("Thiếu họ tên");
+            }
+
+            if (!student.birth_date) {
+              errors.push("Thiếu ngày sinh");
+            } else if (
+              !/^\d{4}-\d{2}-\d{2}$/.test(student.birth_date) ||
+              !isValidCsvDate(student.birth_date)
+            ) {
+              errors.push("Ngày sinh phải theo định dạng YYYY-MM-DD");
+            }
+
+            if (!student.gender) {
+              errors.push("Thiếu giới tính");
+            }
+
+            if (!student.class_name) {
+              errors.push("Thiếu lớp");
+            }
+
+            return {
+              rowNumber: index + 2,
+              student,
+              errors,
+            };
+          },
+        );
+
+        setCsvPreviewRows(previewRows);
+
+        const parserErrors: string[] = results.errors.map(
+          (error) =>
+            `Lỗi đọc CSV tại dòng ${error.row ?? "không xác định"}: ${error.message}`,
+        );
+
+        setCsvImportErrors(parserErrors);
+        setCsvImportLoading(false);
+      },
+
+      error: (error) => {
+        setCsvImportErrors([`Không thể đọc file CSV: ${error.message}`]);
+        setCsvImportLoading(false);
+      },
+    });
+  }
+
+  function isValidCsvDate(value: string): boolean {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+    if (!match) return false;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    );
+  }
 
   const [resetLoading, setResetLoading] =
     useState(false);
@@ -2376,14 +2540,28 @@ async function saveMaintenanceChanges() {
         </section>
 
         {/* =====================================================
-            SECTION 6 - RESET MẬT KHẨU SINH VIÊN
+            SECTION 6 - KHO LƯU TRỮ HỒ SƠ
+        ===================================================== */}
+
+        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">6. Kho lưu trữ hồ sơ</h2>
+              <p className="mt-1 text-sm text-gray-600">Tìm kiếm, chọn sinh viên và xuất hồ sơ JSON cùng PDF minh chứng để lưu trữ dài hạn.</p>
+            </div>
+            <button type="button" onClick={() => router.push("/admin/archive")} className="menu-btn menu-btn-inline menu-btn-blue">Mở kho lưu trữ →</button>
+          </div>
+        </section>
+        
+        {/* =====================================================
+            SECTION 7 - RESET MẬT KHẨU SINH VIÊN
         ===================================================== */}
 
         <section className="mt-8 rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-red-700">
-                6. Reset mật khẩu sinh viên
+                7. Reset mật khẩu sinh viên
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-gray-600">
@@ -2627,13 +2805,13 @@ async function saveMaintenanceChanges() {
         </section>
 
         {/* =====================================================
-            SECTION 7 - LỆNH QUẢN TRỊ ĐẶC BIỆT
+            SECTION 8 - LỆNH QUẢN TRỊ ĐẶC BIỆT
         ===================================================== */}
 
         <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
 
           <h2 className="text-2xl font-semibold text-gray-900">
-            7. Lệnh quản trị đặc biệt
+            8. Lệnh quản trị đặc biệt
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
@@ -2671,7 +2849,290 @@ async function saveMaintenanceChanges() {
           </div>
 
           {/* ================================================
-              7.1. TẠO TÀI KHOẢN SINH VIÊN
+              8.1. THÊM DANH SÁCH SINH VIÊN
+          ================================================ */}
+
+          <div className="mt-8 overflow-hidden rounded-xl border-2 border-blue-300">
+            <button
+              type="button"
+              onClick={() => setImportStudentsOpen((prev) => !prev)}
+              aria-expanded={importStudentsOpen}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 bg-blue-50 px-5 py-4 text-left transition hover:bg-blue-100"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  8.1. Thêm danh sách sinh viên
+                </h3>
+
+                <p className="mt-1 text-sm text-gray-600">
+                  Nhập danh sách sinh viên từ file CSV và xem trước dữ liệu trước khi xác nhận.
+                </p>
+              </div>
+
+              <ChevronDown
+                size={20}
+                className={`shrink-0 transition-transform duration-200 ${
+                  importStudentsOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {importStudentsOpen && (
+              <div className="space-y-5 border-t border-blue-200 p-5">
+                {/* Hướng dẫn định dạng */}
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <p className="font-semibold text-blue-900">
+                    Định dạng file CSV
+                  </p>
+
+                  <p className="mt-2 text-sm leading-6 text-blue-800">
+                    File cần có đủ các cột mssv, full_name, birth_date,
+                    gender và classname. Các cột có thể nằm theo bất kỳ thứ tự nào.
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-blue-800">
+                    Ngày sinh sử dụng định dạng YYYY-MM-DD.
+                    Các dòng thiếu dữ liệu hoặc có MSSV trùng sẽ được đánh dấu để kiểm tra.
+                  </p>
+                </div>
+
+                {/* Vùng tải file */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => csvInputRef.current?.click()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      csvInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleCsvFile(event.dataTransfer.files[0]);
+                  }}
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-blue-300 bg-gray-50 px-5 py-10 text-center transition hover:border-blue-500 hover:bg-blue-50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mb-3 text-blue-600"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M12 18v-6" />
+                    <path d="m9 15 3-3 3 3" />
+                  </svg>
+
+                  <p className="font-semibold text-gray-800">
+                    Kéo thả file CSV vào đây
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    hoặc nhấn để chọn file từ máy tính
+                  </p>
+
+                  <span className="mt-3 rounded-lg bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                    Chỉ chấp nhận .csv
+                  </span>
+
+                  <input
+                    ref={csvInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={(event) => {
+                      handleCsvFile(event.target.files?.[0]);
+
+                      // Cho phép chọn lại cùng một file.
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </div>
+
+                {/* Trạng thái đọc file */}
+                {csvFileName && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="min-w-0">
+                      <p className="break-all text-sm font-semibold text-gray-800">
+                        {csvFileName}
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        {csvImportLoading
+                          ? "Đang đọc dữ liệu..."
+                          : `${csvPreviewRows.length} dòng dữ liệu`}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCsvFileName("");
+                        setCsvPreviewRows([]);
+                        setCsvImportErrors([]);
+                        setCsvImportSuccess("");
+                      }}
+                      disabled={csvImportLoading}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Xóa file
+                    </button>
+                  </div>
+                )}
+
+                {/* Thông báo lỗi */}
+                {csvImportErrors.length > 0 && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p className="font-semibold text-red-800">
+                      Không thể xác nhận dữ liệu
+                    </p>
+
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-700">
+                      {csvImportErrors.map((error, index) => (
+                        <li key={`${index}-${error}`}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Bảng xem trước */}
+                {csvPreviewRows.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="font-semibold text-gray-900">
+                        Danh sách xem trước
+                      </h4>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          csvPreviewRows.some((row) => row.errors.length > 0)
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {csvPreviewRows.filter((row) => row.errors.length === 0).length}
+                        /{csvPreviewRows.length} dòng hợp lệ
+                      </span>
+                    </div>
+
+                    <div className="max-h-[420px] overflow-auto rounded-xl border border-gray-200">
+                      <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+                        <thead className="sticky top-0 z-10 bg-gray-100">
+                          <tr>
+                            <th className="border-b border-gray-200 px-3 py-3">Dòng</th>
+                            <th className="border-b border-gray-200 px-3 py-3">MSSV</th>
+                            <th className="border-b border-gray-200 px-3 py-3">Họ tên</th>
+                            <th className="border-b border-gray-200 px-3 py-3">Ngày sinh</th>
+                            <th className="border-b border-gray-200 px-3 py-3">Giới tính</th>
+                            <th className="border-b border-gray-200 px-3 py-3">Lớp</th>
+                            <th className="border-b border-gray-200 px-3 py-3">Trạng thái</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {csvPreviewRows.map((row) => (
+                            <tr
+                              key={row.rowNumber}
+                              className={
+                                row.errors.length > 0
+                                  ? "bg-red-50"
+                                  : "transition hover:bg-blue-50/50"
+                              }
+                            >
+                              <td className="border-b border-gray-100 px-3 py-3 text-gray-500">
+                                {row.rowNumber}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3 font-medium text-gray-800">
+                                {row.student.mssv || "—"}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3">
+                                {row.student.full_name || "—"}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3">
+                                {row.student.birth_date || "—"}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3">
+                                {row.student.gender || "—"}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3">
+                                {row.student.class_name || "—"}
+                              </td>
+
+                              <td className="border-b border-gray-100 px-3 py-3">
+                                {row.errors.length === 0 ? (
+                                  <span className="font-medium text-green-700">
+                                    Hợp lệ
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="text-xs font-medium text-red-700"
+                                    title={row.errors.join("; ")}
+                                  >
+                                    {row.errors.join("; ")}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p className="mt-2 text-xs text-gray-500">
+                      Bảng có thể cuộn ngang và dọc để kiểm tra toàn bộ danh sách.
+                    </p>
+                  </div>
+                )}
+
+                {/* Nút xác nhận */}
+                <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-gray-500">
+                    {csvPreviewRows.length > 0
+                      ? `Đã đọc ${csvPreviewRows.length} dòng dữ liệu.`
+                      : "Vui lòng tải lên file CSV để bắt đầu."}
+                  </p>
+
+                  <div className="menu-btn-wrapper-inline">
+                    <button
+                      type="button"
+                      disabled={
+                        csvImportLoading ||
+                        csvPreviewRows.length === 0 ||
+                        csvImportErrors.length > 0 ||
+                        csvPreviewRows.some((row) => row.errors.length > 0)
+                      }
+                      onClick={() => {
+                        alert(
+                          "Giao diện xem trước đã sẵn sàng. Chức năng xác thực mật khẩu và nhập dữ liệu Supabase sẽ được kết nối ở bước tiếp theo.",
+                        );
+                      }}
+                      className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Xác nhận nhập danh sách
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* ================================================
+              8.2. TẠO TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
           <div className="mt-8 overflow-hidden rounded-xl border-2 border-blue-300">
@@ -2690,7 +3151,7 @@ async function saveMaintenanceChanges() {
             >
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  7.1. Tạo tài khoản sinh viên
+                  8.2. Tạo tài khoản sinh viên
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -2862,7 +3323,7 @@ async function saveMaintenanceChanges() {
           </div>
 
           {/* ================================================
-              7.2. XOÁ TÀI KHOẢN SINH VIÊN
+              8.3. XOÁ TÀI KHOẢN SINH VIÊN
           ================================================ */}
 
           <div className="mt-5 overflow-hidden rounded-xl border-2 border-red-300">
@@ -2881,7 +3342,7 @@ async function saveMaintenanceChanges() {
             >
               <div>
                 <h3 className="text-lg font-semibold text-red-800">
-                  7.2. Xoá tài khoản sinh viên
+                  8.3. Xoá tài khoản sinh viên
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -3048,7 +3509,7 @@ async function saveMaintenanceChanges() {
           </div>
 
           {/* ================================================
-              7.3. CẤP / THU HỒI THẺ VÀNG
+              8.4. CẤP / THU HỒI THẺ VÀNG
           ================================================ */}
 
           <div className="mt-5 overflow-hidden rounded-xl border-2 border-amber-300">
@@ -3068,7 +3529,7 @@ async function saveMaintenanceChanges() {
             >
               <div>
                 <h3 className="text-lg font-semibold text-amber-800">
-                  7.3. Cấp / thu hồi thẻ vàng
+                  8.4. Cấp / thu hồi thẻ vàng
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
@@ -3288,17 +3749,6 @@ async function saveMaintenanceChanges() {
             </button>
           </div>
 
-        </section>
-          
-          {/* SECTION 8 - KHO LƯU TRỮ HỒ SƠ */}
-        <section className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">8. Kho lưu trữ hồ sơ</h2>
-              <p className="mt-1 text-sm text-gray-600">Tìm kiếm, chọn sinh viên và xuất hồ sơ JSON cùng PDF minh chứng để lưu trữ dài hạn.</p>
-            </div>
-            <button type="button" onClick={() => router.push("/admin/archive")} className="menu-btn menu-btn-inline menu-btn-blue">Mở kho lưu trữ →</button>
-          </div>
         </section>
       </div>
 

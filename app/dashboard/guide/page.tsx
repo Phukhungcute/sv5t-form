@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import PdfDocument from "@/components/PdfDocument";
 
 export default function IntroductionPage() {
   const router = useRouter();
@@ -20,8 +21,8 @@ export default function IntroductionPage() {
         </div>
 
         <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm md:p-8">
-          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-            Hướng dẫn xét chọn
+          <h1 className="text-2xl font-bold text-sv5t-blue md:text-3xl">
+            HƯỚNG DẪN XÉT CHỌN
           </h1>
 
           <p className="mt-2 text-gray-500">
@@ -29,26 +30,16 @@ export default function IntroductionPage() {
           </p>
 
           {/* Hiển thị file PDF */}
-          <div className="mt-6 overflow-hidden rounded-xl border border-gray-200">
-            <iframe
-              src="/documents/huong-dan-sv5t.pdf"
-              title="Quy định xét chọn   danh hiệu Sinh viên 5 tốt"
-              className="h-[75vh] min-h-[500px] w-full"
-            />
-          </div>
-
-          {/* Liên kết mở PDF nếu trình duyệt không hiển thị được */}
-          <p className="mt-3 text-center text-sm text-gray-500">
-            Nếu không xem được hết PDF,{" "}
-            <a
-              href="/documents/huong-dan-sv5t.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-blue-600 underline"
-            >
-              nhấn vào đây để mở tài liệu
-            </a>.
-          </p>
+          {/* Cấp trường */}
+          <PdfDocument
+            title='1. Quy định về tiêu chuẩn xét chọn danh hiệu "Sinh viên 5 tốt" cấp trường'
+            pdfUrl="/documents/huong-dan-sv5t-truong.pdf"
+          />
+          {/* Cấp khoa */}
+          <PdfDocument
+            title='2. Quy định về bình chọn danh hiệu "Sinh viên 5 tốt" cấp khoa'
+            pdfUrl="/documents/huong-dan-sv5t.pdf"
+          />
         </section>
       </div>
     </main>
