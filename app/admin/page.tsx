@@ -197,6 +197,8 @@ export default function AdminPage() {
 
   const csvInputRef = useRef<HTMLInputElement>(null);
 
+  const [showCsvGuide, setShowCsvGuide] = useState<boolean>(false);
+
   function handleCsvFile(file: File | undefined): void {
     if (!file) return;
 
@@ -224,7 +226,7 @@ export default function AdminPage() {
           "full_name",
           "birth_date",
           "gender",
-          "classname",
+          "class_name",
         ];
 
         const actualColumns: string[] = results.meta.fields ?? [];
@@ -252,7 +254,7 @@ export default function AdminPage() {
               full_name: (record.full_name ?? "").trim(),
               birth_date: (record.birth_date ?? "").trim(),
               gender: (record.gender ?? "").trim(),
-              class_name: (record.classname ?? "").trim(),
+              class_name: (record.class_name ?? "").trim(),
             };
 
             const errors: string[] = [];
@@ -310,6 +312,89 @@ export default function AdminPage() {
         setCsvImportLoading(false);
       },
     });
+  }
+
+  async function handleConfirmCsvImport(): Promise<void> {
+    if (!adminPassword.trim()) {
+      alert("Vui lòng nhập lại mật khẩu quản trị viên.");
+      return;
+    }
+
+    if (csvPreviewRows.length === 0) {
+      alert("Chưa có dữ liệu để nhập.");
+      return;
+    }
+
+    if (csvPreviewRows.some((row) => row.errors.length > 0)) {
+      alert("Vui lòng xử lý các lỗi dữ liệu trước khi nhập.");
+      return;
+    }
+
+    setCsvImportLoading(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert("Phiên đăng nhập đã hết hạn.");
+        router.push("/");
+        return;
+      }
+
+      const response = await fetch(
+        "/api/admin/students/import",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            adminPassword,
+            students: csvPreviewRows.map((row) => ({
+              mssv: row.student.mssv,
+              full_name: row.student.full_name,
+              birth_date: row.student.birth_date,
+              gender: row.student.gender,
+              class_name: row.student.class_name,
+            })),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(result.error ?? "Không thể nhập danh sách sinh viên.");
+        return;
+      }
+
+      setCsvImportSuccess(
+        `Hoàn tất — Thành công: ${result.created}, ` +
+          `trùng: ${result.skipped}, thất bại: ${result.failed}.`
+      );
+
+      alert(
+        `${result.message}\n\n` +
+          result.logs
+            .filter((log: { status: string }) => log.status !== "success")
+            .map(
+              (log: {
+                mssv: string;
+                status: string;
+                message: string;
+              }) => `${log.mssv}: ${log.message}`
+            )
+            .join("\n")
+      );
+    } catch (error) {
+      console.error("[IMPORT_STUDENTS] CLIENT ERROR:", error);
+      alert("Không thể kết nối tới máy chủ.");
+    } finally {
+      setCsvImportLoading(false);
+    }
   }
 
   function isValidCsvDate(value: string): boolean {
@@ -859,148 +944,148 @@ async function toggleTestSchedule(): Promise<void> {
     ===================================================== */
 
   async function runAdminAction(
-  action:
-    | "create"
-    | "delete"
-    | "create_all"
-    | "delete_cohort"
-    | "grant_maintenance"
-    | "revoke_maintenance"
-    | "update_maintenance_bulk",
-  targetMssv?: string
-) {
-  const maintenanceTargetMssv =
-  (targetMssv ?? maintenanceMssv).trim();
-  
-  if (!adminPassword.trim()) {
-    alert(
-      "Vui lòng nhập lại mật khẩu quản trị viên."
-    );
-    return;
-  }
-
-  if (action === "create" && !accountMssv.trim()) {
-    alert("Vui lòng nhập MSSV.");
-    return;
-  }
-
-  if (action === "delete" && !deleteMssv.trim()) {
-    alert("Vui lòng nhập MSSV.");
-    return;
-  }
-
-  if (
-    action === "delete_cohort" &&
-    !cohortKey.trim()
+    action:
+      | "create"
+      | "delete"
+      | "create_all"
+      | "delete_cohort"
+      | "grant_maintenance"
+      | "revoke_maintenance"
+      | "update_maintenance_bulk",
+    targetMssv?: string
   ) {
-    alert("Vui lòng nhập khóa.");
-    return;
-  }
-
-  if (
-    (action === "grant_maintenance" ||
-      action === "revoke_maintenance") &&
-    !maintenanceTargetMssv
-  ) {
-    alert("Vui lòng nhập MSSV.");
-    return;
-  }
-
-  setAdminActionLoading(true);
-
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      alert("Phiên đăng nhập đã hết hạn.");
-      router.push("/");
-      return;
-    }
-
-    const response = await fetch(
-      "/api/admin/account-actions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          action,
-          mssv:
-            action === "create"
-              ? accountMssv.trim()
-              : action === "delete"
-              ? deleteMssv.trim()
-              : action === "grant_maintenance" ||
-                action === "revoke_maintenance"
-              ? maintenanceTargetMssv
-              : undefined,
-          cohortKey:
-            action === "delete_cohort"
-              ? cohortKey.trim()
-              : undefined,
-          adminPassword,
-        }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
+    const maintenanceTargetMssv =
+    (targetMssv ?? maintenanceMssv).trim();
+    
+    if (!adminPassword.trim()) {
       alert(
-        result.error ??
-          "Không thể thực hiện thao tác."
+        "Vui lòng nhập lại mật khẩu quản trị viên."
       );
       return;
     }
 
-    alert(result.message);
-
-    if (action === "create") {
-      setAccountMssv("");
+    if (action === "create" && !accountMssv.trim()) {
+      alert("Vui lòng nhập MSSV.");
+      return;
     }
 
-    if (action === "delete") {
-      setDeleteMssv("");
-    }
-
-    if (action === "delete_cohort") {
-      setCohortKey("");
+    if (action === "delete" && !deleteMssv.trim()) {
+      alert("Vui lòng nhập MSSV.");
+      return;
     }
 
     if (
-      action === "grant_maintenance" ||
-      action === "revoke_maintenance"
+      action === "delete_cohort" &&
+      !cohortKey.trim()
     ) {
-      setMaintenanceMssv("");
-      await loadMaintenanceAccess();
+      alert("Vui lòng nhập khóa.");
+      return;
     }
 
-    // Nếu vừa xoá tài khoản, load lại danh sách
     if (
-      action === "delete" ||
-      action === "delete_cohort" ||
-      action === "create" ||
-      action === "create_all"
+      (action === "grant_maintenance" ||
+        action === "revoke_maintenance") &&
+      !maintenanceTargetMssv
     ) {
-      window.location.reload();
+      alert("Vui lòng nhập MSSV.");
+      return;
     }
-  } catch (error) {
-    console.error(
-      "ADMIN ACTION ERROR:",
-      error
-    );
 
-    alert(
-      "Không thể kết nối tới máy chủ."
-    );
-  } finally {
-    setAdminActionLoading(false);
+    setAdminActionLoading(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        alert("Phiên đăng nhập đã hết hạn.");
+        router.push("/");
+        return;
+      }
+
+      const response = await fetch(
+        "/api/admin/account-actions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action,
+            mssv:
+              action === "create"
+                ? accountMssv.trim()
+                : action === "delete"
+                ? deleteMssv.trim()
+                : action === "grant_maintenance" ||
+                  action === "revoke_maintenance"
+                ? maintenanceTargetMssv
+                : undefined,
+            cohortKey:
+              action === "delete_cohort"
+                ? cohortKey.trim()
+                : undefined,
+            adminPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(
+          result.error ??
+            "Không thể thực hiện thao tác."
+        );
+        return;
+      }
+
+      alert(result.message);
+
+      if (action === "create") {
+        setAccountMssv("");
+      }
+
+      if (action === "delete") {
+        setDeleteMssv("");
+      }
+
+      if (action === "delete_cohort") {
+        setCohortKey("");
+      }
+
+      if (
+        action === "grant_maintenance" ||
+        action === "revoke_maintenance"
+      ) {
+        setMaintenanceMssv("");
+        await loadMaintenanceAccess();
+      }
+
+      // Nếu vừa xoá tài khoản, load lại danh sách
+      if (
+        action === "delete" ||
+        action === "delete_cohort" ||
+        action === "create" ||
+        action === "create_all"
+      ) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error(
+        "ADMIN ACTION ERROR:",
+        error
+      );
+
+      alert(
+        "Không thể kết nối tới máy chủ."
+      );
+    } finally {
+      setAdminActionLoading(false);
+    }
   }
-}
       const [qaList, setQaList] = useState<QA[]>([]);
       const [qaQuestion, setQaQuestion] = useState("");
       const [qaAnswer, setQaAnswer] = useState("");
@@ -2879,22 +2964,221 @@ async function saveMaintenanceChanges() {
 
             {importStudentsOpen && (
               <div className="space-y-5 border-t border-blue-200 p-5">
-                {/* Hướng dẫn định dạng */}
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <p className="font-semibold text-blue-900">
-                    Định dạng file CSV
-                  </p>
+                {/* Hướng dẫn định dạng CSV */}
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="font-semibold text-blue-900">
+                      Định dạng file CSV
+                    </p>
 
-                  <p className="mt-2 text-sm leading-6 text-blue-800">
-                    File cần có đủ các cột mssv, full_name, birth_date,
-                    gender và classname. Các cột có thể nằm theo bất kỳ thứ tự nào.
-                  </p>
+                    <p className="mt-2 text-sm leading-6 text-blue-800">
+                      File cần có đủ các cột mssv, full_name, birth_date,
+                      gender và class_name. Các cột có thể nằm theo bất kỳ thứ tự nào.
+                    </p>
 
-                  <p className="mt-1 text-sm leading-6 text-blue-800">
-                    Ngày sinh sử dụng định dạng YYYY-MM-DD.
-                    Các dòng thiếu dữ liệu hoặc có MSSV trùng sẽ được đánh dấu để kiểm tra.
-                  </p>
-                </div>
+                    <p className="mt-1 text-sm leading-6 text-blue-800">
+                      Ngày sinh sử dụng định dạng YYYY-MM-DD.
+                      Các dòng thiếu dữ liệu hoặc có MSSV trùng sẽ được đánh dấu để kiểm tra.
+                    </p>
+
+                    {/* Nút mở rộng hướng dẫn */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCsvGuide((prev) => !prev)}
+                      aria-expanded={showCsvGuide}
+                      className="cursor-pointer mt-3 flex w-full items-center justify-between border-t border-blue-200 pt-3 text-sm font-semibold text-red-600 transition hover:text-red-700"
+                    >
+                      <span>
+                        {showCsvGuide
+                          ? "Thu gọn hướng dẫn tạo file CSV"
+                          : "Xem hướng dẫn chi tiết cách tạo file CSV"}
+                      </span>
+
+                      <ChevronDown
+                        size={20}
+                        className={`shrink-0 transition-transform duration-300 ${
+                          showCsvGuide ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* Nội dung hướng dẫn chi tiết */}
+                    {showCsvGuide && (
+                      <div className="mt-4 space-y-4 border-t border-blue-200 pt-4 text-sm leading-6 text-blue-900">
+                        <h3 className="font-bold text-red-600">
+                          HƯỚNG DẪN TẠO FILE CSV
+                        </h3>
+
+                        {/* Bước 1 */}
+                        <div>
+                          <p className="font-semibold">
+                            Bước 1: Tạo file Excel
+                          </p>
+
+                          <p>
+                            Mở Microsoft Excel và tạo một bảng dữ liệu với đầy đủ
+                            5 cột sau:
+                          </p>
+
+                          <div className="mt-2 overflow-x-auto rounded-md border border-blue-200 bg-white">
+                            <table className="w-full min-w-max text-left text-xs">
+                              <thead className="bg-blue-100">
+                                <tr>
+                                  {[
+                                    "mssv",
+                                    "full_name",
+                                    "birth_date",
+                                    "gender",
+                                    "class_name",
+                                  ].map((column) => (
+                                    <th key={column} className="border-b border-blue-200 px-3 py-2">
+                                      {column}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                <tr>
+                                  <td className="px-3 py-2">3169150001</td>
+                                  <td className="px-3 py-2">Nguyễn Văn A</td>
+                                  <td className="px-3 py-2">2004-02-27</td>
+                                  <td className="px-3 py-2">Nam</td>
+                                  <td className="px-3 py-2">DGT1693</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <p className="mt-2">
+                            Tên các cột phải chính xác như trên. Không thêm dấu cách
+                            vào tên cột. Thứ tự các cột không bắt buộc.
+                          </p>
+                        </div>
+
+                        {/* Bước 2 */}
+                        <div>
+                          <p className="font-semibold">
+                            Bước 2: Điền dữ liệu sinh viên
+                          </p>
+
+                          <p>
+                            Điền đầy đủ mã số sinh viên, họ tên, ngày sinh, giới tính
+                            và lớp tương ứng cho từng sinh viên. Không để trống các
+                            trường dữ liệu bắt buộc.
+                          </p>
+                        </div>
+
+                        {/* Bước 3 */}
+                        <div>
+                          <p className="font-semibold">
+                            Bước 3: Định dạng cột ngày sinh
+                          </p>
+
+                          <p>
+                            Thông thường, Excel có thể hiển thị ngày sinh theo định dạng
+                            khác, chẳng hạn 27/02/2004. Hãy thực hiện các bước sau để
+                            chuyển đổi ngày sinh sang định dạng YYYY-MM-DD:
+                          </p>
+
+                          <ol className="mt-2 list-decimal space-y-1 pl-5">
+                            <li>
+                              Chọn toàn bộ cột <code>"birth_date"</code>.
+                            </li>
+
+                            <li>
+                              Mở thẻ <strong>Data</strong>, chọn{" "}
+                              <strong>Text to Columns</strong> trong nhóm Data Tools.
+                            </li>
+
+                            <li>
+                              Nhấn <strong>Next</strong> qua các bước cho đến màn hình
+                              cuối cùng.
+                            </li>
+
+                            <li>
+                              Tại mục <strong>Column data format</strong>, chọn{" "}
+                              <strong>Date</strong> và chọn thứ tự ngày tháng phù hợp
+                              với dữ liệu gốc, ví dụ DMY nếu dữ liệu đang là
+                              ngày/tháng/năm.
+                            </li>
+
+                            <li>
+                              Nhấn <strong>Finish</strong>.
+                            </li>
+
+                            <li>
+                              Chọn lại cột <code>"birth_date"</code>, mở thẻ{" "}
+                              <strong>Home</strong>, tại nhóm Number, mở danh sách{" "}
+                              <strong>Number Format</strong> và chọn{" "}
+                              <strong>More Number Formats...</strong>.
+                            </li>
+
+                            <li>
+                              Trong hộp thoại Format Cells, chọn Category là{" "}
+                              <strong>Date</strong>. Nếu Excel cung cấp kiểu hiển thị
+                              năm-tháng-ngày, hãy chọn kiểu tương ứng. Nếu không, chọn
+                              Category là <strong>Custom</strong> và nhập{" "}
+                              <code>yyyy-mm-dd</code> vào ô Type.
+                            </li>
+                          </ol>
+
+                          <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+                            <strong>Lưu ý:</strong> Ngày sinh phải là ngày hợp lệ.
+                            Ví dụ ngày 14/03/2012 cần được hiển thị là{" "}
+                            <code>2012-03-14</code>. Sau khi lưu CSV, nên mở lại file
+                            bằng trình soạn thảo văn bản để kiểm tra giá trị thực tế
+                            trong cột <code>birth_date</code>, vì định dạng hiển thị
+                            trong Excel không phải lúc nào cũng bảo đảm định dạng
+                            được ghi vào CSV.
+                          </div>
+                        </div>
+
+                        {/* Bước 4 */}
+                        <div>
+                          <p className="font-semibold">
+                            Bước 4: Lưu file dưới định dạng CSV UTF-8
+                          </p>
+
+                          <ol className="mt-2 list-decimal space-y-1 pl-5">
+                            <li>
+                              Chọn <strong>File → Save As</strong>.
+                            </li>
+
+                            <li>
+                              Chọn vị trí lưu file.
+                            </li>
+
+                            <li>
+                              Tại mục <strong>Save as type</strong>, chọn{" "}
+                              <strong>
+                                CSV UTF-8 (Comma delimited) (*.csv)
+                              </strong>.
+                            </li>
+
+                            <li>
+                              Đặt tên file và nhấn <strong>Save</strong>.
+                            </li>
+
+                            <li>
+                              Nếu Excel hiện thông báo về tính năng không tương thích
+                              với định dạng CSV, hãy xác nhận tiếp tục lưu dưới dạng CSV.
+                            </li>
+                          </ol>
+                        </div>
+
+                        {/* Hoàn tất */}
+                        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-green-800">
+                          <p className="font-semibold">Hoàn tất!</p>
+
+                          <p className="mt-1">
+                            Quay lại mục nhập danh sách sinh viên, chọn file CSV vừa
+                            tạo, kiểm tra dữ liệu xem trước và nhấn nút xác nhận nhập
+                            danh sách.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                 {/* Vùng tải file */}
                 <div
@@ -3116,11 +3400,7 @@ async function saveMaintenanceChanges() {
                         csvImportErrors.length > 0 ||
                         csvPreviewRows.some((row) => row.errors.length > 0)
                       }
-                      onClick={() => {
-                        alert(
-                          "Giao diện xem trước đã sẵn sàng. Chức năng xác thực mật khẩu và nhập dữ liệu Supabase sẽ được kết nối ở bước tiếp theo.",
-                        );
-                      }}
+                      onClick={handleConfirmCsvImport}
                       className="menu-btn menu-btn-blue disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Xác nhận nhập danh sách
@@ -3529,7 +3809,7 @@ async function saveMaintenanceChanges() {
             >
               <div>
                 <h3 className="text-lg font-semibold text-amber-800">
-                  8.4. Cấp / thu hồi thẻ vàng
+                  8.4. Cấp / Thu hồi thẻ vàng
                 </h3>
 
                 <p className="mt-1 text-sm text-gray-600">
