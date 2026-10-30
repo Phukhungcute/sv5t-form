@@ -357,7 +357,7 @@ const vietnamTime = currentTime
   return (
     <>
     <DisableBrowserZoom />
-    <main className="min-h-screen bg-white p-6 px-40">
+    <main className="min-h-screen bg-white p-6 md:px-40">
       
       {showPasswordSuccess && (
           <div
@@ -424,15 +424,13 @@ const vietnamTime = currentTime
         <div className="hidden md:flex flex-col items-start">
           <FloatingBubbles/>
         {/* Ảnh tiêu đề */}
-        {infoHeight > 0 && (
-          <div className="flex h-[200px] shrink-0 items-center">
+        <div className="flex h-[200px] shrink-0 items-center">
             <img
               src="/images/Title.jpg"
               alt="Title SV5T"
-              className="h-full w-auto object-contain"
+              className="block h-full w-auto object-contain"
             />
           </div>
-        )}
 
           {/* Ribbon */}
           <nav className="flex w-full max-w-5xl justify-start overflow-hidden bg-sv5t-blue shadow-md">

@@ -228,64 +228,77 @@ export default function ResultPage() {
 
   async function handleParticipationConfirm() {
   if (participationChoice === null) {
-    alert(
-      "Vui lòng chọn Được hoặc Không."
-    );
+    alert("Vui lòng chọn Được hoặc Không.");
     return;
   }
 
   if (!submission?.id) {
+    console.error("Không tìm thấy submission.id:", submission);
+    alert("Không tìm thấy hồ sơ cần cập nhật.");
     return;
   }
 
   setParticipationSaving(true);
 
   try {
-    const { error } = await supabase
+    console.log("Đang cập nhật participation:", {
+      submissionId: submission.id,
+      participationChoice,
+    });
+
+    const { data, error } = await supabase
       .from("submissions")
       .update({
-        participation:
-          participationChoice,
+        participation: participationChoice,
       })
-      .eq("id", submission.id);
+      .eq("id", submission.id)
+      .select("id, mssv, version, participation");
 
     if (error) {
+      console.error("PARTICIPATION UPDATE ERROR:", error);
+
+      alert(`Không thể lưu lựa chọn: ${error.message}`);
+      return;
+    }
+
+    console.log("Bản ghi được cập nhật:", data);
+
+    if (!data || data.length === 0) {
       console.error(
-        "PARTICIPATION UPDATE ERROR:",
-        error
+        "Không có bản ghi nào được cập nhật. Kiểm tra ID và quyền RLS.",
+        {
+          submissionId: submission.id,
+          participationChoice,
+        }
       );
 
       alert(
-        "Không thể lưu lựa chọn. Vui lòng thử lại."
+        "Không tìm thấy bản ghi để cập nhật hoặc bạn không có quyền cập nhật bản ghi này."
       );
 
       return;
     }
 
+    const updatedSubmission = data[0];
+
     setSubmission((current) =>
       current
         ? {
             ...current,
-            participation:
-              participationChoice,
+            participation: updatedSubmission.participation,
           }
         : current
     );
 
     Success(
-      participationChoice
+      updatedSubmission.participation
         ? "Đã xác nhận tham gia lễ tuyên dương!"
         : "Đã xác nhận không tham gia lễ tuyên dương!"
     );
   } catch (error) {
-    console.error(
-      "PARTICIPATION CONFIRM ERROR:",
-      error
-    );
+    console.error("PARTICIPATION CONFIRM ERROR:", error);
 
-    alert(
-      "Đã xảy ra lỗi. Vui lòng thử lại."
-    );
+    alert("Đã xảy ra lỗi. Vui lòng thử lại.");
   } finally {
     setParticipationSaving(false);
   }
@@ -305,16 +318,16 @@ export default function ResultPage() {
 
     if (!file || !student) return;
 
-    const allowedTypes = ["image/png", "image/jpeg"];
-    const maxSize = 20 * 1024 * 1024;
+    const allowedTypes = ["image/jpeg"];
+    const maxSize = 4 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
-      alert("Vui lòng chọn ảnh PNG hoặc JPG.");
+      alert("Vui lòng chọn ảnh JPG.");
       return;
     }
 
     if (file.size > maxSize) {
-      alert("Ảnh không được vượt quá 20 MB.");
+      alert("Ảnh không được vượt quá 4 MB.");
       return;
     }
 
@@ -848,8 +861,8 @@ export default function ResultPage() {
 
               <p className="mt-2 text-sm leading-6 text-gray-600">
                 Vui lòng tải lên ảnh tuyên dương của bạn.
-                Chấp nhận định dạng PNG, JPG, dung lượng
-                không quá 20 MB.
+                Chấp nhận định dạng JPG, dung lượng
+                không quá 4 MB.
               </p>
 
               {/* Ô tải ảnh */}
@@ -880,13 +893,13 @@ export default function ResultPage() {
                   </span>
 
                   <span className="mt-1 text-sm text-gray-500">
-                    PNG hoặc JPG · Tối đa 20 MB
+                    JPG · Tối đa 4 MB
                   </span>
 
                   <input
                     id="award-photo"
                     type="file"
-                    accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                    accept="image/jpeg,.jpg,.jpeg"
                     className="sr-only"
                     disabled={awardPhotoUploading}
                     onChange={handleAwardPhotoUpload}

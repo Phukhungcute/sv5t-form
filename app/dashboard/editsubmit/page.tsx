@@ -561,16 +561,16 @@ function isStep1Complete() {
     studentId.trim() !== "" &&
     gender !== "" &&
     birthDate !== "" &&
-    ethnicity.trim() !== "" &&
+    // ethnicity.trim() !== "" &&
     major.trim() !== "" &&
     className.trim() !== "" &&
-    faculty.trim() !== "" &&
+    faculty.trim() !== ""
     // phone.trim() !== "" &&
-    studentYear !== "" &&
-    position.trim() !== "" &&
-    unionDate !== "" &&
+    // studentYear !== "" &&
+    // position.trim() !== "" &&
+    // unionDate !== ""
     // email.trim() !== "" &&
-    address.trim() !== ""
+    // address.trim() !== ""
   );
 }
 
@@ -815,6 +815,7 @@ function isStep1Complete() {
                 />
               </div>
 
+              {/*
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
                   Dân tộc <span className="text-red-500">*</span>
@@ -829,6 +830,7 @@ function isStep1Complete() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
+              */}
 
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
@@ -883,7 +885,6 @@ function isStep1Complete() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
-              */}
 
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
@@ -945,7 +946,6 @@ function isStep1Complete() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   
-                  {/* a. Dự bị */}
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
                   a. Dự bị
@@ -987,7 +987,6 @@ function isStep1Complete() {
                 )}
               </div>
 
-                  {/* b. Chính thức */}
               <div>
               <label className="mb-2 block font-medium text-gray-700">
                 b. Chính thức
@@ -1043,10 +1042,7 @@ function isStep1Complete() {
 </div>
             </div>
 
-            {/* Liên hệ */}
-
             <div className="mt-8 grid gap-5 border-t border-gray-200 pt-8">
-              {/*
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
                   Email <span className="text-red-500">*</span>
@@ -1060,8 +1056,7 @@ function isStep1Complete() {
                   maxLength={100}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
-              </div>
-              */}
+              </div>              
 
               <div>
                 <label className="mb-2 block font-medium text-gray-700">
@@ -1077,6 +1072,7 @@ function isStep1Complete() {
                   className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>
+              */}
 
             </div>
 

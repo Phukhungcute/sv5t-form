@@ -415,7 +415,7 @@ async function cleanupOldSubmissions(
 
         <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-xl font-semibold text-gray-900">
-            Thông tin sinh viên
+            1. Thông tin sinh viên
           </h2>
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -454,13 +454,19 @@ async function cleanupOldSubmissions(
               value="Giáo dục Tiểu học"
             />
 
+            <ReviewItem
+              label="Chuyên ngành đào tạo"
+              value="Giáo dục Tiểu học"
+            />
+
           </div>
         </section>
-
+        
         {/* =====================================================
             THÔNG TIN CHUNG
         ====================================================== */}
 
+        {/*
         <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-xl font-semibold text-gray-900">
             Thông tin chung
@@ -531,6 +537,7 @@ async function cleanupOldSubmissions(
 
           </div>
         </section>
+*/}
 
         {/* =====================================================
             ĐẠO ĐỨC TỐT
