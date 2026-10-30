@@ -907,6 +907,30 @@ const vietnamTime = currentTime
                     </h2>
                   </div>
 
+                  {/* Cảnh báo chế độ thử nghiệm */}
+                    {schedule?.test_schedule_enabled === true && (
+                      <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow-sm">
+                        {/* Biểu tượng cảnh báo */}
+                        <div className="flex h-10 w-10 shrink-0 -translate-y-0.5 items-center justify-center rounded-full bg-amber-100 text-xl">
+                          <span className="-translate-y-0.75">⚠️</span>
+                        </div>
+
+                        {/* Nội dung cảnh báo */}
+                        <div>
+                          <h3 className="font-semibold text-amber-900">
+                            Lưu ý về chế độ thử nghiệm
+                          </h3>
+
+                          <p className="mt-1 text-sm leading-relaxed text-amber-800">
+                            Chế độ thử nghiệm đang được triển khai nên hiện tại
+                            các chức năng và hồ sơ được mở để phục vụ kiểm tra.
+                            Trong hoạt động chính thức, hệ thống sẽ tự động mở
+                            các chức năng theo từng đợt dựa trên lịch trình đã thiết lập.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Gửi hồ sơ */}
                   <div className="grid gap-6 md:grid-cols-3 rounded-2xl border-3 border-blue-300 px-2 py-2">
                     <div className="rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">

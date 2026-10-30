@@ -732,7 +732,7 @@ console.log(
             {/* Bên trái: Tiêu đề */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Tạo minh chứng
+                Bổ sung minh chứng
               </h1>
 
               <p className="mt-2 text-gray-600">
