@@ -115,7 +115,7 @@ function TextField({
       )}
 
       <textarea
-        rows={30}
+        rows={10}
         maxLength={1000}
         value={value}
         onChange={(e) => onChange(e.target.value)}

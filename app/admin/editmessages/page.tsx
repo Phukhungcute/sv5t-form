@@ -3,6 +3,7 @@
 import { useEffect , useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import CriteriaManager from "./CriteriaManager";
 
 type MessageSection = {
   id: string;
@@ -186,24 +187,7 @@ export default function EditMessagesPage() {
                       )}
 
                       {section.type === "criteria" && (
-                        <div>
-                          <p className="text-sm leading-6 text-gray-600">
-                            Khu vực này sẽ cho phép quản lý các tiêu chí
-                            xét duyệt, bao gồm nội dung, thứ tự hiển thị
-                            và trạng thái áp dụng.
-                          </p>
-
-                          <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-5 text-center">
-                            <p className="font-medium text-gray-700">
-                              Chưa có tiêu chí được cấu hình
-                            </p>
-
-                            <p className="mt-1 text-sm text-gray-500">
-                              Chức năng thêm, sửa và sắp xếp tiêu chí
-                              sẽ được bổ sung sau.
-                            </p>
-                          </div>
-                        </div>
+                        <CriteriaManager />
                       )}
 
                       {section.type === "file" && (
