@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type {
   CriterionInputType,
+  IntegrationGroup,
   ReviewLevel,
   ReviewSection,
 } from "@/lib/review-criteria";
@@ -30,50 +31,71 @@ const validSections: ReviewSection[] = [
   "priority",
 ];
 
+const validIntegrationGroups: IntegrationGroup[] = [
+  "foreign_language",
+  "skills",
+  "activities",
+];
+
 const validInputTypes: CriterionInputType[] = [
   "text",
+  "score100",
   "score10",
   "score4",
 ];
 
-const SECTION_PREFIX: Record<ReviewSection, string> = {
+const SECTION_PREFIX: Record<
+  Exclude<ReviewSection, "integration">,
+  string
+> = {
   ethics: "ethics",
   study: "study",
   physical: "physical",
   volunteer: "volunteer",
-  integration: "integration",
   priority: "priority",
 };
 
-const SECTION_TITLE: Record<ReviewSection, string> = {
+const SECTION_TITLE: Record<
+  Exclude<ReviewSection, "integration">,
+  string
+> = {
   ethics: "Tiêu chí đạo đức",
   study: "Tiêu chí học tập",
   physical: "Tiêu chí thể lực",
   volunteer: "Tiêu chí tình nguyện",
-  integration: "Tiêu chí hội nhập",
   priority: "Tiêu chuẩn ưu tiên",
 };
 
-function getCriterionIdentity(
-  sectionKey: ReviewSection,
-  sortOrder: number,
-): { criterion_key: string; label: string } {
-  const number = sortOrder + 1;
+const INTEGRATION_IDENTITY: Record<
+  IntegrationGroup,
+  { prefix: string; title: string }
+> = {
+  foreign_language: {
+    prefix: "foreignLanguage",
+    title: "Tiêu chí ngoại ngữ",
+  },
+  skills: {
+    prefix: "skill",
+    title: "Tiêu chí kỹ năng",
+  },
+  activities: {
+    prefix: "integrationActivity",
+    title: "Tiêu chí hoạt động hội nhập",
+  },
+};
 
-  return {
-    criterion_key: `${SECTION_PREFIX[sectionKey]}${number}`,
-    label: `${SECTION_TITLE[sectionKey]} ${number}`,
-  };
-}
+type CriterionIdentity = {
+  criterion_key: string;
+  label: string;
+};
 
 type RequestBody = {
   action?: "create" | "update" | "toggle" | "reorder";
   id?: string;
   academic_year?: string;
   review_level?: ReviewLevel;
-  criterion_key?: string;
   section_key?: ReviewSection;
-  label?: string;
+  integration_group?: IntegrationGroup | null;
   content?: string;
   description?: string;
   input_type?: CriterionInputType;
@@ -82,7 +104,100 @@ type RequestBody = {
   items?: Array<{ id: string; sort_order: number }>;
 };
 
-async function authenticateAdmin(request: Request): Promise<
+type GroupInfo = {
+  academic_year: string;
+  review_level: ReviewLevel;
+  section_key: ReviewSection;
+  integration_group: IntegrationGroup | null;
+};
+
+function getCriterionIdentity(
+  sectionKey: ReviewSection,
+  integrationGroup: IntegrationGroup | null,
+  sortOrder: number,
+): CriterionIdentity {
+  const number = sortOrder + 1;
+
+  if (sectionKey === "integration") {
+    if (!integrationGroup) {
+      throw new Error("Thiếu tiểu mục Hội nhập tốt.");
+    }
+
+    const config = INTEGRATION_IDENTITY[integrationGroup];
+
+    return {
+      criterion_key: `${config.prefix}${number}`,
+      label: `${config.title} ${number}`,
+    };
+  }
+
+  return {
+    criterion_key: `${SECTION_PREFIX[sectionKey]}${number}`,
+    label: `${SECTION_TITLE[sectionKey]} ${number}`,
+  };
+}
+
+function validateGroup(
+  sectionKey: ReviewSection,
+  integrationGroup: IntegrationGroup | null | undefined,
+): string | null {
+  if (sectionKey === "integration") {
+    if (
+      !integrationGroup ||
+      !validIntegrationGroups.includes(integrationGroup)
+    ) {
+      return "Vui lòng chọn tiểu mục Hội nhập tốt.";
+    }
+
+    return null;
+  }
+
+  if (integrationGroup !== null && integrationGroup !== undefined) {
+    return "Nhóm tiêu chí này không có tiểu mục Hội nhập.";
+  }
+
+  return null;
+}
+
+function validateCriterion(body: RequestBody): string | null {
+  if (!body.academic_year?.trim()) {
+    return "Thiếu năm học.";
+  }
+
+  if (!body.review_level || !validLevels.includes(body.review_level)) {
+    return "Cấp xét duyệt không hợp lệ.";
+  }
+
+  if (!body.section_key || !validSections.includes(body.section_key)) {
+    return "Nhóm tiêu chí không hợp lệ.";
+  }
+
+  const groupError = validateGroup(
+    body.section_key,
+    body.integration_group,
+  );
+
+  if (groupError) {
+    return groupError;
+  }
+
+  if (!body.content?.trim()) {
+    return "Vui lòng nhập nội dung tiêu chí.";
+  }
+
+  if (
+    body.input_type &&
+    !validInputTypes.includes(body.input_type)
+  ) {
+    return "Kiểu dữ liệu không hợp lệ.";
+  }
+
+  return null;
+}
+
+async function authenticateAdmin(
+  request: Request,
+): Promise<
   | { success: true; userId: string }
   | { success: false; response: NextResponse }
 > {
@@ -140,31 +255,107 @@ async function authenticateAdmin(request: Request): Promise<
   return { success: true, userId: user.id };
 }
 
-function validateCriterion(body: RequestBody): string | null {
-  if (!body.academic_year?.trim()) {
-    return "Thiếu năm học.";
+async function getLastSortOrder(
+  group: GroupInfo,
+  excludeId?: string,
+): Promise<number> {
+  let query = supabaseAdmin
+    .from("review_criteria")
+    .select("sort_order")
+    .eq("academic_year", group.academic_year)
+    .eq("review_level", group.review_level)
+    .eq("section_key", group.section_key);
+
+  if (group.integration_group === null) {
+    query = query.is("integration_group", null);
+  } else {
+    query = query.eq("integration_group", group.integration_group);
   }
 
-  if (!body.review_level || !validLevels.includes(body.review_level)) {
-    return "Cấp xét duyệt không hợp lệ.";
+  if (excludeId) {
+    query = query.neq("id", excludeId);
   }
 
-  if (!body.section_key || !validSections.includes(body.section_key)) {
-    return "Nhóm tiêu chí không hợp lệ.";
+  const { data, error } = await query
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw error;
   }
 
-  if (!body.content?.trim()) {
-    return "Vui lòng nhập nội dung tiêu chí.";
+  return data?.[0]?.sort_order ?? -1;
+}
+
+async function getGroupItems(group: GroupInfo) {
+  let query = supabaseAdmin
+    .from("review_criteria")
+    .select("id, sort_order")
+    .eq("academic_year", group.academic_year)
+    .eq("review_level", group.review_level)
+    .eq("section_key", group.section_key);
+
+  if (group.integration_group === null) {
+    query = query.is("integration_group", null);
+  } else {
+    query = query.eq("integration_group", group.integration_group);
   }
 
-  if (
-    body.input_type &&
-    !validInputTypes.includes(body.input_type)
-  ) {
-    return "Kiểu dữ liệu không hợp lệ.";
+  const { data, error } = await query.order("sort_order", {
+    ascending: true,
+  });
+
+  if (error) {
+    throw error;
   }
 
-  return null;
+  return data ?? [];
+}
+
+/**
+ * Đánh lại thứ tự và mã tiêu chí trong một nhóm độc lập.
+ *
+ * Dùng mã tạm trước để tránh xung đột UNIQUE criterion_key.
+ */
+async function renumberGroup(group: GroupInfo): Promise<void> {
+  const items = await getGroupItems(group);
+
+  // Bước 1: Đưa các mã về trạng thái tạm.
+  for (const item of items) {
+    const { error } = await supabaseAdmin
+      .from("review_criteria")
+      .update({
+        criterion_key: `__temporary_${item.id}`,
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  // Bước 2: Đánh lại mã và thứ tự.
+  for (const [index, item] of items.entries()) {
+    const identity = getCriterionIdentity(
+      group.section_key,
+      group.integration_group,
+      index,
+    );
+
+    const { error } = await supabaseAdmin
+      .from("review_criteria")
+      .update({
+        sort_order: index,
+        criterion_key: identity.criterion_key,
+        label: identity.label,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      throw error;
+    }
+  }
 }
 
 export async function GET(request: Request) {
@@ -200,6 +391,7 @@ export async function GET(request: Request) {
       .eq("academic_year", academicYear)
       .eq("review_level", reviewLevel)
       .order("section_key")
+      .order("integration_group")
       .order("sort_order");
 
     if (error) {
@@ -243,33 +435,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: existingItems, error: listError } =
-  await supabaseAdmin
-    .from("review_criteria")
-    .select("sort_order")
-    .eq("academic_year", body.academic_year!.trim())
-    .eq("review_level", body.review_level!)
-    .eq("section_key", body.section_key!)
-    .order("sort_order", { ascending: false })
-    .limit(1);
+    const group: GroupInfo = {
+      academic_year: body.academic_year!.trim(),
+      review_level: body.review_level!,
+      section_key: body.section_key!,
+      integration_group: body.integration_group ?? null,
+    };
 
-if (listError) {
-  throw listError;
-}
-
-    const sortOrder = (existingItems?.[0]?.sort_order ?? -1) + 1;
+    const sortOrder = (await getLastSortOrder(group)) + 1;
 
     const identity = getCriterionIdentity(
-    body.section_key!,
-    sortOrder,
+      group.section_key,
+      group.integration_group,
+      sortOrder,
     );
 
     const { data, error } = await supabaseAdmin
-    .from("review_criteria")
-    .insert({
-        academic_year: body.academic_year!.trim(),
-        review_level: body.review_level!,
-        section_key: body.section_key!,
+      .from("review_criteria")
+      .insert({
+        ...group,
         criterion_key: identity.criterion_key,
         label: identity.label,
         content: body.content!.trim(),
@@ -277,21 +461,19 @@ if (listError) {
         input_type: body.input_type ?? "text",
         sort_order: sortOrder,
         is_active: true,
-    })
-    .select()
-    .single();
+      })
+      .select()
+      .single();
 
     if (error) {
-    if (error.code === "23505") {
+      if (error.code === "23505") {
         return NextResponse.json(
-        {
-            error: "Mã tiêu chí bị trùng. Vui lòng tải lại danh sách và thử lại.",
-        },
-        { status: 409 },
+          { error: "Mã tiêu chí bị trùng. Vui lòng tải lại danh sách." },
+          { status: 409 },
         );
-    }
+      }
 
-    throw error;
+      throw error;
     }
 
     return NextResponse.json({ success: true, data });
@@ -315,124 +497,145 @@ export async function PATCH(request: Request) {
 
     const body = (await request.json()) as RequestBody;
 
-    // Cập nhật thứ tự nhiều tiêu chí
-        if (body.action === "reorder") {
-    if (
-        !Array.isArray(body.items) ||
-        body.items.length === 0
-    ) {
+    // Sắp xếp tiêu chí.
+    if (body.action === "reorder") {
+      if (!Array.isArray(body.items) || body.items.length === 0) {
         return NextResponse.json(
-        { error: "Danh sách sắp xếp không hợp lệ." },
-        { status: 400 },
+          { error: "Danh sách sắp xếp không hợp lệ." },
+          { status: 400 },
         );
-    }
+      }
 
-    const ids = body.items.map((item) => item.id);
+      const ids = body.items.map((item) => item.id);
 
-    if (
+      if (
         new Set(ids).size !== ids.length ||
         body.items.some(
-        (item) =>
+          (item) =>
             typeof item.id !== "string" ||
             !Number.isInteger(item.sort_order) ||
             item.sort_order < 0,
         )
-    ) {
+      ) {
         return NextResponse.json(
-        { error: "Dữ liệu sắp xếp không hợp lệ." },
-        { status: 400 },
+          { error: "Dữ liệu sắp xếp không hợp lệ." },
+          { status: 400 },
         );
-    }
+      }
 
-    // Lấy thông tin nhóm và năm học của các tiêu chí.
-    const { data: existingItems, error: fetchError } =
+      const { data: existingItems, error: fetchError } =
         await supabaseAdmin
-        .from("review_criteria")
-        .select("id, academic_year, review_level, section_key")
-        .in("id", ids);
+          .from("review_criteria")
+          .select(
+            "id, academic_year, review_level, section_key, integration_group",
+          )
+          .in("id", ids);
 
-    if (fetchError) {
+      if (fetchError) {
         throw fetchError;
-    }
+      }
 
-    if (!existingItems || existingItems.length !== ids.length) {
+      if (!existingItems || existingItems.length !== ids.length) {
         return NextResponse.json(
-        { error: "Một số tiêu chí không còn tồn tại." },
-        { status: 404 },
+          { error: "Một số tiêu chí không còn tồn tại." },
+          { status: 404 },
         );
-    }
+      }
 
-    // Không cho phép sắp xếp lẫn tiêu chí thuộc các section khác nhau.
-    const firstItem = existingItems[0];
+      const firstItem = existingItems[0];
 
-    const sameGroup = existingItems.every(
+      const sameGroup = existingItems.every(
         (item) =>
-        item.academic_year === firstItem.academic_year &&
-        item.review_level === firstItem.review_level &&
-        item.section_key === firstItem.section_key,
-    );
+          item.academic_year === firstItem.academic_year &&
+          item.review_level === firstItem.review_level &&
+          item.section_key === firstItem.section_key &&
+          item.integration_group === firstItem.integration_group,
+      );
 
-    if (!sameGroup) {
+      if (!sameGroup) {
         return NextResponse.json(
-        { error: "Không thể sắp xếp tiêu chí thuộc các nhóm khác nhau." },
-        { status: 400 },
+          {
+            error:
+              "Không thể sắp xếp tiêu chí thuộc các nhóm hoặc tiểu mục khác nhau.",
+          },
+          { status: 400 },
         );
-    }
+      }
 
-    const orderedItems = [...body.items].sort(
+      const orderedItems = [...body.items].sort(
         (a, b) => a.sort_order - b.sort_order,
-    );
+      );
 
-    if (
+      if (
         orderedItems.some(
-        (item, index) => item.sort_order !== index,
+          (item, index) => item.sort_order !== index,
         )
-    ) {
+      ) {
         return NextResponse.json(
-        { error: "Thứ tự tiêu chí không liên tục." },
-        { status: 400 },
+          { error: "Thứ tự tiêu chí không liên tục." },
+          { status: 400 },
         );
-    }
+      }
 
-    // Bước 1: Đổi mã tạm để tránh xung đột UNIQUE khi hoán đổi.
-    for (let index = 0; index < orderedItems.length; index++) {
-        const item = orderedItems[index];
+      // Kiểm tra danh sách gửi lên phải bao gồm toàn bộ nhóm.
+      const group: GroupInfo = {
+        academic_year: firstItem.academic_year,
+        review_level: firstItem.review_level,
+        section_key: firstItem.section_key,
+        integration_group: firstItem.integration_group,
+      };
 
+      const allGroupItems = await getGroupItems(group);
+
+      if (
+        allGroupItems.length !== orderedItems.length ||
+        !allGroupItems.every((item) =>
+          ids.includes(item.id),
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Danh sách sắp xếp chưa đầy đủ." },
+          { status: 400 },
+        );
+      }
+
+      // Đổi mã tạm để tránh xung đột UNIQUE criterion_key.
+      for (const item of orderedItems) {
         const { error } = await supabaseAdmin
-        .from("review_criteria")
-        .update({
+          .from("review_criteria")
+          .update({
             criterion_key: `__temporary_${item.id}`,
-        })
-        .eq("id", item.id);
+          })
+          .eq("id", item.id);
 
         if (error) {
-        throw error;
+          throw error;
         }
-    }
+      }
 
-    // Bước 2: Gán mã và tên hiển thị mới.
-    for (const item of orderedItems) {
+      for (const item of orderedItems) {
         const identity = getCriterionIdentity(
-        firstItem.section_key as ReviewSection,
-        item.sort_order,
+          group.section_key,
+          group.integration_group,
+          item.sort_order,
         );
 
         const { error } = await supabaseAdmin
-        .from("review_criteria")
-        .update({
+          .from("review_criteria")
+          .update({
             sort_order: item.sort_order,
             criterion_key: identity.criterion_key,
             label: identity.label,
             updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
+          })
+          .eq("id", item.id);
 
         if (error) {
-        throw error;
+          throw error;
         }
-    }
+      }
 
-    return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true });
     }
 
     if (!body.id) {
@@ -442,6 +645,7 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Bật / tắt tiêu chí.
     if (body.action === "toggle") {
       if (typeof body.is_active !== "boolean") {
         return NextResponse.json(
@@ -465,6 +669,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // Chỉnh sửa tiêu chí.
     if (body.action !== "update") {
       return NextResponse.json(
         { error: "Thao tác không hợp lệ." },
@@ -482,69 +687,95 @@ export async function PATCH(request: Request) {
     }
 
     const { data: currentItem, error: currentError } =
-        await supabaseAdmin
-            .from("review_criteria")
-            .select("academic_year, review_level, section_key, sort_order")
-            .eq("id", body.id)
-            .single();
-
-        if (currentError) {
-        throw currentError;
-        }
-
-        const targetSection = body.section_key!;
-
-        let sortOrder = currentItem.sort_order;
-
-        if (targetSection !== currentItem.section_key) {
-        const { data: targetItems, error: targetError } =
-            await supabaseAdmin
-            .from("review_criteria")
-            .select("sort_order")
-            .eq("academic_year", currentItem.academic_year)
-            .eq("review_level", currentItem.review_level)
-            .eq("section_key", targetSection)
-            .neq("id", body.id)
-            .order("sort_order", { ascending: false })
-            .limit(1);
-
-        if (targetError) {
-            throw targetError;
-        }
-
-        sortOrder = (targetItems?.[0]?.sort_order ?? -1) + 1;
-        }
-
-        const identity = getCriterionIdentity(targetSection, sortOrder);
-
-        const { data, error } = await supabaseAdmin
+      await supabaseAdmin
         .from("review_criteria")
-        .update({
-            section_key: targetSection,
-            criterion_key: identity.criterion_key,
-            label: identity.label,
-            content: body.content!.trim(),
-            description: body.description?.trim() ?? "",
-            input_type: body.input_type ?? "text",
-            sort_order: sortOrder,
-            updated_at: new Date().toISOString(),
-        })
+        .select(
+          "id, academic_year, review_level, section_key, integration_group",
+        )
         .eq("id", body.id)
-        .select()
         .single();
 
-        if (error) {
-        if (error.code === "23505") {
-            return NextResponse.json(
-            { error: "Mã tiêu chí bị trùng trong nhóm mới." },
-            { status: 409 },
-            );
-        }
+    if (currentError) {
+      throw currentError;
+    }
 
-        throw error;
-        }
+    const oldGroup: GroupInfo = {
+      academic_year: currentItem.academic_year,
+      review_level: currentItem.review_level,
+      section_key: currentItem.section_key,
+      integration_group: currentItem.integration_group,
+    };
 
-        return NextResponse.json({ success: true, data });
+    const newGroup: GroupInfo = {
+      academic_year: currentItem.academic_year,
+      review_level: currentItem.review_level,
+      section_key: body.section_key!,
+      integration_group: body.integration_group ?? null,
+    };
+
+    const groupChanged =
+      oldGroup.section_key !== newGroup.section_key ||
+      oldGroup.integration_group !== newGroup.integration_group;
+
+    let sortOrder: number;
+
+    if (groupChanged) {
+      sortOrder = (await getLastSortOrder(newGroup)) + 1;
+    } else {
+      const { data: currentOrder, error: orderError } =
+        await supabaseAdmin
+          .from("review_criteria")
+          .select("sort_order")
+          .eq("id", body.id)
+          .single();
+
+      if (orderError) {
+        throw orderError;
+      }
+
+      sortOrder = currentOrder.sort_order;
+    }
+
+    const identity = getCriterionIdentity(
+      newGroup.section_key,
+      newGroup.integration_group,
+      sortOrder,
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("review_criteria")
+      .update({
+        section_key: newGroup.section_key,
+        integration_group: newGroup.integration_group,
+        criterion_key: identity.criterion_key,
+        label: identity.label,
+        content: body.content!.trim(),
+        description: body.description?.trim() ?? "",
+        input_type: body.input_type ?? "text",
+        sort_order: sortOrder,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", body.id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "Mã tiêu chí bị trùng trong nhóm mới." },
+          { status: 409 },
+        );
+      }
+
+      throw error;
+    }
+
+    // Nếu chuyển nhóm, đánh lại thứ tự ở nhóm cũ.
+    if (groupChanged) {
+      await renumberGroup(oldGroup);
+    }
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("[REVIEW_CRITERIA_PATCH]", error);
 
@@ -573,76 +804,35 @@ export async function DELETE(request: Request) {
     }
 
     const { data: deletedItem, error: fetchError } =
-    await supabaseAdmin
+      await supabaseAdmin
         .from("review_criteria")
-        .select("academic_year, review_level, section_key")
+        .select(
+          "id, academic_year, review_level, section_key, integration_group",
+        )
         .eq("id", body.id)
         .single();
 
     if (fetchError) {
-    throw fetchError;
+      throw fetchError;
     }
+
+    const group: GroupInfo = {
+      academic_year: deletedItem.academic_year,
+      review_level: deletedItem.review_level,
+      section_key: deletedItem.section_key,
+      integration_group: deletedItem.integration_group,
+    };
 
     const { error: deleteError } = await supabaseAdmin
-    .from("review_criteria")
-    .delete()
-    .eq("id", body.id);
+      .from("review_criteria")
+      .delete()
+      .eq("id", body.id);
 
     if (deleteError) {
-    throw deleteError;
+      throw deleteError;
     }
 
-    // Lấy các tiêu chí còn lại trong section.
-    const { data: remainingItems, error: listError } =
-    await supabaseAdmin
-        .from("review_criteria")
-        .select("id")
-        .eq("academic_year", deletedItem.academic_year)
-        .eq("review_level", deletedItem.review_level)
-        .eq("section_key", deletedItem.section_key)
-        .order("sort_order", { ascending: true });
-
-    if (listError) {
-    throw listError;
-    }
-
-    // Đánh mã tạm trước để tránh xung đột UNIQUE.
-    for (const item of remainingItems ?? []) {
-    const { error } = await supabaseAdmin
-        .from("review_criteria")
-        .update({
-        criterion_key: `__temporary_${item.id}`,
-        })
-        .eq("id", item.id);
-
-    if (error) {
-        throw error;
-    }
-    }
-
-    // Đánh lại mã và thứ tự chính thức.
-    for (const [index, item] of (remainingItems ?? []).entries()) {
-    const identity = getCriterionIdentity(
-        deletedItem.section_key as ReviewSection,
-        index,
-    );
-
-    const { error } = await supabaseAdmin
-        .from("review_criteria")
-        .update({
-        sort_order: index,
-        criterion_key: identity.criterion_key,
-        label: identity.label,
-        updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
-
-    if (error) {
-        throw error;
-    }
-    }
-
-    return NextResponse.json({ success: true });
+    await renumberGroup(group);
 
     return NextResponse.json({ success: true });
   } catch (error) {

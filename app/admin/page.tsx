@@ -5,7 +5,7 @@ import { useEffect, useState , useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { ACADEMIC_YEAR } from "@/lib/constants";
 import { ADMIN_NAMES } from "@/lib/constants";
-import { ArrowUp , ArrowDown , ChevronDown } from "lucide-react";
+import { ArrowUp , ArrowDown , ChevronDown , Filter } from "lucide-react";
 import { motion } from "motion/react";
 import Papa from "papaparse";
 
@@ -1591,19 +1591,25 @@ async function saveMaintenanceChanges() {
       }
     );
 
+    const [showChangedPasswordOnly, setShowChangedPasswordOnly] = useState(false);
+
     const filteredStudentsForReset = studentsWithAccount.filter(
       (student) => {
         const query = resetSearch.trim().toLowerCase();
 
-        return (
+        const matchesSearch =
           !query ||
           student.mssv.toLowerCase().includes(query) ||
           (student.full_name ?? "").toLowerCase().includes(query) ||
-          (student.class_name ?? "").toLowerCase().includes(query)
-        );
+          (student.class_name ?? "").toLowerCase().includes(query);
+
+        const matchesPasswordStatus =
+          !showChangedPasswordOnly ||
+          student.must_change_password === false;
+
+        return matchesSearch && matchesPasswordStatus;
       }
     );
-
     function toggleSelectedMssv(
       mssv: string,
       selected: string[],
@@ -2719,15 +2725,32 @@ async function saveMaintenanceChanges() {
                 </div>
               </div>
 
-              {/* Tìm kiếm */}
-              <div className="mt-4">
+              {/* Tìm kiếm và lọc */}
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <input
                   type="text"
                   value={resetSearch}
                   onChange={(event) => setResetSearch(event.target.value)}
                   placeholder="Tìm theo MSSV, họ tên hoặc lớp..."
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                  className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
                 />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowChangedPasswordOnly((prev) => !prev)
+                  }
+                  className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition ${
+                    showChangedPasswordOnly
+                      ? "border-green-300 bg-green-50 text-green-700"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Filter className="h-4 w-4" />
+                  {showChangedPasswordOnly
+                    ? "Đang lọc: Đã đổi mật khẩu"
+                    : "Đã đổi mật khẩu"}
+                </button>
               </div>
 
               {/* Chọn tất cả sinh viên đang hiển thị */}

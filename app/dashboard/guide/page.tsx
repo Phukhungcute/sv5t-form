@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import PdfDocument from "@/components/PdfDocument";
+import WordDocument from "@/components/WordDocument";
 
 export default function IntroductionPage() {
   const router = useRouter();
@@ -39,6 +40,24 @@ export default function IntroductionPage() {
           <PdfDocument
             title='2. Quy định về bình chọn danh hiệu "Sinh viên 5 tốt" cấp khoa'
             pdfUrl="/documents/huong-dan-sv5t.pdf"
+          />
+
+          {/* Biểu mẫu dành cho sinh viên */}
+          <WordDocument
+            title="3. Mẫu 01 - Bảng khai thành tích cá nhân xét cấp trường"
+            fileUrl="/documents/mau_01.docx"
+          />
+          <WordDocument
+            title="4. Mẫu 02 - Minh chứng thành tích cá nhân xét cấp trường"
+            fileUrl="/documents/mau_02.docx"
+          />
+          <WordDocument
+            title="5. Mẫu 03 - Bảng khai thành tích tập thể xét cấp trường"
+            fileUrl="/documents/mau_03.docx"
+          />
+          <WordDocument
+            title="6. Mẫu 04 - Minh chứng thành tích tập thể xét cấp trường"
+            fileUrl="/documents/mau_04.docx"
           />
         </section>
       </div>

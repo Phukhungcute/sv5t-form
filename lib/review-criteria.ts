@@ -8,8 +8,14 @@ export type ReviewSection =
   | "integration"
   | "priority";
 
+export type IntegrationGroup =
+  | "foreign_language"
+  | "skills"
+  | "activities";
+
 export type CriterionInputType =
   | "text"
+  | "score100"
   | "score10"
   | "score4";
 
@@ -19,6 +25,7 @@ export type ReviewCriterion = {
   review_level: ReviewLevel;
   criterion_key: string;
   section_key: ReviewSection;
+  integration_group: IntegrationGroup | null;
   label: string;
   content: string;
   description: string;
@@ -33,6 +40,7 @@ export type ReviewCriterionInput = {
   academic_year: string;
   review_level: ReviewLevel;
   section_key: ReviewSection;
+  integration_group: IntegrationGroup | null;
   content: string;
   description: string;
   input_type: CriterionInputType;
@@ -50,6 +58,32 @@ export const REVIEW_SECTIONS: {
   { key: "priority", label: "Tiêu chuẩn ưu tiên" },
 ];
 
+export const INTEGRATION_GROUPS: {
+  key: IntegrationGroup;
+  label: string;
+  prefix: string;
+  title: string;
+}[] = [
+  {
+    key: "foreign_language",
+    label: "5.1. Về ngoại ngữ",
+    prefix: "foreignLanguage",
+    title: "Tiêu chí ngoại ngữ",
+  },
+  {
+    key: "skills",
+    label: "5.2. Về kỹ năng",
+    prefix: "skill",
+    title: "Tiêu chí kỹ năng",
+  },
+  {
+    key: "activities",
+    label: "5.3. Về hoạt động hội nhập",
+    prefix: "integrationActivity",
+    title: "Tiêu chí hoạt động hội nhập",
+  },
+];
+
 export const REVIEW_LEVELS: Record<ReviewLevel, string> = {
   faculty: "Cấp Khoa",
   university: "Cấp Trường",
@@ -65,6 +99,7 @@ export const CRITERION_INPUT_TYPES: {
   label: string;
 }[] = [
   { value: "text", label: "Văn bản (Text)" },
+  { value: "score100", label: "Điểm rèn luyện" },
   { value: "score10", label: "Điểm hệ 10" },
   { value: "score4", label: "Điểm hệ 4" },
 ];
