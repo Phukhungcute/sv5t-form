@@ -1413,11 +1413,11 @@ export default function ArchivePage() {
                     !knownCriterionKeys.has(normalizedKey)
                   );
                 });
-
-                function renderCriterion({
-                  criterion,
-                  value,
-                }: ArchiveDisplayCriterion) {
+     
+                function renderCriterion(
+                  { criterion, value }: ArchiveDisplayCriterion,
+                  index: number,
+                ) {
                   const displayValue =
                     value == null || value === ""
                       ? "Chưa có dữ liệu"
@@ -1431,7 +1431,7 @@ export default function ArchivePage() {
                       className="rounded-xl border border-gray-200 p-4"
                     >
                       <p className="font-medium text-gray-800">
-                        {criterion.content || criterion.label || criterion.criterion_key}
+                        {index + 1}. {criterion.content || criterion.label || criterion.criterion_key}
                       </p>
 
                       {criterion.description?.trim() && (
