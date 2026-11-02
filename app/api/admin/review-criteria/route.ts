@@ -255,6 +255,66 @@ async function authenticateAdmin(
   return { success: true, userId: user.id };
 }
 
+async function authenticateCriteriaReader(
+  request: Request,
+): Promise<
+  | { success: true; userId: string }
+  | { success: false; response: NextResponse }
+> {
+  const token =
+    request.headers
+      .get("Authorization")
+      ?.replace(/^Bearer\s+/i, "") ?? "";
+
+  if (!token) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Chưa đăng nhập." },
+        { status: 401 },
+      ),
+    };
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabaseAuth.auth.getUser(token);
+
+  if (authError || !user) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Phiên đăng nhập không hợp lệ." },
+        { status: 401 },
+      ),
+    };
+  }
+
+  const { data: profile, error: profileError } =
+    await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  if (!profile || !["student", "admin"].includes(profile.role)) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Bạn không có quyền xem tiêu chí." },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { success: true, userId: user.id };
+}
+
 async function getLastSortOrder(
   group: GroupInfo,
   excludeId?: string,
@@ -360,7 +420,8 @@ async function renumberGroup(group: GroupInfo): Promise<void> {
 
 export async function GET(request: Request) {
   try {
-    const auth = await authenticateAdmin(request);
+    // GET cho phép student và admin.
+    const auth = await authenticateCriteriaReader(request);
 
     if (!auth.success) {
       return auth.response;
@@ -371,16 +432,12 @@ export async function GET(request: Request) {
     const academicYear = searchParams.get("academic_year");
     const reviewLevel = searchParams.get("review_level");
 
-    if (!academicYear || !reviewLevel) {
+    if (
+      !academicYear ||
+      !["faculty", "university"].includes(reviewLevel ?? "")
+    ) {
       return NextResponse.json(
-        { error: "Thiếu năm học hoặc cấp xét duyệt." },
-        { status: 400 },
-      );
-    }
-
-    if (!validLevels.includes(reviewLevel as ReviewLevel)) {
-      return NextResponse.json(
-        { error: "Cấp xét duyệt không hợp lệ." },
+        { error: "Năm học hoặc cấp xét duyệt không hợp lệ." },
         { status: 400 },
       );
     }
@@ -398,7 +455,10 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data: data ?? [] },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     console.error("[REVIEW_CRITERIA_GET]", error);
 

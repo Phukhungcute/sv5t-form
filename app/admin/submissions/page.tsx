@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { STANDARD , FACULTY_NAME_NORMAL , ACADEMIC_YEAR } from "@/lib/constants";
+import { ACADEMIC_YEAR, FACULTY_NAME_NORMAL } from "@/lib/constants";
+import { useReviewCriteria } from "@/lib/useReviewCriteria";
+import { INTEGRATION_GROUPS } from "@/lib/review-criteria";
 import { ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
@@ -172,7 +174,25 @@ function getSubmissionFieldOrder(key: string) {
         .toLowerCase() === normalizedKey
   );
 
-  return index === -1 ? 9999 : index;
+  if (index !== -1) return index;
+
+  const dynamicPatterns: Array<[RegExp, number]> = [
+    [/^ethics(\d+)$/i, 200],
+    [/^study(\d+)$/i, 300],
+    [/^physical(\d+)$/i, 400],
+    [/^volunteer(\d+)$/i, 500],
+    [/^foreignLanguage(\d+)$/i, 600],
+    [/^skill(\d+)$/i, 610],
+    [/^integrationActivity(\d+)$/i, 620],
+    [/^priority(\d+)$/i, 700],
+  ];
+
+  for (const [pattern, sectionOrder] of dynamicPatterns) {
+    const match = key.match(pattern);
+    if (match) return sectionOrder + Number(match[1]);
+  }
+
+  return 9999;
 }
 
 /* =====================================================
@@ -235,6 +255,7 @@ function ReviewField({
 
 export default function SubmissionsPage() {
   const router = useRouter();
+  const { criteria, error: criteriaError } = useReviewCriteria();
 
   const [adminName, setAdminName] =
     useState("Quản trị viên");
@@ -995,120 +1016,6 @@ export default function SubmissionsPage() {
   return String(value);
 }
 
-  function getFieldLabel(key: string) {
-  const normalizedKey = key
-    .replace(/[_-]/g, "")
-    .toLowerCase();
-
-  const standardMap: Record<string, string> = {
-    conductscore: STANDARD.CONDUCTSCORE.CONTENT,
-    unionevaluation: STANDARD.UNIONEVALUATION.CONTENT,
-
-    ethics3: STANDARD.ETHIC3.CONTENT,
-    ethics4: STANDARD.ETHIC4.CONTENT,
-    ethics5: STANDARD.ETHIC5.CONTENT,
-    ethics6: STANDARD.ETHIC6.CONTENT,
-    ethics7: STANDARD.ETHIC7.CONTENT,
-    ethics8: STANDARD.ETHIC8.CONTENT,
-
-    gpa: STANDARD.GPA.CONTENT,
-    study2: STANDARD.STUDY2.CONTENT,
-    study3: STANDARD.STUDY3.CONTENT,
-    study4: STANDARD.STUDY4.CONTENT,
-    study5: STANDARD.STUDY5.CONTENT,
-
-    physical1: STANDARD.PHYSICAL1.CONTENT,
-    physical2: STANDARD.PHYSICAL2.CONTENT,
-    physical3: STANDARD.PHYSICAL3.CONTENT,
-    physical4: STANDARD.PHYSICAL4.CONTENT,
-    physical5: STANDARD.PHYSICAL5.CONTENT,
-    physical6: STANDARD.PHYSICAL6.CONTENT,
-    physical7: STANDARD.PHYSICAL7.CONTENT,
-
-    volunteer1: STANDARD.VOLUNTEER1.CONTENT,
-    volunteer2: STANDARD.VOLUNTEER2.CONTENT,
-    volunteer3: STANDARD.VOLUNTEER3.CONTENT,
-    volunteer4: STANDARD.VOLUNTEER4.CONTENT,
-
-    foreignlanguage1:
-      STANDARD.FOREIGNLANGUAGE1.CONTENT,
-    foreignlanguage2:
-      STANDARD.FOREIGNLANGUAGE2.CONTENT,
-    foreignlanguage3:
-      STANDARD.FOREIGNLANGUAGE3.CONTENT,
-
-    skill4: STANDARD.SKILL4.CONTENT,
-    skill5: STANDARD.SKILL5.CONTENT,
-    skill6: STANDARD.SKILL6.CONTENT,
-    skill7: STANDARD.SKILL7.CONTENT,
-    skill8: STANDARD.SKILL8.CONTENT,
-
-    integration8:
-      STANDARD.INTEGRATION8.CONTENT,
-    integration9:
-      STANDARD.INTEGRATION9.CONTENT,
-
-    priority1: STANDARD.PRIORITY1.CONTENT,
-    priority2: STANDARD.PRIORITY2.CONTENT,
-    priority3: STANDARD.PRIORITY3.CONTENT,
-    priority4: STANDARD.PRIORITY4.CONTENT,
-    priority5: STANDARD.PRIORITY5.CONTENT,
-    priority6: STANDARD.PRIORITY6.CONTENT,
-    priority7: STANDARD.PRIORITY7.CONTENT,
-    priority8: STANDARD.PRIORITY8.CONTENT,
-  };
-
-  if (standardMap[normalizedKey]) {
-    return standardMap[normalizedKey];
-  }
-
-  const generalMap: Record<string, string> = {
-    fullname: "Họ và tên",
-    studentid: "Mã số sinh viên",
-    mssv: "Mã số sinh viên",
-    gender: "Giới tính",
-    birthdate: "Ngày sinh",
-    ethnicity: "Dân tộc",
-    major: "Chuyên ngành đào tạo",
-    classname: "Lớp",
-    faculty: "Khoa",
-    phone: "Số điện thoại",
-    studentyear: "Sinh viên năm thứ",
-    position: "Chức vụ (Đoàn - Hội)",
-    uniondate: "Ngày vào Hội / Ngày vào Đoàn",
-    unionhasdate: "Ngày vào Đoàn",
-    probationhasdate: "Đảng viên dự bị",
-    probationdate: "Ngày vào Đảng — Dự bị",
-    officialhasdate: "Đảng viên chính thức",
-    officialdate: "Ngày vào Đảng — Chính thức",
-    email: "Email",
-    address: "Địa chỉ liên lạc",
-  };
-
-  return (
-    generalMap[normalizedKey] ??
-    key
-  );
-}
-
-  function getStandardLabel(key: string) {
-  const normalizedKey = key
-    .replace(/[_-]/g, "")
-    .toLowerCase();
-
-  for (const [standardKey, standard] of Object.entries(STANDARD)) {
-    if (
-      standardKey
-        .replace(/[_-]/g, "")
-        .toLowerCase() === normalizedKey
-    ) {
-      return standard.CONTENT;
-    }
-  }
-
-  return null;
-}
-
 function formatDateInput(
   dateString: string | null | undefined
 ) {
@@ -1471,6 +1378,11 @@ function exportToExcel() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100">
+      {criteriaError && (
+        <div className="mx-auto mb-4 max-w-6xl rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          Không thể tải tiêu chí động: {criteriaError}
+        </div>
+      )}
         <p className="text-gray-500">
           Đang tải...
         </p>
@@ -2320,55 +2232,33 @@ function exportToExcel() {
                         <h3 className="mb-4 text-lg font-semibold text-gray-900">
                           2. Tiêu chí Đạo đức tốt
                         </h3>
-
                         <div className="space-y-4">
                           <ReviewField
-                            label={`${STANDARD.CONDUCTSCORE.CONTENT} ${STANDARD.CONDUCTSCORE.DESC}`}
+                            label={`1. Điểm rèn luyện năm học ${ACADEMIC_YEAR} (Không ghi xếp loại)`}
                             value={data.conductScore}
                           />
-
                           <ReviewField
-                            label={`${STANDARD.UNIONEVALUATION.CONTENT} ${STANDARD.UNIONEVALUATION.DESC}`}
+                            label={`2. Phân tích chất lượng Đoàn viên năm học ${ACADEMIC_YEAR} (đối với Hội viên là Đoàn viên)`}
                             value={data.unionEvaluation}
                           />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC3.CONTENT}
-                            description={STANDARD.ETHIC3.DESC}
-                            value={data.ethics3}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC4.CONTENT}
-                            description={STANDARD.ETHIC4.DESC}
-                            value={data.ethics4}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC5.CONTENT}
-                            description={STANDARD.ETHIC5.DESC}
-                            value={data.ethics5}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC6.CONTENT}
-                            description={STANDARD.ETHIC6.DESC}
-                            value={data.ethics6}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC7.CONTENT}
-                            description={STANDARD.ETHIC7.DESC}
-                            value={data.ethics7}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.ETHIC8.CONTENT}
-                            description={STANDARD.ETHIC8.DESC}
-                            value={data.ethics8}
-                          />
+                          {criteria
+                            .filter(
+                              (criterion) =>
+                                criterion.section_key === "ethics" &&
+                                (criterion.is_active ||
+                                  data[criterion.criterion_key] !== undefined),
+                            )
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map((criterion) => (
+                              <ReviewField
+                                key={criterion.id}
+                                label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                description={criterion.description}
+                                value={data[criterion.criterion_key]}
+                              />
+                            ))}
                         </div>
-                      </div>
+                        </div>
 
                       {/* =====================================================
                           3. HỌC TẬP TỐT
@@ -2377,38 +2267,29 @@ function exportToExcel() {
                         <h3 className="mb-4 text-lg font-semibold text-gray-900">
                           3. Tiêu chí Học tập tốt
                         </h3>
-
                         <div className="space-y-4">
                           <ReviewField
-                            label={`${STANDARD.GPA.CONTENT} ${STANDARD.GPA.DESC}`}
+                            label={`1. Điểm trung bình học tập năm học ${ACADEMIC_YEAR} (Không ghi xếp loại)`}
                             value={data.gpa}
                           />
-
-                          <ReviewField
-                            label={STANDARD.STUDY2.CONTENT}
-                            description={STANDARD.STUDY2.DESC}
-                            value={data.study2}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.STUDY3.CONTENT}
-                            description={STANDARD.STUDY3.DESC}
-                            value={data.study3}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.STUDY4.CONTENT}
-                            description={STANDARD.STUDY4.DESC}
-                            value={data.study4}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.STUDY5.CONTENT}
-                            description={STANDARD.STUDY5.DESC}
-                            value={data.study5}
-                          />
+                          {criteria
+                            .filter(
+                              (criterion) =>
+                                criterion.section_key === "study" &&
+                                (criterion.is_active ||
+                                  data[criterion.criterion_key] !== undefined),
+                            )
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map((criterion) => (
+                              <ReviewField
+                                key={criterion.id}
+                                label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                description={criterion.description}
+                                value={data[criterion.criterion_key]}
+                              />
+                            ))}
                         </div>
-                      </div>
+                        </div>
 
                       {/* =====================================================
                           4. THỂ LỰC TỐT
@@ -2419,49 +2300,24 @@ function exportToExcel() {
                         </h3>
 
                         <div className="space-y-4">
-                          <ReviewField
-                            label={STANDARD.PHYSICAL1.CONTENT}
-                            description={STANDARD.PHYSICAL1.DESC}
-                            value={data.physical1}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL2.CONTENT}
-                            description={STANDARD.PHYSICAL2.DESC}
-                            value={data.physical2}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL3.CONTENT}
-                            description={STANDARD.PHYSICAL3.DESC}
-                            value={data.physical3}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL4.CONTENT}
-                            description={STANDARD.PHYSICAL4.DESC}
-                            value={data.physical4}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL5.CONTENT}
-                            description={STANDARD.PHYSICAL5.DESC}
-                            value={data.physical5}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL6.CONTENT}
-                            description={STANDARD.PHYSICAL6.DESC}
-                            value={data.physical6}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PHYSICAL7.CONTENT}
-                            description={STANDARD.PHYSICAL7.DESC}
-                            value={data.physical7}
-                          />
+                          {criteria
+                            .filter(
+                              (criterion) =>
+                                criterion.section_key === "physical" &&
+                                (criterion.is_active ||
+                                  data[criterion.criterion_key] !== undefined),
+                            )
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map((criterion) => (
+                              <ReviewField
+                                key={criterion.id}
+                                label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                description={criterion.description}
+                                value={data[criterion.criterion_key]}
+                              />
+                            ))}
                         </div>
-                      </div>
+                        </div>
 
                       {/* =====================================================
                           5. TÌNH NGUYỆN TỐT
@@ -2472,31 +2328,24 @@ function exportToExcel() {
                         </h3>
 
                         <div className="space-y-4">
-                          <ReviewField
-                            label={STANDARD.VOLUNTEER1.CONTENT}
-                            description={STANDARD.VOLUNTEER1.DESC}
-                            value={data.volunteer1}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.VOLUNTEER2.CONTENT}
-                            description={STANDARD.VOLUNTEER2.DESC}
-                            value={data.volunteer2}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.VOLUNTEER3.CONTENT}
-                            description={STANDARD.VOLUNTEER3.DESC}
-                            value={data.volunteer3}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.VOLUNTEER4.CONTENT}
-                            description={STANDARD.VOLUNTEER4.DESC}
-                            value={data.volunteer4}
-                          />
+                          {criteria
+                            .filter(
+                              (criterion) =>
+                                criterion.section_key === "volunteer" &&
+                                (criterion.is_active ||
+                                  data[criterion.criterion_key] !== undefined),
+                            )
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map((criterion) => (
+                              <ReviewField
+                                key={criterion.id}
+                                label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                description={criterion.description}
+                                value={data[criterion.criterion_key]}
+                              />
+                            ))}
                         </div>
-                      </div>
+                        </div>
 
                       {/* =====================================================
                           6. HỘI NHẬP TỐT
@@ -2506,93 +2355,38 @@ function exportToExcel() {
                           6. Tiêu chí Hội nhập tốt
                         </h3>
 
-                        {/* Ngoại ngữ */}
-                        <div>
-                          <h4 className="mb-3 text-base font-semibold text-gray-800">
-                            Về ngoại ngữ
-                          </h4>
+                        <div className="space-y-6">
+                          {INTEGRATION_GROUPS.map((group) => {
+                            const groupCriteria = criteria
+                              .filter(
+                                (criterion) =>
+                                  criterion.section_key === "integration" &&
+                                  criterion.integration_group === group.key &&
+                                  (criterion.is_active ||
+                                    data[criterion.criterion_key] !== undefined),
+                              )
+                              .sort((a, b) => a.sort_order - b.sort_order);
 
-                          <div className="space-y-4">
-                            <ReviewField
-                              label={STANDARD.FOREIGNLANGUAGE1.CONTENT}
-                              description={STANDARD.FOREIGNLANGUAGE1.DESC}
-                              value={data.foreignLanguage1}
-                            />
+                            if (groupCriteria.length === 0) return null;
 
-                            <ReviewField
-                              label={STANDARD.FOREIGNLANGUAGE2.CONTENT}
-                              description={STANDARD.FOREIGNLANGUAGE2.DESC}
-                              value={data.foreignLanguage2}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.FOREIGNLANGUAGE3.CONTENT}
-                              description={STANDARD.FOREIGNLANGUAGE3.DESC}
-                              value={data.foreignLanguage3}
-                            />
-                          </div>
+                            return (
+                              <div key={group.key} className="space-y-4">
+                                <h4 className="font-semibold text-gray-800">
+                                  {group.label}
+                                </h4>
+                                {groupCriteria.map((criterion) => (
+                                  <ReviewField
+                                    key={criterion.id}
+                                    label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                    description={criterion.description}
+                                    value={data[criterion.criterion_key]}
+                                  />
+                                ))}
+                              </div>
+                            );
+                          })}
                         </div>
-
-                        {/* Kỹ năng */}
-                        <div className="mt-8 border-t border-gray-200 pt-6">
-                          <h4 className="mb-3 text-base font-semibold text-gray-800">
-                            Về kỹ năng
-                          </h4>
-
-                          <div className="space-y-4">
-                            <ReviewField
-                              label={STANDARD.SKILL4.CONTENT}
-                              description={STANDARD.SKILL4.DESC}
-                              value={data.skill4}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.SKILL5.CONTENT}
-                              description={STANDARD.SKILL5.DESC}
-                              value={data.skill5}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.SKILL6.CONTENT}
-                              description={STANDARD.SKILL6.DESC}
-                              value={data.skill6}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.SKILL7.CONTENT}
-                              description={STANDARD.SKILL7.DESC}
-                              value={data.skill7}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.SKILL8.CONTENT}
-                              description={STANDARD.SKILL8.DESC}
-                              value={data.skill8}
-                            />
-                          </div>
                         </div>
-
-                        {/* Hội nhập */}
-                        <div className="mt-8 border-t border-gray-200 pt-6">
-                          <h4 className="mb-3 text-base font-semibold text-gray-800">
-                            Về hoạt động hội nhập
-                          </h4>
-
-                          <div className="space-y-4">
-                            <ReviewField
-                              label={STANDARD.INTEGRATION8.CONTENT}
-                              description={STANDARD.INTEGRATION8.DESC}
-                              value={data.integration8}
-                            />
-
-                            <ReviewField
-                              label={STANDARD.INTEGRATION9.CONTENT}
-                              description={STANDARD.INTEGRATION9.DESC}
-                              value={data.integration9}
-                            />
-                          </div>
-                        </div>
-                      </div>
 
                       {/* =====================================================
                           7. TIÊU CHUẨN ƯU TIÊN
@@ -2603,63 +2397,29 @@ function exportToExcel() {
                         </h3>
 
                         <div className="space-y-4">
-                          <ReviewField
-                            label={STANDARD.PRIORITY1.CONTENT}
-                            description={STANDARD.PRIORITY1.DESC}
-                            value={data.priority1}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY2.CONTENT}
-                            description={STANDARD.PRIORITY2.DESC}
-                            value={data.priority2}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY3.CONTENT}
-                            description={STANDARD.PRIORITY3.DESC}
-                            value={data.priority3}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY4.CONTENT}
-                            description={STANDARD.PRIORITY4.DESC}
-                            value={data.priority4}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY5.CONTENT}
-                            description={STANDARD.PRIORITY5.DESC}
-                            value={data.priority5}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY6.CONTENT}
-                            description={STANDARD.PRIORITY6.DESC}
-                            value={data.priority6}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY7.CONTENT}
-                            description={STANDARD.PRIORITY7.DESC}
-                            value={data.priority7}
-                          />
-
-                          <ReviewField
-                            label={STANDARD.PRIORITY8.CONTENT}
-                            description={STANDARD.PRIORITY8.DESC}
-                            value={data.priority8}
-                          />
+                          {criteria
+                            .filter(
+                              (criterion) =>
+                                criterion.section_key === "priority" &&
+                                (criterion.is_active ||
+                                  data[criterion.criterion_key] !== undefined),
+                            )
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map((criterion) => (
+                              <ReviewField
+                                key={criterion.id}
+                                label={`${criterion.sort_order + 1}. ${criterion.content}`}
+                                description={criterion.description}
+                                value={data[criterion.criterion_key]}
+                              />
+                            ))}
                         </div>
                       </div>
                     </div>
-
                   </div>
-
-                </div>
-              )}
-
-            </div>
+                  </div>
+                )}
+              </div>
 
             {/* ==========================================
                 REVIEW

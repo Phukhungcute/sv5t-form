@@ -6,12 +6,13 @@ import { supabase } from "@/lib/supabase";
 import {
     FACULTY_NAME,
     FACULTY_NAME_NORMAL,
-    ACADEMIC_YEAR,
     STANDARD,
     isSubmissionPeriod,
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
 import { Success } from "@/lib/success-notification";
+import { useReviewCriteria } from "@/lib/useReviewCriteria";
+import { INTEGRATION_GROUPS } from "@/lib/review-criteria";
 
 type SubmissionData = {
   ethnicity: string;
@@ -41,6 +42,7 @@ type Student = {
 
 export default function ReviewPage() {
   const router = useRouter();
+  const { criteria, error: criteriaError } = useReviewCriteria();
 
   useEffect(() => {
   initializeStudentPage(router, "submission");
@@ -359,6 +361,11 @@ async function cleanupOldSubmissions(
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8">
+      {criteriaError && (
+        <div className="mx-auto mb-4 max-w-4xl rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          {criteriaError}
+        </div>
+      )}
       <div className="mx-auto max-w-4xl">
 
         {/* HEADER DESKTOP */}
@@ -567,36 +574,21 @@ async function cleanupOldSubmissions(
             Tiêu chuẩn khác
           </h2>
 
-            <ReviewItem
-              label={`${STANDARD.ETHIC3.CONTENT} ${STANDARD.ETHIC3.DESC}`}
-              value={display(submission.ethics3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC4.CONTENT} ${STANDARD.ETHIC4.DESC}`}
-              value={display(submission.ethics4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC5.CONTENT} ${STANDARD.ETHIC5.DESC}`}
-              value={display(submission.ethics5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC6.CONTENT} ${STANDARD.ETHIC6.DESC}`}
-              value={display(submission.ethics6)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC7.CONTENT} ${STANDARD.ETHIC7.DESC}`}
-              value={display(submission.ethics7)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.ETHIC8.CONTENT} ${STANDARD.ETHIC8.DESC}`}
-              value={display(submission.ethics8)}
-            />
-
+            {criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "ethics" &&
+                  (criterion.is_active ||
+                    submission[criterion.criterion_key] !== undefined),
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <ReviewItem
+                  key={criterion.id}
+                  label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                  value={display(submission[criterion.criterion_key])}
+                />
+              ))}
           </div>
         </section>
 
@@ -623,26 +615,21 @@ async function cleanupOldSubmissions(
             Tiêu chuẩn khác
           </h2>
 
-            <ReviewItem
-              label={`${STANDARD.STUDY2.CONTENT} ${STANDARD.STUDY2.DESC}`}
-              value={display(submission.study2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.STUDY3.CONTENT} ${STANDARD.STUDY3.DESC}`}
-              value={display(submission.study3)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.STUDY4.CONTENT} ${STANDARD.STUDY4.DESC}`}
-              value={display(submission.study4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.STUDY5.CONTENT} ${STANDARD.STUDY5.DESC}`}
-              value={display(submission.study5)}
-            />
-          
+            {criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "study" &&
+                  (criterion.is_active ||
+                    submission[criterion.criterion_key] !== undefined),
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <ReviewItem
+                  key={criterion.id}
+                  label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                  value={display(submission[criterion.criterion_key])}
+                />
+              ))}
           </div>
         </section>
 
@@ -656,41 +643,21 @@ async function cleanupOldSubmissions(
           </h2>
 
           <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL1.CONTENT} ${STANDARD.PHYSICAL1.DESC}`}
-              value={display(submission.physical1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL2.CONTENT} ${STANDARD.PHYSICAL2.DESC}`}
-              value={display(submission.physical2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL3.CONTENT} ${STANDARD.PHYSICAL3.DESC}`}
-              value={display(submission.physical3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL4.CONTENT} ${STANDARD.PHYSICAL4.DESC}`}
-              value={display(submission.physical4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL5.CONTENT} ${STANDARD.PHYSICAL5.DESC}`}
-              value={display(submission.physical5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL6.CONTENT} ${STANDARD.PHYSICAL6.DESC}`}
-              value={display(submission.physical6)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PHYSICAL7.CONTENT} ${STANDARD.PHYSICAL7.DESC}`}
-              value={display(submission.physical7)}
-            />
-                  
+            {criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "physical" &&
+                  (criterion.is_active ||
+                    submission[criterion.criterion_key] !== undefined),
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <ReviewItem
+                  key={criterion.id}
+                  label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                  value={display(submission[criterion.criterion_key])}
+                />
+              ))}
           </div>
         </section>
 
@@ -704,26 +671,21 @@ async function cleanupOldSubmissions(
           </h2>
 
           <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER1.CONTENT} ${STANDARD.VOLUNTEER1.DESC}`}
-              value={display(submission.volunteer1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER2.CONTENT} ${STANDARD.VOLUNTEER2.DESC}`}
-              value={display(submission.volunteer2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER3.CONTENT} ${STANDARD.VOLUNTEER3.DESC}`}
-              value={display(submission.volunteer3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.VOLUNTEER4.CONTENT} ${STANDARD.VOLUNTEER4.DESC}`}
-              value={display(submission.volunteer4)}
-            />
-            
+            {criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "volunteer" &&
+                  (criterion.is_active ||
+                    submission[criterion.criterion_key] !== undefined),
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <ReviewItem
+                  key={criterion.id}
+                  label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                  value={display(submission[criterion.criterion_key])}
+                />
+              ))}
           </div>
         </section>
 
@@ -737,56 +699,34 @@ async function cleanupOldSubmissions(
           </h2>
 
           <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE1.CONTENT} ${STANDARD.FOREIGNLANGUAGE1.DESC}`}
-              value={display(submission.foreignLanguage1)}
-            />
+            {INTEGRATION_GROUPS.map((group) => {
+              const groupCriteria = criteria
+                .filter(
+                  (criterion) =>
+                    criterion.section_key === "integration" &&
+                    criterion.integration_group === group.key &&
+                    (criterion.is_active ||
+                      submission[criterion.criterion_key] !== undefined),
+                )
+                .sort((a, b) => a.sort_order - b.sort_order);
 
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE2.CONTENT} ${STANDARD.FOREIGNLANGUAGE2.DESC}`}
-              value={display(submission.foreignLanguage2)}
-            />
+              if (groupCriteria.length === 0) return null;
 
-            <ReviewItem
-              label={`${STANDARD.FOREIGNLANGUAGE3.CONTENT} ${STANDARD.FOREIGNLANGUAGE3.DESC}`}
-              value={display(submission.foreignLanguage3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL4.CONTENT} ${STANDARD.SKILL4.DESC}`}
-              value={display(submission.skill4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL5.CONTENT} ${STANDARD.SKILL5.DESC}`}
-              value={display(submission.skill5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL6.CONTENT} ${STANDARD.SKILL6.DESC}`}
-              value={display(submission.skill6)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.SKILL7.CONTENT} ${STANDARD.SKILL7.DESC}`}
-              value={display(submission.skill7)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.SKILL8.CONTENT} ${STANDARD.SKILL8.DESC}`}
-              value={display(submission.skill8)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.INTEGRATION8.CONTENT} ${STANDARD.INTEGRATION8.DESC}`}
-              value={display(submission.integration8)}
-            />
-            
-            <ReviewItem
-              label={`${STANDARD.INTEGRATION9.CONTENT} ${STANDARD.INTEGRATION9.DESC}`}
-              value={display(submission.integration9)}
-            />
-
+              return (
+                <div key={group.key} className="space-y-4">
+                  <h3 className="font-semibold text-gray-800">
+                    {group.label}
+                  </h3>
+                  {groupCriteria.map((criterion) => (
+                    <ReviewItem
+                      key={criterion.id}
+                      label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                      value={display(submission[criterion.criterion_key])}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -800,46 +740,21 @@ async function cleanupOldSubmissions(
           </h2>
 
           <div className="space-y-5">
-            <ReviewItem
-              label={`${STANDARD.PRIORITY1.CONTENT} ${STANDARD.PRIORITY1.DESC}`}
-              value={display(submission.priority1)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY2.CONTENT} ${STANDARD.PRIORITY2.DESC}`}
-              value={display(submission.priority2)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY3.CONTENT} ${STANDARD.PRIORITY3.DESC}`}
-              value={display(submission.priority3)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY4.CONTENT} ${STANDARD.PRIORITY4.DESC}`}
-              value={display(submission.priority4)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY5.CONTENT} ${STANDARD.PRIORITY5.DESC}`}
-              value={display(submission.priority5)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY6.CONTENT} ${STANDARD.PRIORITY6.DESC}`}
-              value={display(submission.priority6)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY7.CONTENT} ${STANDARD.PRIORITY7.DESC}`}
-              value={display(submission.priority7)}
-            />
-
-            <ReviewItem
-              label={`${STANDARD.PRIORITY8.CONTENT} ${STANDARD.PRIORITY8.DESC}`}
-              value={display(submission.priority8)}
-            />
-            
+            {criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "priority" &&
+                  (criterion.is_active ||
+                    submission[criterion.criterion_key] !== undefined),
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <ReviewItem
+                  key={criterion.id}
+                  label={`${criterion.sort_order + 1}. ${criterion.content} ${criterion.description ?? ""}`}
+                  value={display(submission[criterion.criterion_key])}
+                />
+              ))}
           </div>
         </section>
 

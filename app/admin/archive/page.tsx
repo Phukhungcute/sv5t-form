@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { supabase } from "@/lib/supabase";
-import { STANDARD } from "@/lib/constants";
+import { ACADEMIC_YEAR } from "@/lib/constants";
+import { SUBMISSION_REVIEW_LEVEL } from "@/lib/review-criteria";
 
 type Student = {
   id?: number | string;
@@ -42,6 +43,26 @@ type ArchiveManifest = {
   student_count: number;
   selected_mssv: string[];
   notes?: string;
+
+  // Snapshot tiêu chí tại thời điểm xuất archive.
+  criteria_snapshot?: CriteriaSnapshot | null;
+};
+
+type ArchivedCriterion = {
+  criterion_key: string;
+  section_key: string;
+  integration_group?: string | null;
+  sort_order: number;
+  label?: string;
+  content: string;
+  description?: string | null;
+  input_type?: string;
+};
+
+type CriteriaSnapshot = {
+  academic_year: string;
+  review_level: string;
+  items: ArchivedCriterion[];
 };
 
 type ArchiveStudent = {
@@ -72,8 +93,65 @@ type ArchiveListItem = {
 
 const PAGE_SIZE = 25;
 
+const HIDDEN_ARCHIVE_KEYS = new Set([
+  "ethnicity",
+  "phone",
+  "studentyear",
+  "position",
+  "uniondate",
+  "unionhasdate",
+  "probationhasdate",
+  "probationdate",
+  "officialhasdate",
+  "officialdate",
+  "email",
+  "address",
+  "youthuniondate",
+  "unionEvaluation".toLowerCase(),
+]);
+
+const ARCHIVE_SECTIONS = [
+  { key: "ethics", title: "1. Đạo đức tốt" },
+  { key: "study", title: "2. Học tập tốt" },
+  { key: "physical", title: "3. Thể lực tốt" },
+  { key: "volunteer", title: "4. Tình nguyện tốt" },
+  { key: "integration", title: "5. Hội nhập tốt" },
+  { key: "priority", title: "6. Tiêu chuẩn ưu tiên" },
+] as const;
+
+const INTEGRATION_GROUPS = [
+  { key: "foreign_language", title: "Về ngoại ngữ" },
+  { key: "skills", title: "Về kỹ năng" },
+  { key: "activities", title: "Về hoạt động hội nhập" },
+] as const;
+
+const GENERAL_LABELS: Record<string, string> = {
+  fullname: "Họ và tên",
+  studentid: "Mã số sinh viên",
+  mssv: "Mã số sinh viên",
+  gender: "Giới tính",
+  birthdate: "Ngày sinh",
+  major: "Chuyên ngành đào tạo",
+  classname: "Lớp",
+  faculty: "Khoa",
+};
+
+function filterArchiveData(
+  data: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data ?? {}).filter(
+      ([key]) => !HIDDEN_ARCHIVE_KEYS.has(normalizeCriterionKey(key)),
+    ),
+  );
+}
+
 function safeFileName(value: string): string {
   return value.replace(/[\\/:*?"<>|]/g, "_").trim() || "student";
+}
+
+function normalizeCriterionKey(key: string): string {
+  return key.replace(/[_-]/g, "").toLowerCase();
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -85,6 +163,77 @@ function downloadBlob(blob: Blob, filename: string) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+type ArchiveDisplayCriterion = {
+  criterion: ArchivedCriterion;
+  value: unknown;
+};
+
+type ArchiveDisplaySection = {
+  key: string;
+  title: string;
+  items: ArchiveDisplayCriterion[];
+  groups?: {
+    key: string;
+    title: string;
+    items: ArchiveDisplayCriterion[];
+  }[];
+};
+
+function buildArchiveSections(
+  data: Record<string, unknown>,
+  snapshot: CriteriaSnapshot | null | undefined,
+): ArchiveDisplaySection[] {
+  const dataMap = new Map(
+    Object.entries(data).map(([key, value]) => [
+      normalizeCriterionKey(key),
+      value,
+    ]),
+  );
+
+  const criteria = [...(snapshot?.items ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
+
+  return ARCHIVE_SECTIONS.map((section) => {
+    const sectionCriteria = criteria.filter(
+      (item) => item.section_key === section.key,
+    );
+
+    const availableItems = sectionCriteria
+      .filter((item) =>
+        dataMap.has(normalizeCriterionKey(item.criterion_key)),
+      )
+      .map((criterion) => ({
+        criterion,
+        value: dataMap.get(
+          normalizeCriterionKey(criterion.criterion_key),
+        ),
+      }));
+
+    if (section.key !== "integration") {
+      return {
+        key: section.key,
+        title: section.title,
+        items: availableItems,
+      };
+    }
+
+    return {
+      key: section.key,
+      title: section.title,
+      items: [],
+      groups: INTEGRATION_GROUPS.map((group) => ({
+        key: group.key,
+        title: group.title,
+        items: availableItems.filter(
+          ({ criterion }) =>
+            criterion.integration_group === group.key,
+        ),
+      })),
+    };
+  });
 }
 
 export default function ArchivePage() {
@@ -252,16 +401,146 @@ export default function ArchivePage() {
     try {
       const zip = new JSZip();
       const selected = selectedStudents;
-      const manifest = {
+      const errors: string[] = [];
+
+      let criteriaSnapshot: CriteriaSnapshot | null = null;
+
+      // Chỉ cần snapshot khi xuất JSON hoặc toàn bộ.
+      if (kind === "json" || kind === "all") {
+        // Lấy token admin.
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.access_token) {
+          throw new Error("Phiên đăng nhập không hợp lệ.");
+        }
+
+        // Đọc toàn bộ tiêu chí thuộc năm học và cấp xét duyệt hiện tại.
+        const params = new URLSearchParams({
+          academic_year: ACADEMIC_YEAR.replace(/\s*-\s*/g, "-"),
+          review_level: SUBMISSION_REVIEW_LEVEL,
+        });
+
+        const response = await fetch(
+          `/api/admin/review-criteria?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          },
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (
+          !response.ok ||
+          !result?.success ||
+          !Array.isArray(result.data)
+        ) {
+          throw new Error(
+            result?.error || "Không thể tải snapshot tiêu chí.",
+          );
+        }
+
+        // Ba tiêu chuẩn bắt buộc cố định.
+        // Lưu cả tên tiêu chí theo năm học tại thời điểm xuất.
+        const fixedCriteria: ArchivedCriterion[] = [
+          {
+            criterion_key: "conductScore",
+            section_key: "ethics",
+            sort_order: -2,
+            label: "Tiêu chuẩn bắt buộc 1",
+            content: `Điểm rèn luyện năm học ${ACADEMIC_YEAR} (Không ghi xếp loại)`,
+            description: "Nhập điểm rèn luyện.",
+          },
+          {
+            criterion_key: "unionEvaluation",
+            section_key: "ethics",
+            sort_order: -1,
+            label: "Tiêu chuẩn bắt buộc 2",
+            content: `Phân tích chất lượng Đoàn viên năm học ${ACADEMIC_YEAR} (đối với Hội viên là Đoàn viên)`,
+            description: "",
+          },
+          {
+            criterion_key: "gpa",
+            section_key: "study",
+            sort_order: -1,
+            label: "Tiêu chuẩn bắt buộc 1",
+            content: `Điểm trung bình học tập năm học ${ACADEMIC_YEAR} (Không ghi xếp loại)`,
+            description: "",
+          },
+        ];
+
+        // Tránh trùng key nếu các tiêu chuẩn cố định đã có trong database.
+        const existingKeys = new Set<string>(
+          result.data.map((item: ArchivedCriterion) =>
+            normalizeCriterionKey(item.criterion_key),
+          ),
+        );
+
+        const missingFixedCriteria = fixedCriteria.filter(
+          (item) =>
+            !existingKeys.has(
+              normalizeCriterionKey(item.criterion_key),
+            ),
+        );
+
+        const allCriteria = [
+          ...(result.data as ArchivedCriterion[]),
+          ...missingFixedCriteria,
+        ];
+
+        const sectionOrder = new Map(
+          ARCHIVE_SECTIONS.map((section, index) => [
+            section.key,
+            index,
+          ]),
+        );
+
+        const integrationOrder = new Map(
+          INTEGRATION_GROUPS.map((group, index) => [
+            group.key,
+            index,
+          ]),
+        );
+
+        allCriteria.sort((a, b) => {
+          const sectionA = sectionOrder.get(a.section_key as never) ?? 999;
+          const sectionB = sectionOrder.get(b.section_key as never) ?? 999;
+
+          if (sectionA !== sectionB) return sectionA - sectionB;
+
+          const groupA = integrationOrder.get(a.integration_group as never) ?? 999;
+          const groupB = integrationOrder.get(b.integration_group as never) ?? 999;
+
+          if (groupA !== groupB) return groupA - groupB;
+
+          return a.sort_order - b.sort_order;
+        });
+
+        criteriaSnapshot = {
+          academic_year: ACADEMIC_YEAR,
+          review_level: SUBMISSION_REVIEW_LEVEL,
+          items: allCriteria,
+        };
+      }
+
+      // Manifest chứa snapshot tiêu chí.
+      const manifest: ArchiveManifest = {
         archive_version: 1,
         created_at: new Date().toISOString(),
         export_type: kind,
         student_count: selected.length,
         selected_mssv: selected.map((student) => student.mssv),
         notes: "Bản lưu trữ được tạo từ trang quản trị SV5T Form.",
+        criteria_snapshot: criteriaSnapshot,
       };
+
       zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-      const errors: string[] = [];
 
       if (kind === "json" || kind === "all") {
         for (const student of selected) {
@@ -278,13 +557,41 @@ export default function ArchivePage() {
             errors.push(`${student.mssv}: không tải được submissions (${submissionsError.message})`);
           }
 
+          const sanitizedSubmission = latestSubmission
+            ? {
+                ...latestSubmission,
+                data: filterArchiveData(
+                  latestSubmission.data as Record<string, unknown>,
+                ),
+              }
+            : null;
+
           const archiveStudent = {
             archive_version: 1,
             archived_at: new Date().toISOString(),
             student,
-            submissions: latestSubmission ? [latestSubmission] : [],
-            proofs: original.map(({ id, mssv, version, file_path, status, created_at }) => ({ id, mssv, version, file_path, status, created_at })),
-            edit_proofs: edited.map(({ id, mssv, version, base_version, file_path, status, created_at }) => ({ id, mssv, version, base_version, file_path, status, created_at })),
+            submissions: sanitizedSubmission ? [sanitizedSubmission] : [],
+            proofs: original.map(
+              ({ id, mssv, version, file_path, status, created_at }) => ({
+                id,
+                mssv,
+                version,
+                file_path,
+                status,
+                created_at,
+              }),
+            ),
+            edit_proofs: edited.map(
+              ({ id, mssv, version, base_version, file_path, status, created_at }) => ({
+                id,
+                mssv,
+                version,
+                base_version,
+                file_path,
+                status,
+                created_at,
+              }),
+            ),
           };
           zip.folder("students")?.file(`${safeFileName(student.mssv)}.json`, JSON.stringify(archiveStudent, null, 2));
         }
@@ -429,8 +736,11 @@ export default function ArchivePage() {
             archived_at: parsed.archived_at,
             student: parsed.student,
             submissions: Array.isArray(parsed.submissions)
-              ? parsed.submissions
-              : [],
+            ? parsed.submissions.map((submission) => ({
+                ...submission,
+                data: filterArchiveData(submission.data),
+              }))
+            : [],
             proofs: Array.isArray(parsed.proofs)
               ? parsed.proofs
               : [],
@@ -1072,50 +1382,42 @@ export default function ArchivePage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {Object.entries(
-                  selectedArchiveStudent.submission.data ?? {},
-                ).map(([key, value]) => {
-                  const normalizedKey = key
-                    .replace(/[_-]/g, "")
-                    .toLowerCase();
+              {(() => {
+                const data = filterArchiveData(
+                  selectedArchiveStudent.submission?.data,
+                );
 
-                  const generalLabels: Record<string, string> = {
-                    fullname: "Họ và tên",
-                    studentid: "Mã số sinh viên",
-                    mssv: "Mã số sinh viên",
-                    gender: "Giới tính",
-                    birthdate: "Ngày sinh",
-                    ethnicity: "Dân tộc",
-                    major: "Chuyên ngành đào tạo",
-                    classname: "Lớp",
-                    faculty: "Khoa",
-                    phone: "Số điện thoại",
-                    studentyear: "Sinh viên năm thứ",
-                    position: "Chức vụ (Đoàn - Hội)",
-                    uniondate: "Ngày vào Hội / Ngày vào Đoàn",
-                    unionhasdate: "Ngày vào Đoàn",
-                    probationhasdate: "Đảng viên dự bị",
-                    probationdate: "Ngày vào Đảng — Dự bị",
-                    officialhasdate: "Đảng viên chính thức",
-                    officialdate: "Ngày vào Đảng — Chính thức",
-                    email: "Email",
-                    address: "Địa chỉ liên lạc",
-                  };
+                const snapshot = archiveManifest?.criteria_snapshot;
 
-                  let label = generalLabels[normalizedKey] ?? key;
+                const sections = buildArchiveSections(data, snapshot);
 
-                  for (const [standardKey, standard] of Object.entries(STANDARD)) {
-                    if (
-                      standardKey
-                        .replace(/[_-]/g, "")
-                        .toLowerCase() === normalizedKey
-                    ) {
-                      label = standard.CONTENT;
-                      break;
-                    }
-                  }
+                // Các thông tin chung, không phải tiêu chí xét duyệt.
+                const generalEntries = Object.entries(data).filter(
+                  ([key]) =>
+                    GENERAL_LABELS[normalizeCriterionKey(key)] !== undefined,
+                );
 
+                // Các trường chưa có trong snapshot.
+                // Giữ lại để archive cũ không bị mất dữ liệu khi đọc.
+                const knownCriterionKeys = new Set(
+                  (snapshot?.items ?? []).map((item) =>
+                    normalizeCriterionKey(item.criterion_key),
+                  ),
+                );
+
+                const otherEntries = Object.entries(data).filter(([key]) => {
+                  const normalizedKey = normalizeCriterionKey(key);
+
+                  return (
+                    !GENERAL_LABELS[normalizedKey] &&
+                    !knownCriterionKeys.has(normalizedKey)
+                  );
+                });
+
+                function renderCriterion({
+                  criterion,
+                  value,
+                }: ArchiveDisplayCriterion) {
                   const displayValue =
                     value == null || value === ""
                       ? "Chưa có dữ liệu"
@@ -1125,20 +1427,128 @@ export default function ArchivePage() {
 
                   return (
                     <div
-                      key={key}
+                      key={criterion.criterion_key}
                       className="rounded-xl border border-gray-200 p-4"
                     >
                       <p className="font-medium text-gray-800">
-                        {label}
+                        {criterion.content || criterion.label || criterion.criterion_key}
                       </p>
+
+                      {criterion.description?.trim() && (
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-gray-500">
+                          {criterion.description}
+                        </p>
+                      )}
 
                       <p className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-600">
                         {displayValue}
                       </p>
                     </div>
                   );
-                })}
-              </div>
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {/* THÔNG TIN CHUNG */}
+                    {generalEntries.length > 0 && (
+                      <section>
+                        <h4 className="mb-3 font-semibold text-gray-800">
+                          Thông tin chung
+                        </h4>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {generalEntries.map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="rounded-xl border border-gray-200 p-4"
+                            >
+                              <p className="text-sm font-medium text-gray-700">
+                                {GENERAL_LABELS[normalizeCriterionKey(key)]}
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-600">
+                                {value == null || value === ""
+                                  ? "Chưa có dữ liệu"
+                                  : String(value)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {/* SÁU NHÓM TIÊU CHÍ */}
+                    {sections.map((section) => {
+                      const hasItems =
+                        section.key === "integration"
+                          ? section.groups?.some((group) => group.items.length)
+                          : section.items.length > 0;
+
+                      if (!hasItems) return null;
+
+                      return (
+                        <section key={section.key}>
+                          <h4 className="mb-3 border-b border-gray-200 pb-2 text-base font-bold text-gray-900">
+                            {section.title}
+                          </h4>
+
+                          {section.key === "integration" ? (
+                            <div className="space-y-5">
+                              {section.groups?.map((group) => {
+                                if (!group.items.length) return null;
+
+                                return (
+                                  <div key={group.key}>
+                                    <h5 className="mb-3 font-semibold text-gray-700">
+                                      {group.title}
+                                    </h5>
+
+                                    <div className="space-y-3">
+                                      {group.items.map(renderCriterion)}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {section.items.map(renderCriterion)}
+                            </div>
+                          )}
+                        </section>
+                      );
+                    })}
+
+                    {/* DỮ LIỆU CHƯA ĐƯỢC ÁNH XẠ */}
+                    {otherEntries.length > 0 && (
+                      <section>
+                        <h4 className="mb-3 border-b border-gray-200 pb-2 font-bold text-gray-700">
+                          Dữ liệu khác
+                        </h4>
+
+                        <div className="space-y-3">
+                          {otherEntries.map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="rounded-xl border border-gray-200 p-4"
+                            >
+                              <p className="font-medium text-gray-800">{key}</p>
+
+                              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-600">
+                                {value == null || value === ""
+                                  ? "Chưa có dữ liệu"
+                                  : typeof value === "object"
+                                    ? JSON.stringify(value, null, 2)
+                                    : String(value)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           ) : (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">

@@ -40,7 +40,7 @@ const messageSections: MessageSection[] = [
   },
   {
     id: "criteria",
-    title: "Các tiêu chí xét duyệt (Vẫn còn đang thử nghiệm, chưa triển khai)",
+    title: "Các tiêu chí xét duyệt",
     description:
       "Quản lý nội dung, thứ tự và các tiêu chí dùng trong quá trình xét duyệt.",
     icon: "📋",

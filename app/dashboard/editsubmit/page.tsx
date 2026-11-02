@@ -11,6 +11,12 @@ import {
     ACADEMIC_YEAR
 } from "@/lib/constants";
 import { initializeStudentPage } from "@/lib/initializeStudentPage";
+import DynamicCriterionField from "@/components/DynamicCriterionField";
+import { useReviewCriteria } from "@/lib/useReviewCriteria";
+import {
+  INTEGRATION_GROUPS,
+  removeDeletedCriterionAnswers,
+} from "@/lib/review-criteria";
 import { hasUsableReviewNote } from "@/lib/edit-permission";
 
 type Student = {
@@ -19,71 +25,6 @@ type Student = {
   birth_date: string;
   gender: string;
   class_name: string;
-};
-
-type SubmissionData = {
-  ethnicity: string;
-  phone: string;
-  studentYear: string;
-  position: string;
-  unionDate: string;
-  email: string;
-  address: string;
-
-  youthunionHasDate: boolean | null;
-  youthunionDate: boolean | null;
-  probationHasDate: boolean | null;
-  probationDate: string;
-  officialHasDate: boolean | null;
-  officialDate: string;
-
-  conductScore: string;
-  unionEvaluation: string;
-  ethics3: string;
-  ethics4: string;
-  ethics5: string;
-  ethics6: string;
-  ethics7: string;
-  ethics8: string;
-
-  gpa: string;
-  study2: string;
-  study3: string;
-  study4: string;
-  study5: string;
-
-  physical1: string;
-  physical2: string;
-  physical3: string;
-  physical4: string;
-  physical5: string;
-  physical6: string;
-  physical7: string;
-
-  volunteer1: string;
-  volunteer2: string;
-  volunteer3: string;
-  volunteer4: string;
-
-  foreignLanguage1: string;
-  foreignLanguage2: string;
-  foreignLanguage3: string;
-  skill4: string;
-  skill5: string;
-  skill6: string;
-  skill7: string;
-  skill8: string;
-  integration8: string;
-  integration9: string;
-
-  priority1: string;
-  priority2: string;
-  priority3: string;
-  priority4: string;
-  priority5: string;
-  priority6: string;
-  priority7: string;
-  priority8: string;
 };
 
 type TextFieldProps = {
@@ -203,6 +144,11 @@ function DateOption({
 
 export default function EditSubmitPage() {
   const router = useRouter();
+  const {
+    criteria,
+    loading: criteriaLoading,
+    error: criteriaError,
+  } = useReviewCriteria();
 
   // Chỉ load dữ liệu sau khi initializeStudentPage xác nhận
   // đúng thời gian + đúng quyền truy cập.
@@ -537,11 +483,20 @@ function getSubmissionData() {
     officialHasDate,
     officialDate,
 
-    ...answers,
+    ...removeDeletedCriterionAnswers(answers, criteria),
   };
 }
 
 function finishForm() {
+  if (criteriaLoading || criteriaError) {
+    alert(
+      criteriaLoading
+        ? "Tiêu chí đang được tải. Vui lòng đợi một chút rồi thử lại."
+        : "Không thể tải bộ tiêu chí. Vui lòng tải lại trang trước khi tiếp tục.",
+    );
+    return;
+  }
+
   if (!student?.mssv) {
     alert("Không tìm thấy thông tin sinh viên.");
     return;
@@ -1174,65 +1129,37 @@ function isStep1Complete() {
 
             {/* Tiêu chuẩn khác */}
 
-            <div className="mt-10 border-t border-gray-200 pt-8">
-
+            <div className="mt-8 space-y-5">
               <h3 className="text-xl font-semibold text-gray-800">
                 Tiêu chuẩn khác
               </h3>
-
-              <div className="mt-8 space-y-5">
-
-                <TextField
-                  field="ethics3"
-                  title={`${STANDARD.ETHIC3.CONTENT}`}
-                  description={`${STANDARD.ETHIC3.DESC}`}
-                  value={answers.ethics3 ?? ""}
-                  onChange={(value) => setAnswer("ethics3", value)}
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "ethics" &&
+                  criterion.is_active,
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <DynamicCriterionField
+                  key={criterion.id}
+                  criterion={criterion}
+                  value={answers[criterion.criterion_key] ?? ""}
+                  onChange={(value) =>
+                    setAnswer(criterion.criterion_key, value)
+                  }
                 />
-
-                <TextField
-                  field="ethics4"
-                  title={`${STANDARD.ETHIC4.CONTENT}`}
-                  description={`${STANDARD.ETHIC4.DESC}`}
-                  value={answers.ethics4 ?? ""}
-                  onChange={(value) => setAnswer("ethics4", value)}
-                />
-
-                <TextField
-                  field="ethics5"
-                  title={`${STANDARD.ETHIC5.CONTENT}`}
-                  description={`${STANDARD.ETHIC5.DESC}`}
-                  value={answers.ethics5 ?? ""}
-                  onChange={(value) => setAnswer("ethics5", value)}
-                />
-
-                <TextField
-                  field="ethics6"
-                  title={`${STANDARD.ETHIC6.CONTENT}`}
-                  description={`${STANDARD.ETHIC6.DESC}`}
-                  value={answers.ethics6 ?? ""}
-                  onChange={(value) => setAnswer("ethics6", value)}
-                />
-
-                <TextField
-                  field="ethics7"
-                  title={`${STANDARD.ETHIC7.CONTENT}`}
-                  description={`${STANDARD.ETHIC7.DESC}`}
-                  value={answers.ethics7 ?? ""}
-                  onChange={(value) => setAnswer("ethics7", value)}
-                />
-
-                <TextField
-                  field="ethics8"
-                  title={`${STANDARD.ETHIC8.CONTENT}`}
-                  description={`${STANDARD.ETHIC8.DESC}`}
-                  value={answers.ethics8 ?? ""}
-                  onChange={(value) => setAnswer("ethics8", value)}
-                />
-
-              </div>
+              ))
+              )}
             </div>
-
           </section>
         )}
 
@@ -1297,50 +1224,37 @@ function isStep1Complete() {
 
             </div>
 
-            <div className="mt-10 border-t border-gray-200 pt-8">
-
+            <div className="mt-8 space-y-5">
               <h3 className="text-xl font-semibold text-gray-800">
                 Tiêu chuẩn khác
               </h3>
-
-              <div className="mt-8 space-y-5">
-
-                <TextField
-                  field="study2"
-                  title={`${STANDARD.STUDY2.CONTENT}`}
-                  description={`${STANDARD.STUDY2.DESC}`}
-                  value={answers.study2 ?? ""}
-                  onChange={(value) => setAnswer("study2", value)}
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "study" &&
+                  criterion.is_active,
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <DynamicCriterionField
+                  key={criterion.id}
+                  criterion={criterion}
+                  value={answers[criterion.criterion_key] ?? ""}
+                  onChange={(value) =>
+                    setAnswer(criterion.criterion_key, value)
+                  }
                 />
-
-                <TextField
-                  field="study3"
-                  title={`${STANDARD.STUDY3.CONTENT}`}
-                  description={`${STANDARD.STUDY3.DESC}`}
-                  value={answers.study3 ?? ""}
-                  onChange={(value) => setAnswer("study3", value)}
-                />
-
-                <TextField
-                  field="study4"
-                  title={`${STANDARD.STUDY4.CONTENT}`}
-                  description={`${STANDARD.STUDY4.DESC}`}
-                  value={answers.study4 ?? ""}
-                  onChange={(value) => setAnswer("study4", value)}
-                />
-
-                <TextField
-                  field="study5"
-                  title={`${STANDARD.STUDY5.CONTENT}`}
-                  description={`${STANDARD.STUDY5.DESC}`}
-                  value={answers.study5 ?? ""}
-                  onChange={(value) => setAnswer("study5", value)}
-                />
-
-              </div>
-
+              ))
+              )}
             </div>
-
           </section>
         )}
 
@@ -1354,98 +1268,34 @@ function isStep1Complete() {
               Thể lực tốt
             </h2>
 
+            
             <div className="mt-8 space-y-5">
-              <TextField
-                field="physical1"
-                title={`${STANDARD.PHYSICAL1.CONTENT}`}
-                description={`${STANDARD.PHYSICAL1.DESC}`}
-                value={answers.physical1 ?? ""}
-                onChange={(value) => setAnswer("physical1", value)}
-              />
-
-              <TextField
-                field="physical2"
-                title={`${STANDARD.PHYSICAL2.CONTENT}`}
-                description={`${STANDARD.PHYSICAL2.DESC}`}
-                value={answers.physical2 ?? ""}
-                onChange={(value) => setAnswer("physical2", value)}
-              />
-
-              <TextField
-                field="physical3"
-                title={`${STANDARD.PHYSICAL3.CONTENT}`}
-                description={`${STANDARD.PHYSICAL3.DESC}`}
-                value={answers.physical3 ?? ""}
-                onChange={(value) => setAnswer("physical3", value)}
-              />
-
-              <TextField
-                field="physical4"
-                title={`${STANDARD.PHYSICAL4.CONTENT}`}
-                description={`${STANDARD.PHYSICAL4.DESC}`}
-                value={answers.physical4 ?? ""}
-                onChange={(value) => setAnswer("physical4", value)}
-              />
-
-              <TextField
-                field="physical5"
-                title={`${STANDARD.PHYSICAL5.CONTENT}`}
-                description={`${STANDARD.PHYSICAL5.DESC}`}
-                value={answers.physical5 ?? ""}
-                onChange={(value) => setAnswer("physical5", value)}
-              />
-
-              <div className="rounded-xl border border-gray-200 p-5">
-              <div className="mt-5">
-                <label className="mb-2 block font-medium leading-7 text-gray-700">
-                   {STANDARD.PHYSICAL6.CONTENT}
-                      <span className="ml-1 text-sm text-gray-500">
-                        {STANDARD.PHYSICAL6.DESC}
-                      </span>
-                </label>
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="0.01"
-                value={answers.physical6 ?? ""}
-                onChange={(e) => {
-                const value = e.target.value;
-
-                // Cho phép xóa ô
-                if (value === "") {
-                  setAnswer("physical6", "");
-                  return;
-                }
-
-                // Chỉ cho số và tối đa 2 số sau dấu .
-                if (!/^\d*\.?\d{0,2}$/.test(value)) {
-                  return;
-                }
-
-                // Không cho vượt quá 10
-                const num = Number(value);
-
-                if (num > 10) {
-                  return;
-                }
-
-                  setAnswer("physical6", value);
-                }}
-                  placeholder="Ví dụ: 7.56"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-              </div>
-            </div>
-
-              <TextField
-                field="physical7"
-                title={`${STANDARD.PHYSICAL7.CONTENT}`}
-                description={`${STANDARD.PHYSICAL7.DESC}`}
-                value={answers.physical7 ?? ""}
-                onChange={(value) => setAnswer("physical7", value)}
-              />
-
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "physical" &&
+                  criterion.is_active,
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <DynamicCriterionField
+                  key={criterion.id}
+                  criterion={criterion}
+                  value={answers[criterion.criterion_key] ?? ""}
+                  onChange={(value) =>
+                    setAnswer(criterion.criterion_key, value)
+                  }
+                />
+              ))
+              )}
             </div>
           </section>
         )}
@@ -1460,38 +1310,34 @@ function isStep1Complete() {
               Tình nguyện tốt
             </h2>
 
+            
             <div className="mt-8 space-y-5">
-              <TextField
-                field="volunteer1"
-                title={`${STANDARD.VOLUNTEER1.CONTENT}`}
-                description={`${STANDARD.VOLUNTEER1.DESC}`}
-                value={answers.volunteer1 ?? ""}
-                onChange={(value) => setAnswer("volunteer1", value)}
-              />
-
-              <TextField
-                field="volunteer2"
-                title={`${STANDARD.VOLUNTEER2.CONTENT}`}
-                description={`${STANDARD.VOLUNTEER2.DESC}`}
-                value={answers.volunteer2 ?? ""}
-                onChange={(value) => setAnswer("volunteer2", value)}
-              />
-
-              <TextField
-                field="volunteer3"
-                title={`${STANDARD.VOLUNTEER3.CONTENT}`}
-                description={`${STANDARD.VOLUNTEER3.DESC}`}
-                value={answers.volunteer3 ?? ""}
-                onChange={(value) => setAnswer("volunteer3", value)}
-              />
-
-              <TextField
-                field="volunteer4"
-                title={`${STANDARD.VOLUNTEER4.CONTENT}`}
-                description={`${STANDARD.VOLUNTEER4.DESC}`}
-                value={answers.volunteer4 ?? ""}
-                onChange={(value) => setAnswer("volunteer4", value)}
-              />
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "volunteer" &&
+                  criterion.is_active,
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <DynamicCriterionField
+                  key={criterion.id}
+                  criterion={criterion}
+                  value={answers[criterion.criterion_key] ?? ""}
+                  onChange={(value) =>
+                    setAnswer(criterion.criterion_key, value)
+                  }
+                />
+              ))
+              )}
             </div>
           </section>
         )}
@@ -1508,149 +1354,47 @@ function isStep1Complete() {
 
             {/* NGOẠI NGỮ */}
 
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold text-gray-800">
-                Về ngoại ngữ
-              </h3>
+            
+            <div className="mt-8 space-y-5">
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                INTEGRATION_GROUPS.map((group) => {
+              const groupCriteria = criteria
+                .filter(
+                  (criterion) =>
+                    criterion.section_key === "integration" &&
+                    criterion.integration_group === group.key &&
+                    criterion.is_active,
+                )
+                .sort((a, b) => a.sort_order - b.sort_order);
 
-              <div className="mt-5 space-y-5">
-                <TextField
-                  field="foreignLanguage1"
-                  title={`${STANDARD.FOREIGNLANGUAGE1.CONTENT}`}
-                  description={`${STANDARD.FOREIGNLANGUAGE1.DESC}`}
-                  value={answers.foreignLanguage1 ?? ""}
-                  onChange={(value) => setAnswer("foreignLanguage1", value)}
-                />
-                
-                <div className="rounded-xl border border-gray-200 p-5">
-                    <div className="mt-5">
-                        <label className="mb-2 block font-medium leading-7 text-gray-700">
-                            {STANDARD.FOREIGNLANGUAGE2.CONTENT}
-                          <span className="ml-1 text-sm text-gray-500">
-                            {STANDARD.FOREIGNLANGUAGE2.DESC}
-                          </span>
-                        </label>
+              if (groupCriteria.length === 0) return null;
 
-                        <input
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.01"
-                          value={answers.foreignLanguage2 ?? ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            // Cho phép xóa ô
-                            if (value === "") {
-                              setAnswer("foreignLanguage2", "");
-                              return;
-                            }
-
-                            // Chỉ cho số và tối đa 2 số sau dấu .
-                            if (!/^\d*\.?\d{0,2}$/.test(value)) {
-                              return;
-                            }
-
-                            // Không cho vượt quá 10
-                            const num = Number(value);
-
-                            if (num > 10) {
-                              return;
-                            }
-
-                            setAnswer("foreignLanguage2", value);
-                          }}
-                          placeholder="Ví dụ: 7.56"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        />
-                    </div>
+              return (
+                <div key={group.key} className="space-y-5">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {group.label}
+                  </h3>
+                  {groupCriteria.map((criterion) => (
+                    <DynamicCriterionField
+                      key={criterion.id}
+                      criterion={criterion}
+                      value={answers[criterion.criterion_key] ?? ""}
+                      onChange={(value) =>
+                        setAnswer(criterion.criterion_key, value)
+                      }
+                    />
+                  ))}
                 </div>
-
-                <TextField
-                  field="foreignLanguage3"
-                  title={`${STANDARD.FOREIGNLANGUAGE3.CONTENT}`}
-                  description={`${STANDARD.FOREIGNLANGUAGE3.DESC}`}
-                  value={answers.foreignLanguage3 ?? ""}
-                  onChange={(value) => setAnswer("foreignLanguage3", value)}
-                />
-              </div>
-            </div>
-
-            {/* KỸ NĂNG */}
-
-            <div className="mt-10 border-t border-gray-200 pt-8">
-              <h3 className="text-xl font-semibold text-gray-800">
-                Về kỹ năng
-              </h3>
-
-              <div className="mt-5 space-y-5">
-                <TextField
-                  field="skill4"
-                  title={`${STANDARD.SKILL4.CONTENT}`}
-                  description={`${STANDARD.SKILL4.DESC}`}
-                  value={answers.skill4 ?? ""}
-                  onChange={(value) => setAnswer("skill4", value)}
-                />
-
-                <TextField
-                  field="skill5"
-                  title={`${STANDARD.SKILL5.CONTENT}`}
-                  description={`${STANDARD.SKILL5.DESC}`}
-                  value={answers.skill5 ?? ""}
-                  onChange={(value) => setAnswer("skill5", value)}
-                />
-
-                <TextField
-                  field="skill6"
-                  title={`${STANDARD.SKILL6.CONTENT}`}
-                  description={`${STANDARD.SKILL6.DESC}`}
-                  value={answers.skill6 ?? ""}
-                  onChange={(value) => setAnswer("skill6", value)}
-                />
-
-                <TextField
-                  field="skill7"
-                  title={`${STANDARD.SKILL7.CONTENT}`}
-                  description={`${STANDARD.SKILL7.DESC}`}
-                  value={answers.skill7 ?? ""}
-                  onChange={(value) => setAnswer("skill7", value)}
-                />
-
-                <TextField
-                  field="skill8"
-                  title={`${STANDARD.SKILL8.CONTENT}`}
-                  description={`${STANDARD.SKILL8.DESC}`}
-                  value={answers.skill8 ?? ""}
-                  onChange={(value) => setAnswer("skill8", value)}
-                />
-
-              </div>
-            </div>
-
-            {/* HỘI NHẬP */}
-
-            <div className="mt-10 border-t border-gray-200 pt-8">
-              <h3 className="text-xl font-semibold text-gray-800">
-                Về hoạt động hội nhập
-              </h3>
-
-              <div className="mt-5 space-y-5">
-                <TextField
-                  field="integration8"
-                  title={`${STANDARD.INTEGRATION8.CONTENT}`}
-                  description={`${STANDARD.INTEGRATION8.DESC}`}
-                  value={answers.integration8 ?? ""}
-                  onChange={(value) => setAnswer("integration8", value)}
-                />
-
-                <TextField
-                  field="integration9"
-                  title={`${STANDARD.INTEGRATION9.CONTENT}`}
-                  description={`${STANDARD.INTEGRATION9.DESC}`}
-                  value={answers.integration9 ?? ""}
-                  onChange={(value) => setAnswer("integration9", value)}
-                />
-              </div>
+              );
+            })
+              )}
             </div>
           </section>
         )}
@@ -1665,156 +1409,36 @@ function isStep1Complete() {
       Tiêu chuẩn ưu tiên
     </h2>
 
-    <div className="mt-8 space-y-5">
-      <div>
-        <label className="mb-2 block font-medium leading-7 text-gray-700">
-            {STANDARD.PRIORITY1.CONTENT}
-          <span className="ml-1 text-sm text-gray-500">
-            {STANDARD.PRIORITY1.DESC}
-          </span>
-        </label>
-
-        <input
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          value={answers.priority1 ?? ""}
-          onChange={(e) => {
-            const value = e.target.value;
-
-            if (value === "") {
-              setAnswer("priority1", "");
-              return;
-            }
-
-            // Chỉ cho phép số nguyên, không cho dấu . hoặc -
-            if (!/^\d+$/.test(value)) {
-              return;
-            }
-
-            const num = Number(value);
-
-            if (num >= 0 && num <= 100) {
-              setAnswer("priority1", value);
-            }
-          }}
-          placeholder="Nhập điểm rèn luyện"
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
-
-      <div className="mt-5">
-        <label className="mb-2 block font-medium leading-7 text-gray-700">
-            {STANDARD.PRIORITY2.CONTENT}
-          <span className="ml-1 text-sm text-gray-500">
-            {STANDARD.PRIORITY2.DESC}
-          </span>
-        </label>
-
-        <input
-          type="number"
-          min="0"
-          max="4"
-          step="0.01"
-          value={answers.priority2 ?? ""}
-          onChange={(e) => {
-            const value = e.target.value;
-
-            // Cho phép xóa ô
-            if (value === "") {
-              setAnswer("priority2", "");
-              return;
-            }
-
-            // Chỉ cho số và tối đa 2 số sau dấu .
-            if (!/^\d*\.?\d{0,2}$/.test(value)) {
-              return;
-            }
-
-            // Không cho vượt quá 4
-            const num = Number(value);
-
-            if (num > 4) {
-              return;
-            }
-
-            setAnswer("priority2", value);
-          }}
-          placeholder="Ví dụ: 2.72"
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
-
-      <TextField
-        field="priority3"
-        title={`${STANDARD.PRIORITY3.CONTENT}`}
-        description={`${STANDARD.PRIORITY3.DESC}`}
-        value={answers.priority3 ?? ""}
-        onChange={(value) => setAnswer("priority3", value)}
-      />
-
-      <div className="rounded-xl border border-gray-200 p-5">
-        <div className="mt-5">
-            <label className="mb-2 block font-medium leading-7 text-gray-700">
-                {STANDARD.PRIORITY4.CONTENT}
-              <span className="ml-1 text-sm text-gray-500">
-                {STANDARD.PRIORITY4.DESC}
-              </span>
-            </label>
-
-            <input
-              type="number"
-              min="0"
-              max="10"
-              step="0.01"
-              value={answers.priority4 ?? ""}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                // Cho phép xóa ô
-                if (value === "") {
-                  setAnswer("priority4", "");
-                  return;
-                }
-
-                // Chỉ cho số và tối đa 2 số sau dấu .
-                if (!/^\d*\.?\d{0,2}$/.test(value)) {
-                  return;
-                }
-
-                // Không cho vượt quá 10
-                const num = Number(value);
-
-                if (num > 10) {
-                  return;
-                }
-
-                setAnswer("priority4", value);
-              }}
-              placeholder="Ví dụ: 9.20"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
-        </div>
-      </div>
-
-      <TextField
-        field="priority5"
-        title={`${STANDARD.PRIORITY5.CONTENT}`}
-        description={`${STANDARD.PRIORITY5.DESC}`}
-        value={answers.priority5 ?? ""}
-        onChange={(value) => setAnswer("priority5", value)}
-      />
-
-      <TextField
-        field="priority6"
-        title={`${STANDARD.PRIORITY6.CONTENT}`}
-        description={`${STANDARD.PRIORITY6.DESC}`}
-        value={answers.priority6 ?? ""}
-        onChange={(value) => setAnswer("priority6", value)}
-      />
-    </div>
-  </section>
+    
+            <div className="mt-8 space-y-5">
+              {criteriaError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  {criteriaError}
+                </p>
+              )}
+              {criteriaLoading ? (
+                <p className="text-sm text-gray-500">Đang tải tiêu chí...</p>
+              ) : (
+                criteria
+              .filter(
+                (criterion) =>
+                  criterion.section_key === "priority" &&
+                  criterion.is_active,
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((criterion) => (
+                <DynamicCriterionField
+                  key={criterion.id}
+                  criterion={criterion}
+                  value={answers[criterion.criterion_key] ?? ""}
+                  onChange={(value) =>
+                    setAnswer(criterion.criterion_key, value)
+                  }
+                />
+              ))
+              )}
+            </div>
+          </section>
 )}
 
         {/* =====================================================

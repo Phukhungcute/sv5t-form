@@ -1,5 +1,8 @@
 export type ReviewLevel = "faculty" | "university";
 
+/** Cấp xét duyệt dùng cho hồ sơ sinh viên và màn hình Admin > Submissions. */
+export const SUBMISSION_REVIEW_LEVEL: ReviewLevel = "faculty";
+
 export type ReviewSection =
   | "ethics"
   | "study"
@@ -103,3 +106,30 @@ export const CRITERION_INPUT_TYPES: {
   { value: "score10", label: "Điểm hệ 10" },
   { value: "score4", label: "Điểm hệ 4" },
 ];
+
+/**
+ * Các key tiêu chí cũ từng được khai báo cố định trong STANDARD.
+ * Khi sinh viên chỉnh sửa hồ sơ, chỉ loại bỏ key cũ nếu key đó
+ * không còn tồn tại trong bộ tiêu chí động hiện hành.
+ * Các trường khác trong JSONB (review_note, metadata...) được giữ nguyên.
+ */
+const DYNAMIC_CRITERION_KEY_PATTERN =
+  /^(ethics|study|physical|volunteer|integration|priority)\d+$|^(foreignLanguage|skill|integrationActivity)\d+$/;
+
+export function removeDeletedCriterionAnswers(
+  answers: Record<string, string>,
+  criteria: ReviewCriterion[],
+): Record<string, string> {
+  const currentKeys = new Set(
+    criteria
+      .filter((criterion) => criterion.is_active)
+      .map((criterion) => criterion.criterion_key),
+  );
+
+  return Object.fromEntries(
+    Object.entries(answers).filter(
+      ([key]) =>
+        !DYNAMIC_CRITERION_KEY_PATTERN.test(key) || currentKeys.has(key),
+    ),
+  );
+}
