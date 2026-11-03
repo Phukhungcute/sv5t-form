@@ -388,7 +388,7 @@ export default function Home() {
                     placeholder="Nhập email"
                     autoComplete="username"
                     disabled={loading}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    className="w-full rounded-lg text-gray-900 placeholder:text-gray-400 border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
                     required
                   />
                 </div>
@@ -414,7 +414,7 @@ export default function Home() {
                     placeholder="Nhập MSSV"
                     autoComplete="username"
                     disabled={loading}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    className="w-full rounded-lg text-gray-900 placeholder:text-gray-400 border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
                     required
                   />
                 </div>
@@ -440,7 +440,7 @@ export default function Home() {
                     placeholder="Nhập mật khẩu"
                     autoComplete="current-password"
                     disabled={loading}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                    className="w-full rounded-lg text-gray-900 placeholder:text-gray-400 border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
                     required
                   />
 
