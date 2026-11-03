@@ -48,6 +48,18 @@ type ScheduleSettings = {
   test_schedule_enabled: boolean;
 };
 
+const formatPasswordChangedAt = (date: string | null) => {
+  if (!date) return "Chưa đổi mật khẩu";
+
+  return new Date(date).toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 function ScheduleDaysRow({
   title,
   label,
@@ -159,6 +171,7 @@ type AccountStudent = {
   gender: string | null;
   class_name: string | null;
   must_change_password: boolean | null;
+  password_changed_at: string | null;
 };
 
 export default function AdminPage() {
@@ -1593,8 +1606,8 @@ async function saveMaintenanceChanges() {
 
     const [showChangedPasswordOnly, setShowChangedPasswordOnly] = useState(false);
 
-    const filteredStudentsForReset = studentsWithAccount.filter(
-      (student) => {
+    const filteredStudentsForReset = studentsWithAccount
+      .filter((student) => {
         const query = resetSearch.trim().toLowerCase();
 
         const matchesSearch =
@@ -1608,8 +1621,17 @@ async function saveMaintenanceChanges() {
           student.must_change_password === false;
 
         return matchesSearch && matchesPasswordStatus;
-      }
-    );
+      })
+      .sort((a, b) => {
+        // Những tài khoản chưa đổi mật khẩu được xếp cuối
+        if (!a.password_changed_at) return 1;
+        if (!b.password_changed_at) return -1;
+
+        return (
+          new Date(b.password_changed_at).getTime() -
+          new Date(a.password_changed_at).getTime()
+        );
+      });
     function toggleSelectedMssv(
       mssv: string,
       selected: string[],
@@ -2849,8 +2871,15 @@ async function saveMaintenanceChanges() {
                                 {student.birth_date
                                   ? formatDateDisplay(student.birth_date)
                                   : "Chưa có"}
-                              </span>
+                              </span>                            
                             </div>
+
+                            <div className="text-sm text-gray-500">
+                                Ngày đổi mật khẩu:{" "}
+                                <span className="font-medium text-gray-900">
+                                  {formatPasswordChangedAt(student.password_changed_at)}
+                                </span>
+                              </div>
 
                             <div className="mt-2">
                               {student.must_change_password === true ? (

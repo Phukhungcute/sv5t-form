@@ -352,7 +352,10 @@ export async function POST(request: Request) {
       const { data: updatedProfile, error: mustChangeError } =
         await supabaseAdmin
           .from("profiles")
-          .update({ must_change_password: true })
+          .update({
+            must_change_password: true,
+            password_changed_at: null,
+          })
           .eq("id", profile.id)
           .select("id")
           .maybeSingle();

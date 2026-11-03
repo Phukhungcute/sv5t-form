@@ -71,7 +71,7 @@ if (studentsError) throw studentsError;
 const { data: profiles, error: profilesError } =
   await supabaseAdmin
     .from("profiles")
-    .select("mssv, role, must_change_password");
+    .select("mssv, role, must_change_password, password_changed_at");
 
 if (profilesError) throw profilesError;
 
@@ -81,6 +81,7 @@ const profileByMssv = new Map<
   {
     role: string;
     must_change_password: boolean | null;
+    password_changed_at: string | null;
   }
 >();
 
@@ -89,6 +90,7 @@ for (const profile of profiles ?? []) {
     profileByMssv.set(profile.mssv, {
       role: profile.role,
       must_change_password: profile.must_change_password,
+      password_changed_at: profile.password_changed_at,
     });
   }
 }
@@ -108,6 +110,8 @@ const studentsWithAccount = (students ?? [])
     ...student,
     must_change_password:
       profileByMssv.get(student.mssv)?.must_change_password ?? null,
+    password_changed_at:
+      profileByMssv.get(student.mssv)?.password_changed_at ?? null,
   }));
 
 return NextResponse.json({
