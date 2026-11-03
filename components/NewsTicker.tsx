@@ -1,20 +1,64 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "@/lib/supabase";
 import { Megaphone } from "lucide-react";
 
 type NewsTickerProps = {
   message?: string;
 };
 
+const DEFAULT_TICKER_MESSAGE =
+  "Sinh viên Thành phố vươn mình thời đại số, chủ động làm chủ công nghệ, phát huy sức trẻ và bản lĩnh sáng tạo, tự tin vươn mình tiến vào kỷ nguyên mới.";
+
 export default function NewsTicker({
-  message = "Sinh viên Thành phố vươn mình thời đại số, chủ động làm chủ công nghệ, phát huy sức trẻ và bản lĩnh sáng tạo, tự tin vươn mình tiến vào kỷ nguyên mới.",
+  message,
 }: NewsTickerProps) {
+  const [tickerMessage, setTickerMessage] = useState(
+    DEFAULT_TICKER_MESSAGE,
+  );
+
+  const displayMessage = message ?? tickerMessage;
+
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLSpanElement>(null);
   const secondMessageRef = useRef<HTMLSpanElement>(null);
+
+  // Lấy thông điệp từ Supabase
+  useEffect(() => {
+    if (message !== undefined) return;
+
+    let isMounted = true;
+
+    async function fetchTickerMessage() {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "ticker_message")
+        .maybeSingle();
+
+      if (error) {
+        console.error("FETCH TICKER MESSAGE ERROR:", error);
+        return;
+      }
+
+      if (
+        isMounted &&
+        typeof data?.value === "string" &&
+        data.value.trim()
+      ) {
+        setTickerMessage(data.value);
+      }
+    }
+
+    fetchTickerMessage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [message]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -46,6 +90,12 @@ export default function NewsTicker({
     // Đo một lần, không đo lại trong mỗi frame
     const messageWidth = firstMessage.offsetWidth;
     const viewportWidth = viewport.clientWidth;
+
+    console.log({
+  messageWidth,
+  viewportWidth,
+  trackWidth: track.scrollWidth,
+});
 
     // Tin ngắn hơn vùng hiển thị thì không cần chạy
     if (messageWidth <= viewportWidth) {
@@ -147,7 +197,7 @@ export default function NewsTicker({
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [message]);
+  }, [displayMessage]);
 
   return (
     <div className="flex w-full overflow-hidden rounded-xl border-2 border-blue-300 bg-white shadow-sm">
@@ -173,7 +223,7 @@ export default function NewsTicker({
             ref={messageRef}
             className="ticker-text font-bold !text-orange-400"
           >
-            {message}
+            {displayMessage}
           </span>
 
           <span
@@ -181,7 +231,7 @@ export default function NewsTicker({
             className="ticker-text font-bold !text-orange-400"
             aria-hidden="true"
           >
-            {message}
+            {displayMessage}
           </span>
         </div>
       </div>

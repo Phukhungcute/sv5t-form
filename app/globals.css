@@ -492,10 +492,11 @@ body {
 }
 
 .ticker-text {
-  display: block;
+  display: inline-block;
   flex-shrink: 0;
   padding-right: 4rem;
   white-space: nowrap;
+  width: max-content;
   color: #374151;
   font-size: 14px;
 }

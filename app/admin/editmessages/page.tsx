@@ -48,7 +48,7 @@ const messageSections: MessageSection[] = [
   },
   {
     id: "criteria-pdf",
-    title: "File PDF tiêu chí",
+    title: "File PDF tiêu chí và biểu mẫu",
     description:
       "Tải lên hoặc thay thế file PDF chứa các tiêu chí xét duyệt.",
     icon: "📄",
@@ -68,6 +68,84 @@ export default function EditMessagesPage() {
   const router = useRouter();
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  const DEFAULT_TICKER_MESSAGE =
+  "Sinh viên Thành phố vươn mình thời đại số, chủ động làm chủ công nghệ, phát huy sức trẻ và bản lĩnh sáng tạo, tự tin vươn mình tiến vào kỷ nguyên mới.";
+
+  const [tickerMessage, setTickerMessage] = useState("");
+  const [tickerLoading, setTickerLoading] = useState(true);
+  const [tickerSaving, setTickerSaving] = useState(false);
+  const [tickerStatus, setTickerStatus] = useState("");
+
+  useEffect(() => {
+  async function fetchTickerMessage() {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "ticker_message")
+      .maybeSingle();
+
+    if (error) {
+      console.error("FETCH TICKER MESSAGE ERROR:", error);
+      setTickerMessage(DEFAULT_TICKER_MESSAGE);
+    } else {
+      setTickerMessage(
+        typeof data?.value === "string" && data.value.trim()
+          ? data.value
+          : DEFAULT_TICKER_MESSAGE,
+      );
+    }
+
+    setTickerLoading(false);
+  }
+
+  fetchTickerMessage();
+}, []);
+
+async function handleSaveTicker() {
+  setTickerSaving(true);
+  setTickerStatus("");
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new Error("Không xác định được tài khoản đăng nhập.");
+    }
+
+    const newMessage = tickerMessage.trim();
+
+    const { error } = await supabase
+      .from("site_settings")
+      .update({
+        value: newMessage,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
+      })
+      .eq("key", "ticker_message");
+
+    if (error) throw error;
+
+    setTickerMessage(newMessage);
+    setTickerStatus(
+      newMessage
+        ? "Đã lưu thông điệp Ticker thành công!"
+        : "Đã xóa thông điệp tùy chỉnh. Ticker sẽ sử dụng thông điệp mặc định.",
+    );
+  } catch (error) {
+    console.error("SAVE TICKER MESSAGE ERROR:", error);
+    setTickerStatus(
+      error instanceof Error
+        ? error.message
+        : "Không thể lưu thông điệp.",
+    );
+  } finally {
+    setTickerSaving(false);
+  }
+}
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
@@ -171,18 +249,75 @@ export default function EditMessagesPage() {
                             Nội dung thông điệp
                           </label>
 
-                          <textarea
-                            id={`${section.id}-content`}
-                            rows={5}
-                            placeholder={`Nhập ${section.title.toLowerCase()}...`}
-                            disabled
-                            className="w-full resize-y rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 outline-none disabled:cursor-not-allowed"
-                          />
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-amber-600">
+                              ⚠️ Thông điệp sẽ được hiển thị công khai trên giao diện hệ thống.
+                            </p>
 
-                          <p className="mt-2 text-xs text-gray-400">
-                            Chức năng chỉnh sửa và lưu nội dung sẽ được
-                            triển khai sau.
-                          </p>
+                            <p className="mb-3 text-xs text-gray-400">
+                              ℹ️ Để trống nội dung và lưu nếu muốn sử dụng thông điệp mặc định.
+                            </p>
+                          </div>
+
+                          {section.id === "ticker" ? (
+                            <>
+                              <textarea
+                                id="ticker-content"
+                                rows={5}
+                                value={tickerMessage}
+                                onChange={(e) => {
+                                  setTickerMessage(e.target.value);
+                                  setTickerStatus("");
+                                }}
+                                placeholder={DEFAULT_TICKER_MESSAGE}
+                                disabled={tickerLoading || tickerSaving}
+                                className="w-full resize-y rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+                              />
+
+                              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                <p className="text-xs text-gray-400">
+                                  {tickerMessage.length} ký tự
+                                </p>
+
+                                <button
+                                  type="button"
+                                  onClick={handleSaveTicker}
+                                  disabled={tickerLoading || tickerSaving}
+                                  className="cursor-pointer rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {tickerSaving
+                                    ? "Đang lưu..."
+                                    : "Lưu thông điệp"}
+                                </button>
+                              </div>
+
+                              {tickerStatus && (
+                                <p
+                                  className={`mt-3 text-sm ${
+                                    tickerStatus.includes("thành công")
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {tickerStatus}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <textarea
+                                id={`${section.id}-content`}
+                                rows={5}
+                                placeholder={`Nhập ${section.title.toLowerCase()}...`}
+                                disabled
+                                className="w-full resize-y rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 outline-none disabled:cursor-not-allowed"
+                              />
+
+                              <p className="mt-2 text-xs text-gray-400">
+                                Chức năng chỉnh sửa và lưu nội dung sẽ được triển khai sau.
+                              </p>
+                            </>
+                          )}
                         </div>
                       )}
 
