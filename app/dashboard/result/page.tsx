@@ -524,8 +524,8 @@ export default function ResultPage() {
           </p>
 
           <p className="mt-3">
-            Hồ sơ của bạn cần chỉnh sửa/bổ sung
-            thêm trước khi có thể đánh giá kết quả.
+            Hồ sơ của bạn vẫn còn đang ở trạng thái
+            xem xét. Vui lòng đợi kết quả chính thức.
           </p>
         </>
       );

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { AlertCircle } from "lucide-react";
 import DisableBrowserZoom from "@/components/DisableBrowserZoom";
 import LoginFloatingBubbles from "@/components/LoginFloatingBubbles";
 
@@ -359,6 +360,21 @@ export default function Home() {
                 Quản trị viên
               </button>
 
+            </div>
+
+            <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
+              <div className="flex items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5 text-orange-700" />
+                <span className="text-xs font-semibold text-orange-800">
+                  Lưu ý: Lịch bảo trì hệ thống
+                </span>
+              </div>
+
+              <p className="mt-1 text-xs leading-relaxed text-orange-800">
+                Hệ thống dự kiến bảo trì từ <strong>13h00</strong> đến{" "}
+                <strong>17h00 (04/11/2026)</strong>.
+                Trong thời gian này, sinh viên sẽ không thể truy cập hệ thống.
+              </p>
             </div>
 
             {/* FORM */}
