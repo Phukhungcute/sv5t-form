@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { AlertCircle } from "lucide-react";
@@ -8,6 +8,26 @@ import DisableBrowserZoom from "@/components/DisableBrowserZoom";
 import LoginFloatingBubbles from "@/components/LoginFloatingBubbles";
 
 type LoginMode = "student" | "admin";
+
+type MaintenanceMessageSettings = {
+  maintenance_message_enabled: boolean;
+  maintenance_start_time: string | null;
+  maintenance_start_date: string | null;
+  maintenance_end_time: string | null;
+  maintenance_end_date: string | null;
+};
+
+function formatMaintenanceTime(value: string) {
+  const [hour, minute] = value.slice(0, 5).split(":");
+
+  return `${Number(hour)}h${minute}`;
+}
+
+function formatMaintenanceDate(value: string) {
+  const [year, month, day] = value.split("-");
+
+  return `${day}/${month}/${year}`;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -19,6 +39,101 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // ==========================================
+  // THÔNG ĐIỆP BẢO TRÌ
+  // ==========================================
+
+  const [maintenanceMessage, setMaintenanceMessage] =
+    useState<MaintenanceMessageSettings | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMaintenanceMessage() {
+      try {
+        const response = await fetch(
+          "/api/admin/maintenance-message",
+          {
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Không thể tải thông điệp bảo trì.");
+        }
+
+        const result = await response.json();
+
+        if (!cancelled) {
+          setMaintenanceMessage(result.settings);
+        }
+      } catch (error) {
+        console.error(
+          "LOAD MAINTENANCE MESSAGE ERROR:",
+          error
+        );
+      }
+    }
+
+    loadMaintenanceMessage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const maintenancePeriod = (() => {
+    const settings = maintenanceMessage;
+
+    if (
+      !settings?.maintenance_start_time ||
+      !settings?.maintenance_start_date ||
+      !settings?.maintenance_end_time ||
+      !settings?.maintenance_end_date
+    ) {
+      return null;
+    }
+
+    const startTime = formatMaintenanceTime(
+      settings.maintenance_start_time
+    );
+
+    const endTime = formatMaintenanceTime(
+      settings.maintenance_end_time
+    );
+
+    const startDate = formatMaintenanceDate(
+      settings.maintenance_start_date
+    );
+
+    const endDate = formatMaintenanceDate(
+      settings.maintenance_end_date
+    );
+
+    // Cùng ngày
+    if (
+      settings.maintenance_start_date ===
+      settings.maintenance_end_date
+    ) {
+      return {
+        sameDate: true,
+        startTime,
+        endTime,
+        startDate,
+        endDate,
+      };
+    }
+
+    // Khác ngày
+    return {
+      sameDate: false,
+      startTime,
+      endTime,
+      startDate,
+      endDate,
+    };
+  })();
 
   const [loading, setLoading] =
     useState(false);
@@ -362,20 +477,41 @@ export default function Home() {
 
             </div>
 
-            <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
-              <div className="flex items-center gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5 text-orange-700" />
-                <span className="text-xs font-semibold text-orange-800">
-                  Lưu ý: Lịch bảo trì hệ thống
-                </span>
-              </div>
+            {maintenanceMessage?.maintenance_message_enabled &&
+              maintenancePeriod && (
+                <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 text-orange-700" />
 
-              <p className="mt-1 text-xs leading-relaxed text-orange-800">
-                Hệ thống dự kiến bảo trì từ <strong>13h00</strong> đến{" "}
-                <strong>17h00 (04/11/2026)</strong>.
-                Trong thời gian này, sinh viên sẽ không thể truy cập hệ thống.
-              </p>
-            </div>
+                    <span className="text-xs font-semibold text-orange-800">
+                      Lưu ý: Lịch bảo trì hệ thống
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-xs leading-relaxed text-orange-800">
+                    Hệ thống dự kiến bảo trì từ{" "}
+
+                    {maintenancePeriod.sameDate ? (
+                      <>
+                        <strong>{maintenancePeriod.startTime}</strong>
+                        {" "}đến{" "}
+                        <strong>{maintenancePeriod.endTime}</strong>
+                        {" "}({maintenancePeriod.startDate})
+                      </>
+                    ) : (
+                      <>
+                        <strong>{maintenancePeriod.startTime}</strong>
+                        {" "}({maintenancePeriod.startDate})
+                        {" "}đến{" "}
+                        <strong>{maintenancePeriod.endTime}</strong>
+                        {" "}({maintenancePeriod.endDate})
+                      </>
+                    )}
+
+                    . Trong thời gian này, sinh viên sẽ không thể truy cập hệ thống.
+                  </p>
+                </div>
+              )}
 
             {/* FORM */}
 
@@ -631,20 +767,41 @@ export default function Home() {
               className="space-y-5"
             >
 
-              <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
-              <div className="flex items-center gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5 text-orange-700" />
-                <span className="text-xs font-semibold text-orange-800">
-                  Lưu ý: Lịch bảo trì hệ thống
-                </span>
-              </div>
+              {maintenanceMessage?.maintenance_message_enabled &&
+                maintenancePeriod && (
+                  <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 text-orange-700" />
 
-              <p className="mt-1 text-xs leading-relaxed text-orange-800">
-                Hệ thống dự kiến bảo trì từ <strong>13h00</strong> đến{" "}
-                <strong>17h00 (04/11/2026)</strong>.
-                Trong thời gian này, sinh viên sẽ không thể truy cập hệ thống.
-              </p>
-            </div>
+                      <span className="text-xs font-semibold text-orange-800">
+                        Lưu ý: Lịch bảo trì hệ thống
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-xs leading-relaxed text-orange-800">
+                      Hệ thống dự kiến bảo trì từ{" "}
+
+                      {maintenancePeriod.sameDate ? (
+                        <>
+                          <strong>{maintenancePeriod.startTime}</strong>
+                          {" "}đến{" "}
+                          <strong>{maintenancePeriod.endTime}</strong>
+                          {" "}({maintenancePeriod.startDate})
+                        </>
+                      ) : (
+                        <>
+                          <strong>{maintenancePeriod.startTime}</strong>
+                          {" "}({maintenancePeriod.startDate})
+                          {" "}đến{" "}
+                          <strong>{maintenancePeriod.endTime}</strong>
+                          {" "}({maintenancePeriod.endDate})
+                        </>
+                      )}
+
+                      . Trong thời gian này, sinh viên sẽ không thể truy cập hệ thống.
+                    </p>
+                  </div>
+                )}
 
               {/* ADMIN → EMAIL */}
 

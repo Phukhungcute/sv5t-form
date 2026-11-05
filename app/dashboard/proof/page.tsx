@@ -27,6 +27,12 @@ type Student = {
   full_name: string;
 };
 
+type CurrentPdf = {
+  url: string;
+  version: number;
+  created_at: string;
+};
+
 const categories: {
   key: CategoryKey;
   title: string;
@@ -261,6 +267,77 @@ export default function ProofPage() {
   const [loading, setLoading] = useState(true);
 
   const [saving, setSaving] = useState(false);
+
+  const [currentPdf, setCurrentPdf] =
+  useState<CurrentPdf | null>(null);
+
+  const [pdfLoading, setPdfLoading] =
+    useState(true);
+
+  const [pdfError, setPdfError] =
+    useState("");
+
+    /* =======================================================
+   LOAD CURRENT PROOF PDF
+======================================================= */
+
+useEffect(() => {
+  let mounted = true;
+
+  async function loadCurrentPdf() {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Phiên đăng nhập đã hết hạn.");
+      }
+
+      const response = await fetch(
+        "/api/student/proof-pdf?type=original",
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Không thể tải PDF minh chứng."
+        );
+      }
+
+      if (mounted) {
+        setCurrentPdf(result.pdf ?? null);
+      }
+    } catch (error) {
+      console.error("LOAD CURRENT PROOF PDF ERROR:", error);
+
+      if (mounted) {
+        setPdfError(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải PDF minh chứng."
+        );
+      }
+    } finally {
+      if (mounted) {
+        setPdfLoading(false);
+      }
+    }
+  }
+
+  loadCurrentPdf();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   /* =======================================================
      LOAD STUDENT
@@ -710,6 +787,65 @@ export default function ProofPage() {
               tương ứng với từng nội dung.
             </p>
           </div>
+        </div>
+
+        {/* PDF MINH CHỨNG HIỆN TẠI */}
+
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-gray-900">
+                Minh chứng hiện tại
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                PDF minh chứng gần nhất đã được lưu trên hệ thống.
+              </p>
+            </div>
+
+            {currentPdf && (
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                Phiên bản v{currentPdf.version}
+              </span>
+            )}
+          </div>
+
+          {pdfLoading ? (
+            <div className="flex h-32 items-center justify-center rounded-lg bg-gray-50">
+              <p className="text-sm text-gray-500">
+                Đang tải PDF...
+              </p>
+            </div>
+          ) : pdfError ? (
+            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+              {pdfError}
+            </div>
+          ) : currentPdf ? (
+            <>
+              <iframe
+                src={currentPdf.url}
+                title="PDF minh chứng hiện tại"
+                className="h-[500px] w-full rounded-lg border border-gray-200 md:h-[700px]"
+              />
+
+              <div className="mt-3 flex justify-end">
+                <a
+                  href={currentPdf.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                >
+                  Mở PDF ở tab mới ↗
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-lg bg-gray-50 p-4 text-center">
+              <p className="text-sm text-gray-500">
+                Bạn chưa có PDF minh chứng nào được lưu trên hệ thống.
+              </p>
+            </div>
+          )}
         </div>
         
         {/* THANH DUNG LƯỢNG */}

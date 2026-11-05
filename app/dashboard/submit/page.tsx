@@ -418,6 +418,13 @@ function finishForm() {
     return;
   }
 
+  if (!isRequiredCriteriaComplete()) {
+  alert(
+    "Vui lòng điền đầy đủ các mục bắt buộc: Điểm rèn luyện, Đánh giá của Đoàn - Hội và Điểm trung bình (GPA)."
+  );
+  return;
+}
+
   localStorage.setItem(
   "sv5t_submission",
   JSON.stringify(getSubmissionData())
@@ -444,6 +451,14 @@ function isStep1Complete() {
     // address.trim() !== ""
   );
 }
+
+  function isRequiredCriteriaComplete() {
+    return (
+      (answers.conductScore ?? "").trim() !== "" &&
+      (answers.unionEvaluation ?? "").trim() !== "" &&
+      (answers.gpa ?? "").trim() !== ""
+    );
+  }
 
   const totalSteps = 7;
 
@@ -972,7 +987,7 @@ function isStep1Complete() {
               <div className="mt-5 space-y-6">
                 <div>
                   <label className="mb-2 block font-medium leading-7 text-gray-700">
-                      {STANDARD.CONDUCTSCORE.CONTENT}
+                      {STANDARD.CONDUCTSCORE.CONTENT} <span className="text-red-600">*</span>
                     <span className="ml-1 text-sm text-gray-500">
                       {STANDARD.CONDUCTSCORE.DESC}
                     </span>
@@ -1010,7 +1025,7 @@ function isStep1Complete() {
 
                 <div>
                   <label className="mb-3 block font-medium leading-7 text-gray-700">
-                      {STANDARD.UNIONEVALUATION.CONTENT}
+                      {STANDARD.UNIONEVALUATION.CONTENT} <span className="text-red-600">*</span>
                     <span className="ml-1 text-sm text-gray-500">
                       {STANDARD.UNIONEVALUATION.DESC}
                     </span>
@@ -1098,7 +1113,7 @@ function isStep1Complete() {
 
               <div className="mt-5">
                 <label className="mb-2 block font-medium leading-7 text-gray-700">
-                    {STANDARD.GPA.CONTENT}
+                    {STANDARD.GPA.CONTENT} <span className="text-red-600">*</span>
                   <span className="ml-1 text-sm text-gray-500">
                     {STANDARD.GPA.DESC}
                   </span>

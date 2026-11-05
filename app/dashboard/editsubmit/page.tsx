@@ -497,6 +497,13 @@ function finishForm() {
     return;
   }
 
+  if (!isRequiredCriteriaComplete()) {
+    alert(
+      "Vui lòng điền đầy đủ các mục bắt buộc: Điểm rèn luyện, Đánh giá của Đoàn - Hội và Điểm trung bình (GPA)."
+    );
+    return;
+  }
+
   if (!student?.mssv) {
     alert("Không tìm thấy thông tin sinh viên.");
     return;
@@ -526,6 +533,14 @@ function isStep1Complete() {
     // unionDate !== ""
     // email.trim() !== "" &&
     // address.trim() !== ""
+  );
+}
+
+function isRequiredCriteriaComplete() {
+  return (
+    (answers.conductScore ?? "").trim() !== "" &&
+    (answers.unionEvaluation ?? "").trim() !== "" &&
+    (answers.gpa ?? "").trim() !== ""
   );
 }
 
