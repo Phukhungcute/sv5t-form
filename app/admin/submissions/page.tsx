@@ -16,6 +16,7 @@ type Student = {
   birth_date: string;
   gender: string;
   class_name: string;
+  created_at: string;
 };
 
 type Submission = {
@@ -70,130 +71,6 @@ type StudentSubmission = {
 };
 
 type ReviewStatus = "passed" | "failed" | "consider" | null;
-
-const SUBMISSION_FIELD_ORDER = [
-  // =====================================================
-  // BƯỚC 1 — THÔNG TIN CHUNG
-  // =====================================================
-  "fullName",
-  "studentId",
-  "gender",
-  "birthDate",
-  "ethnicity",
-  "major",
-  "className",
-  "faculty",
-  "phone",
-  "studentYear",
-  "position",
-  "unionDate",
-  "unionHasDate",
-  "probationHasDate",
-  "probationDate",
-  "officialHasDate",
-  "officialDate",
-  "email",
-  "address",
-
-  // =====================================================
-  // BƯỚC 2 — ĐẠO ĐỨC TỐT
-  // =====================================================
-  "conductScore",
-  "unionEvaluation",
-  "ethics3",
-  "ethics4",
-  "ethics5",
-  "ethics6",
-  "ethics7",
-  "ethics8",
-
-  // =====================================================
-  // BƯỚC 3 — HỌC TẬP TỐT
-  // =====================================================
-  "gpa",
-  "study2",
-  "study3",
-  "study4",
-  "study5",
-
-  // =====================================================
-  // BƯỚC 4 — THỂ LỰC TỐT
-  // =====================================================
-  "physical1",
-  "physical2",
-  "physical3",
-  "physical4",
-  "physical5",
-  "physical6",
-  "physical7",
-
-  // =====================================================
-  // BƯỚC 5 — TÌNH NGUYỆN TỐT
-  // =====================================================
-  "volunteer1",
-  "volunteer2",
-  "volunteer3",
-  "volunteer4",
-
-  // =====================================================
-  // BƯỚC 6 — HỘI NHẬP TỐT
-  // =====================================================
-  "foreignLanguage1",
-  "foreignLanguage2",
-  "foreignLanguage3",
-  "skill4",
-  "skill5",
-  "skill6",
-  "skill7",
-  "skill8",
-  "integration8",
-  "integration9",
-
-  // =====================================================
-  // BƯỚC 7 — TIÊU CHUẨN ƯU TIÊN
-  // =====================================================
-  "priority1",
-  "priority2",
-  "priority3",
-  "priority4",
-  "priority5",
-  "priority6",
-  "priority7",
-  "priority8",
-];
-
-function getSubmissionFieldOrder(key: string) {
-  const normalizedKey = key
-    .replace(/[_-]/g, "")
-    .toLowerCase();
-
-  const index = SUBMISSION_FIELD_ORDER.findIndex(
-    (field) =>
-      field
-        .replace(/[_-]/g, "")
-        .toLowerCase() === normalizedKey
-  );
-
-  if (index !== -1) return index;
-
-  const dynamicPatterns: Array<[RegExp, number]> = [
-    [/^ethics(\d+)$/i, 200],
-    [/^study(\d+)$/i, 300],
-    [/^physical(\d+)$/i, 400],
-    [/^volunteer(\d+)$/i, 500],
-    [/^foreignLanguage(\d+)$/i, 600],
-    [/^skill(\d+)$/i, 610],
-    [/^integrationActivity(\d+)$/i, 620],
-    [/^priority(\d+)$/i, 700],
-  ];
-
-  for (const [pattern, sectionOrder] of dynamicPatterns) {
-    const match = key.match(pattern);
-    if (match) return sectionOrder + Number(match[1]);
-  }
-
-  return 9999;
-}
 
 /* =====================================================
    CONFIG
@@ -268,6 +145,9 @@ export default function SubmissionsPage() {
 
   const [search, setSearch] =
     useState("");
+
+  const [sortNewest, setSortNewest] =
+    useState(false);
 
   const [statusFilter, setStatusFilter] =
     useState<ReviewStatus | "all">("all");
@@ -565,7 +445,6 @@ export default function SubmissionsPage() {
           ) ?? null,
       }));
 
-
       // ==========================================
       // 8. ƯU TIÊN SUBMITTED → MSSV
       // ==========================================
@@ -620,10 +499,9 @@ export default function SubmissionsPage() {
   ===================================================== */
 
   const filteredStudents = useMemo(() => {
-    const keyword =
-      search.trim().toLowerCase();
+    const keyword = search.trim().toLowerCase();
 
-    return students.filter((item) => {
+    const result = students.filter((item) => {
       const matchesSearch =
         !keyword ||
         item.student.mssv
@@ -639,7 +517,23 @@ export default function SubmissionsPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [students, search, statusFilter]);
+
+    if (sortNewest) {
+      result.sort((a, b) => {
+        const dateA = a.submission?.created_at
+          ? new Date(a.submission.created_at).getTime()
+          : 0;
+
+        const dateB = b.submission?.created_at
+          ? new Date(b.submission.created_at).getTime()
+          : 0;
+
+        return dateB - dateA;
+      });
+    }
+
+    return result;
+  }, [students, search, statusFilter, sortNewest]);
 
   /* =====================================================
      LOGOUT
@@ -692,113 +586,104 @@ export default function SubmissionsPage() {
      PDF
   ===================================================== */
 
+  
   async function openPDF(filePath: string) {
+    // Mở tab ngay trong thao tác click để tránh popup blocker.
+    const newTab = window.open("about:blank", "_blank");
+
+    if (!newTab) {
+      alert("Trình duyệt đã chặn cửa sổ mở PDF. Vui lòng cho phép mở cửa sổ bật lên.");
+      return;
+    }
+
     try {
       let path = filePath.trim();
 
-      // Nếu DB lưu "/proofs/..." hoặc "proofs/..."
-      // thì bỏ phần bucket ra.
       if (path.startsWith("/")) {
         path = path.slice(1);
       }
 
       if (path.startsWith(`${PROOF_BUCKET}/`)) {
-        path = path.slice(
-          PROOF_BUCKET.length + 1
-        );
+        path = path.slice(PROOF_BUCKET.length + 1);
       }
 
-      console.log("PDF FILE PATH:", path);
-
-      const {
-        data,
-        error,
-      } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from(PROOF_BUCKET)
-        .createSignedUrl(
-          path,
-          60 * 60
-        );
+        .createSignedUrl(path, 60 * 60);
+
+      if (error || !data?.signedUrl) {
+        console.error("PDF URL ERROR:", error);
+        newTab.close();
+        alert("Không thể mở file PDF.");
+        return;
+      }
+
+      newTab.location.href = data.signedUrl;
+    } catch (error) {
+      console.error("PDF ERROR:", error);
+      newTab.close();
+      alert("Không thể mở file PDF.");
+    }
+  }
+
+
+  
+  async function openAwardPhoto(filePath: string) {
+    // Mở tab ngay khi người dùng nhấn nút.
+    const newTab = window.open("about:blank", "_blank");
+
+    if (!newTab) {
+      alert("Trình duyệt đã chặn cửa sổ mở ảnh. Vui lòng cho phép mở cửa sổ bật lên.");
+      return;
+    }
+
+    try {
+      // 1. Chuẩn hóa đường dẫn ảnh
+      let path = filePath.trim();
+
+      if (path.startsWith("/")) {
+        path = path.slice(1);
+      }
+
+      if (path.startsWith("student-awards/")) {
+        path = path.slice("student-awards/".length);
+      }
+
+      console.log("AWARD PHOTO PATH:", path);
+
+      // 2. Tạo signed URL
+      const { data, error } = await supabase.storage
+        .from("student-awards")
+        .createSignedUrl(path, 60 * 60);
 
       if (error) {
-        console.error(
-          "PDF URL ERROR:",
-          error
-        );
-
-        alert(
-          "Không thể mở file PDF."
-        );
-
+        console.error("AWARD PHOTO URL ERROR:", error);
+        newTab.close();
+        alert(`Không thể tạo đường dẫn ảnh: ${error.message}`);
         return;
       }
 
       if (!data?.signedUrl) {
-        alert(
-          "Không tạo được đường dẫn PDF."
-        );
+        newTab.close();
+        alert("Không tạo được đường dẫn ảnh.");
         return;
       }
 
-      window.open(
-        data.signedUrl,
-        "_blank"
-      );
+      // 3. Chuyển tab mới đến ảnh
+      newTab.location.href = data.signedUrl;
     } catch (error) {
-      console.error(
-        "PDF ERROR:",
-        error
-      );
+      console.error("OPEN AWARD PHOTO ERROR:", error);
+
+      newTab.close();
 
       alert(
-        "Không thể mở file PDF."
+        error instanceof Error
+          ? error.message
+          : "Không thể mở ảnh tuyên dương."
       );
     }
   }
 
-  async function openAwardPhoto(filePath: string) {
-  try {
-    // 1. Chuẩn hóa đường dẫn ảnh
-    let path = filePath.trim();
-
-    if (path.startsWith("/")) {
-      path = path.slice(1);
-    }
-
-    if (path.startsWith("student-awards/")) {
-      path = path.slice("student-awards/".length);
-    }
-
-    console.log("AWARD PHOTO PATH:", path);
-
-    // 2. Tạo signed URL trực tiếp từ Supabase Storage
-    const { data, error } = await supabase.storage
-      .from("student-awards")
-      .createSignedUrl(path, 60 * 60);
-
-    if (error) {
-      console.error("AWARD PHOTO URL ERROR:", error);
-      alert(`Không thể tạo đường dẫn ảnh: ${error.message}`);
-      return;
-    }
-
-    if (!data?.signedUrl) {
-      alert("Không tạo được đường dẫn ảnh.");
-      return;
-    }
-
-    // 3. Mở ảnh trong tab mới
-    window.open(data.signedUrl, "_blank");
-  } catch (error) {
-    console.error("OPEN AWARD PHOTO ERROR:", error);
-
-    alert(
-      error instanceof Error
-        ? error.message
-        : "Không thể mở ảnh tuyên dương."
-    );
-  }
-}
 
   /* =====================================================
      CONFIRM REVIEW
@@ -1500,6 +1385,18 @@ function exportToExcel() {
               XEM XÉT
             </button>
 
+            <button
+              type="button"
+              onClick={() => setSortNewest((prev) => !prev)}
+              className={`cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
+                sortNewest
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {sortNewest ? "MỚI NHẤT ↓" : "SẮP XẾP: MẶC ĐỊNH"}
+            </button>
+
             <div className="ml-4 menu-btn-wrapper-inline">
               <button
                 type="button"
@@ -1643,6 +1540,20 @@ function exportToExcel() {
 
                               <p className="mt-1 text-xs text-gray-400">
                                 {item.student.class_name}
+                              </p>
+
+                              <p className="mt-1 text-xs text-red-800">
+                                Đã nộp vào lúc{" "}
+                                {item.submission?.created_at
+                                  ? new Date(item.submission.created_at).toLocaleString("vi-VN", {
+                                      timeZone: "Asia/Ho_Chi_Minh",
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "Null"}
                               </p>
                             </td>
 

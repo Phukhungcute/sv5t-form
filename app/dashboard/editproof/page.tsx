@@ -28,6 +28,12 @@ type Student = {
   full_name: string;
 };
 
+type CurrentPdf = {
+  url: string;
+  version: number;
+  created_at: string;
+};
+
 const categories: {
   key: CategoryKey;
   title: string;
@@ -262,6 +268,80 @@ export default function ProofPage() {
   const [loading, setLoading] = useState(true);
 
   const [saving, setSaving] = useState(false);
+
+  const [currentPdf, setCurrentPdf] =
+    useState<CurrentPdf | null>(null);
+
+  const [isPdfExpanded, setIsPdfExpanded] =
+    useState(false);
+
+  const [pdfLoading, setPdfLoading] =
+    useState(true);
+
+  const [pdfError, setPdfError] =
+    useState("");
+
+  /* =======================================================
+   LOAD CURRENT PROOF PDF
+======================================================= */
+
+useEffect(() => {
+  let mounted = true;
+
+  async function loadCurrentPdf() {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Phiên đăng nhập đã hết hạn.");
+      }
+
+      const response = await fetch(
+        "/api/student/proof-pdf?type=edited",
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Không thể tải PDF minh chứng."
+        );
+      }
+
+      if (mounted) {
+        setCurrentPdf(result.pdf ?? null);
+      }
+    } catch (error) {
+      console.error("LOAD CURRENT PROOF PDF ERROR:", error);
+
+      if (mounted) {
+        setPdfError(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải PDF minh chứng."
+        );
+      }
+    } finally {
+      if (mounted) {
+        setPdfLoading(false);
+      }
+    }
+  }
+
+  loadCurrentPdf();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   /* =======================================================
      LOAD STUDENT
@@ -779,6 +859,104 @@ console.log(
           </div>
         </div>
 
+        {/* PDF MINH CHỨNG ĐÃ CHỈNH SỬA */}
+
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-gray-900">
+                Minh chứng đã chỉnh sửa
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                PDF của lần bổ sung minh chứng gần nhất.
+              </p>
+            </div>
+
+            {currentPdf && (
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                Phiên bản v{currentPdf.version}
+              </span>
+            )}
+          </div>
+
+          {pdfLoading ? (
+            <div className="flex h-32 items-center justify-center rounded-lg bg-gray-50">
+              <p className="text-sm text-gray-500">
+                Đang tải PDF...
+              </p>
+            </div>
+          ) : pdfError ? (
+            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+              {pdfError}
+            </div>
+          ) : currentPdf ? (
+            <div className="border-t border-gray-100 bg-gray-50">
+              {/* Nút mở/đóng PDF */}
+              <button
+                type="button"
+                onClick={() => setIsPdfExpanded((prev) => !prev)}
+                aria-expanded={isPdfExpanded}
+                className="flex w-full cursor-pointer items-center justify-between px-5 py-3 text-sm font-medium text-gray-600 transition hover:bg-green-50 hover:text-green-700"
+              >
+                <span>
+                  {isPdfExpanded
+                    ? "Ẩn nội dung PDF"
+                    : "Xem nội dung PDF"}
+                </span>
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform duration-300 ${
+                    isPdfExpanded ? "rotate-180" : ""
+                  }`}
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {/* Nội dung PDF */}
+              {isPdfExpanded && (
+                <div className="px-3 pb-4 sm:px-5">
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                    <iframe
+                      src={`${currentPdf.url}#toolbar=1&navpanes=0`}
+                      title="PDF minh chứng đã chỉnh sửa"
+                      className="h-[600px] w-full"
+                    />
+                  </div>
+
+                  <div className="mt-3 flex justify-end">
+                    <a
+                      href={currentPdf.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+                    >
+                      Mở PDF ở tab mới ↗
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg bg-gray-50 p-4 text-center">
+              <p className="text-sm text-gray-500">
+                Bạn chưa có PDF bổ sung minh chứng nào được lưu trên hệ thống.
+              </p>
+            </div>
+          )}
+        </div>
+        
         {/* THANH DUNG LƯỢNG */}
 
         <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
