@@ -67,6 +67,7 @@ function ScheduleDaysRow({
   enabled,
   onToggle,
   onSave,
+  startDate,
 }: {
   title: string;
   label: string;
@@ -74,19 +75,25 @@ function ScheduleDaysRow({
   enabled?: boolean;
   onToggle?: () => void;
   onSave: (value: number) => void;
+  startDate: string;
 }) {
   const [inputValue, setInputValue] =
     useState(String(value));
-  
-  // Trạng thái thống kê mặc định
-  const [stats, setStats] = useState({
-    total: 0,
-    submitted: 0,
-    pending: 0,
-    passed: 0,
-    failed: 0,
-    consider: 0,
-  });
+
+  const endDate = (() => {
+    const days = Number(inputValue);
+
+    if (
+      !startDate ||
+      !Number.isInteger(days) ||
+      days < 1
+    ) {
+      return "";
+    }
+
+    // Ngày kết thúc tính cả ngày bắt đầu.
+    return addDaysToDateInput(startDate, days - 1);
+  })();
 
   return (
     <div className="rounded-xl border border-gray-200 p-5">
@@ -98,7 +105,7 @@ function ScheduleDaysRow({
           </h3>
 
           <p className="mt-1 text-sm text-gray-500">
-            {label}
+            {label} {inputValue || 0}
           </p>
         </div>
 
@@ -140,6 +147,13 @@ function ScheduleDaysRow({
           Xác nhận
         </button>
       </div>
+        <div className="mt-2 text-sm text-gray-500">
+          {endDate && (
+            <p>
+              Tính đến hết ngày {formatDateDisplay(endDate)}
+            </p>
+          )}
+        </div>
     </div>
   );
 }
@@ -149,6 +163,34 @@ function formatDateDisplay(dateString: string) {
     dateString.slice(0, 10).split("-");
 
   return `${day}/${month}/${year}`;
+}
+
+function addDaysToDateInput(
+  dateString: string,
+  days: number
+): string {
+  if (!dateString || !Number.isInteger(days)) {
+    return "";
+  }
+
+  const [year, month, day] = dateString
+    .slice(0, 10)
+    .split("-")
+    .map(Number);
+
+  const date = new Date(year, month - 1, day);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  date.setDate(date.getDate() + days);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 type QA = {
@@ -2250,6 +2292,7 @@ async function saveMaintenanceChanges() {
                   title="Gửi hồ sơ"
                   label="Số ngày gửi hồ sơ:"
                   value={schedule.submission_days}
+                  startDate={startDateInput}
                   enabled={schedule.submission_enabled}
                   onToggle={() =>
                     toggleSchedule("submission_enabled")
@@ -2267,6 +2310,10 @@ async function saveMaintenanceChanges() {
                   title="Duyệt hồ sơ lần 1"
                   label="Số ngày duyệt hồ sơ lần 1:"
                   value={schedule.review1_days}
+                  startDate={addDaysToDateInput(
+                    startDateInput,
+                    schedule.submission_days
+                  )}
                   onSave={(value) =>
                     updateDays("review1_days", value)
                   }
@@ -2280,6 +2327,10 @@ async function saveMaintenanceChanges() {
                   title="Chỉnh sửa hồ sơ"
                   label="Số ngày chỉnh sửa hồ sơ:"
                   value={schedule.addition_days}
+                  startDate={addDaysToDateInput(
+                    startDateInput,
+                    schedule.submission_days + schedule.review1_days
+                  )}
                   enabled={schedule.addition_enabled}
                   onToggle={() =>
                     toggleSchedule("addition_enabled")
@@ -2297,6 +2348,12 @@ async function saveMaintenanceChanges() {
                   title="Duyệt hồ sơ lần 2"
                   label="Số ngày duyệt hồ sơ lần 2:"
                   value={schedule.review2_days}
+                  startDate={addDaysToDateInput(
+                    startDateInput,
+                    schedule.submission_days +
+                      schedule.review1_days +
+                      schedule.addition_days
+                  )}
                   onSave={(value) =>
                     updateDays("review2_days", value)
                   }
@@ -2310,6 +2367,13 @@ async function saveMaintenanceChanges() {
                   title="Kết quả"
                   label="Số ngày xem kết quả:"
                   value={schedule.result_days}
+                  startDate={addDaysToDateInput(
+                    startDateInput,
+                    schedule.submission_days +
+                      schedule.review1_days +
+                      schedule.addition_days +
+                      schedule.review2_days
+                  )}
                   enabled={schedule.result_enabled}
                   onToggle={() =>
                     toggleSchedule("result_enabled")
