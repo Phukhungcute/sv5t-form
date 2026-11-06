@@ -105,7 +105,7 @@ function ScheduleDaysRow({
           </h3>
 
           <p className="mt-1 text-sm text-gray-500">
-            {label} {inputValue || 0}
+            {label} {inputValue || 0} ngày
           </p>
         </div>
 

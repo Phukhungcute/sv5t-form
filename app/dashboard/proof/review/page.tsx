@@ -1205,34 +1205,34 @@ const filePath =
     );
 
     /* =====================================================
-   DOWNLOAD PDF VỀ MÁY SINH VIÊN
-===================================================== */
+      DOWNLOAD PDF VỀ MÁY SINH VIÊN
+    ===================================================== */
 
-    const downloadUrl =
-      URL.createObjectURL(pdfBlob);
+        const downloadUrl =
+          URL.createObjectURL(pdfBlob);
 
-    const downloadLink =
-      document.createElement("a");
+        const downloadLink =
+          document.createElement("a");
 
-    downloadLink.href =
-      downloadUrl;
+        downloadLink.href =
+          downloadUrl;
 
-    downloadLink.download =
-      `${student.mssv}-${student.full_name}-proof-v${nextVersion}.pdf`;
+        downloadLink.download =
+          `${student.mssv}-${student.full_name}-proof-v${nextVersion}.pdf`;
 
-    document.body.appendChild(
-      downloadLink
-    );
+        document.body.appendChild(
+          downloadLink
+        );
 
-    downloadLink.click();
+        downloadLink.click();
 
-    document.body.removeChild(
-      downloadLink
-    );
+        document.body.removeChild(
+          downloadLink
+        );
 
-    URL.revokeObjectURL(
-      downloadUrl
-    );
+        URL.revokeObjectURL(
+          downloadUrl
+        );
 
     /* =====================================================
        6. XÓA REVIEW DRAFT
@@ -1248,11 +1248,6 @@ const filePath =
     /* =====================================================
        7. THÀNH CÔNG + XOÁ MINH CHỨNG CŨ
     ===================================================== */
-    
-    await cleanupOldProofs(
-      student.mssv,
-      nextVersion
-    );
 
     Success(`Gửi minh chứng thành công! Phiên bản ${nextVersion}`);
 

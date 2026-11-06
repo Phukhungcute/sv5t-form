@@ -1935,24 +1935,6 @@ export default function EditProofReviewPage() {
       );
 
       /* =====================================================
-        10. CLEANUP VERSION TRƯỚC
-        
-        Ví dụ:
-          tạo v25*
-          => xoá v24*
-        
-        Nhưng nếu v24 là bản gốc
-        và đã được protected
-        => KHÔNG XOÁ.
-      ===================================================== */
-
-      await cleanupPreviousEditProof(
-        mssv,
-        newVersion,
-        protectedPath
-      );
-
-      /* =====================================================
         11. DOWNLOAD PDF
       ===================================================== */
 
