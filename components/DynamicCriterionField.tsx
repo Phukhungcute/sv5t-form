@@ -50,8 +50,8 @@ export default function DynamicCriterionField({
 
       {criterion.input_type === "text" ? (
         <textarea
-          rows={4}
-          maxLength={1000}
+          rows={32}
+          maxLength={2000}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Để trống nếu không có..."
