@@ -26,6 +26,8 @@ type Submission = {
   data: Record<string, any>;
   status: string;
   participation: boolean | null;
+  is_representative: boolean;
+  is_university_level: boolean;
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
@@ -157,6 +159,12 @@ export default function SubmissionsPage() {
 
   const [reviewStatus, setReviewStatus] =
     useState<ReviewStatus>(null);
+
+  const [isRepresentative, setIsRepresentative] =
+    useState(false);
+
+  const [isUniversityLevel, setIsUniversityLevel] =
+    useState(false);
 
   const [reviewNote, setReviewNote] =
     useState("");
@@ -308,7 +316,7 @@ export default function SubmissionsPage() {
       } = await supabase
         .from("submissions")
         .select(
-          "id, mssv, version, data, status, participation, created_at, reviewed_at, reviewed_by, is_edit"
+          "id, mssv, version, data, status, participation,is_representative, is_university_level, created_at, reviewed_at, reviewed_by, is_edit"
         )
         .order("version", {
           ascending: false,
@@ -564,6 +572,14 @@ export default function SubmissionsPage() {
       : null
   );
 
+  setIsRepresentative(
+    item.submission?.is_representative ?? false
+  );
+
+  setIsUniversityLevel(
+    item.submission?.is_university_level ?? false
+  );
+
   // Lấy nhận xét mới nhất trực tiếp từ database
   setReviewNote(
     item.submission?.data?.review_note ?? ""
@@ -580,6 +596,8 @@ export default function SubmissionsPage() {
     setSelected(null);
     setReviewStatus(null);
     setReviewNote("");
+    setIsRepresentative(false);
+    setIsUniversityLevel(false);
   }
 
   /* =====================================================
@@ -740,8 +758,22 @@ export default function SubmissionsPage() {
         .update({
           status: reviewStatus,
           data: updatedData,
+
+          // Chỉ lưu hai trạng thái phụ khi hồ sơ ĐẠT.
+          // Các trạng thái khác sẽ tự động đưa về false.
+          is_representative:
+            reviewStatus === "passed"
+              ? isRepresentative
+              : false,
+
+          is_university_level:
+            reviewStatus === "passed"
+              ? isUniversityLevel
+              : false,
+
           reviewed_at:
             new Date().toISOString(),
+
           reviewed_by: user.id,
         })
         .eq(
@@ -1559,11 +1591,29 @@ function exportToExcel() {
 
                             {/* TRẠNG THÁI */}
                             <td className="whitespace-nowrap px-6 py-4 text-center">
-                              <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
-                              >
-                                {status.text}
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span
+                                  className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
+                                >
+                                  {status.text}
+                                </span>
+
+                                {item.submission?.status === "passed" && (
+                                  <>
+                                    {item.submission.is_university_level && (
+                                      <span className="text-xs font-semibold text-red-600">
+                                        (Cấp trường)
+                                      </span>
+                                    )}
+
+                                    {item.submission.is_representative && (
+                                      <span className="text-xs font-semibold text-orange-500">
+                                        (Tiêu biểu)
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </td>
 
                             {/* VERSION HỒ SƠ */}
@@ -2460,6 +2510,44 @@ function exportToExcel() {
                       className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-100"
                     />
 
+                  </div>
+                )}
+
+                {/* ======================================
+                    TRẠNG THÁI BỔ SUNG KHI ĐẠT
+                ====================================== */}
+
+                {reviewStatus === "passed" && (
+                  <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
+                    <p className="mb-3 text-sm font-semibold text-green-900">
+                      Phân loại bổ sung (không bắt buộc)
+                    </p>
+
+                    <div className="flex flex-wrap gap-x-8 gap-y-3">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={isRepresentative}
+                          onChange={(e) =>
+                            setIsRepresentative(e.target.checked)
+                          }
+                          className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        />
+                        Tiêu biểu
+                      </label>
+
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={isUniversityLevel}
+                          onChange={(e) =>
+                            setIsUniversityLevel(e.target.checked)
+                          }
+                          className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                        />
+                        Cấp trường
+                      </label>
+                    </div>
                   </div>
                 )}
 

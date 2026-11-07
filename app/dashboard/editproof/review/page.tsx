@@ -600,8 +600,8 @@ export default function EditProofReviewPage() {
      Tính dung lượng
   ========================================================= */
   
-  const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB / ảnh
-  const MAX_TOTAL_SIZE = 1000 * 1024 * 1024; // 1000 MB tổng
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB / ảnh
+  const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB tổng
   
   function getDataUrlSize(dataUrl: string): number {
     if (!dataUrl) return 0;

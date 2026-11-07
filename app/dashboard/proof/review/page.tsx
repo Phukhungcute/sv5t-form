@@ -243,8 +243,8 @@ function loadImage(
    Tính dung lượng
 ========================================================= */
 
-const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB / ảnh
-const MAX_TOTAL_SIZE = 1000 * 1024 * 1024; // 1000 MB tổng
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB / ảnh
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB tổng
 
 function getDataUrlSize(dataUrl: string): number {
   if (!dataUrl) return 0;
@@ -1246,7 +1246,7 @@ const filePath =
     );
 
     /* =====================================================
-       7. THÀNH CÔNG + XOÁ MINH CHỨNG CŨ
+       7. THÀNH CÔNG
     ===================================================== */
 
     Success(`Gửi minh chứng thành công! Phiên bản ${nextVersion}`);
@@ -1514,7 +1514,7 @@ async function cleanupOldProofs(
               {formatFileSize(
                 getTotalProofSize(proofData)
               )}{" "}
-              / 1000 MB
+              / 100 MB
             </span>
           </div>
 
@@ -1533,7 +1533,7 @@ async function cleanupOldProofs(
           </div>
 
           <p className="mt-2 text-sm text-gray-500">
-            Mỗi ảnh tối đa 15 MB · Tổng tối đa 1000 MB
+            Mỗi ảnh tối đa 5 MB · Tổng tối đa 100 MB
           </p>
         </div>
 

@@ -22,6 +22,8 @@ type Submission = {
   version: number;
   is_edit: number;
   participation: boolean | null;
+  is_representative: boolean;
+  is_university_level: boolean;
 };
 
 export default function ResultPage() {
@@ -178,7 +180,7 @@ export default function ResultPage() {
         } = await supabase
           .from("submissions")
           .select(
-            "id, status, version, is_edit, participation"
+            "id, status, version, is_edit, participation, is_representative, is_university_level"
           )
           .eq("mssv", profile.mssv)
           .order("version", {
@@ -680,8 +682,18 @@ export default function ResultPage() {
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
 
               <p className="font-semibold text-gray-900">
-                Bạn có tham gia được lễ tuyên dương không?
+                Xác nhận tham gia được Lễ tuyên dương danh hiệu "Sinh viên 5 tốt" Năm học 2025 - 2026
+                khoa Giáo dục Tiểu học
               </p>
+
+              <div className="mt-2 text-sm leading-6 text-gray-600">
+                <p>
+                  Thời gian dự kiến: 13h00 ngày 29/11/2026
+                </p>
+                <p>
+                  Địa điểm dự kiến: Hội trường lầu 7 khu E, cơ sở chính trường Đại học Sài Gòn
+                </p>
+              </div>
 
               {/* OPTIONS */}
 
@@ -694,7 +706,7 @@ export default function ResultPage() {
                   disabled={participationSaving}
                   className={`
                     flex
-                    w-28
+                    w-auto
                     cursor-pointer
                     items-center
                     justify-center
@@ -742,7 +754,7 @@ export default function ResultPage() {
                     )}
                   </span>
 
-                  Được
+                  Tham gia
                 </button>
 
 
@@ -753,7 +765,7 @@ export default function ResultPage() {
                   disabled={participationSaving}
                   className={`
                     flex
-                    w-28
+                    w-auto
                     cursor-pointer
                     items-center
                     justify-center
@@ -801,7 +813,7 @@ export default function ResultPage() {
                     )}
                   </span>
 
-                  Không
+                  Không tham gia
                 </button>
 
               </div>
