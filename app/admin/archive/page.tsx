@@ -678,6 +678,7 @@ export default function ArchivePage() {
     }
   }
 
+  
   async function readArchiveZip(file: File) {
     setArchiveError("");
 
@@ -689,12 +690,37 @@ export default function ArchivePage() {
     setArchiveLoading(true);
 
     try {
-      const zip = await JSZip.loadAsync(file);
+      const outerZip = await JSZip.loadAsync(file);
 
+      // Tìm ZIP chính thức bên trong ZIP ngoài.
+      const nestedZipEntries = Object.values(outerZip.files).filter(
+        (entry) =>
+          !entry.dir &&
+          entry.name.toLowerCase().endsWith(".zip"),
+      );
+
+      // Ưu tiên ZIP chính thức theo tên đã quy định.
+      const officialEntry = nestedZipEntries.find((entry) =>
+        entry.name.toLowerCase().endsWith("sv5t-official-archive.zip"),
+      );
+
+      // Nếu không có ZIP chính thức, thử đọc ZIP ngoài trước.
+      let zip: JSZip;
+
+      if (officialEntry) {
+        const nestedBlob = await officialEntry.async("blob");
+        zip = await JSZip.loadAsync(nestedBlob);
+      } else {
+        zip = outerZip;
+      }
+
+      // Tìm manifest ở root của ZIP đang được đọc.
       const manifestFile = zip.file("manifest.json");
 
       if (!manifestFile) {
-        throw new Error("Không tìm thấy manifest.json trong file ZIP.");
+        throw new Error(
+          "Không tìm thấy manifest.json trong ZIP hoặc ZIP chính thức bên trong.",
+        );
       }
 
       const manifestText = await manifestFile.async("text");
@@ -705,7 +731,9 @@ export default function ArchivePage() {
         !manifest.created_at ||
         !Array.isArray(manifest.selected_mssv)
       ) {
-        throw new Error("manifest.json không đúng cấu trúc bản lưu trữ SV5T.");
+        throw new Error(
+          "manifest.json không đúng cấu trúc bản lưu trữ SV5T.",
+        );
       }
 
       const studentFiles = Object.values(zip.files).filter(
@@ -716,7 +744,9 @@ export default function ArchivePage() {
       );
 
       if (studentFiles.length === 0) {
-        throw new Error("Không tìm thấy file JSON nào trong thư mục students/.");
+        throw new Error(
+          "Không tìm thấy file JSON nào trong thư mục students/.",
+        );
       }
 
       const parsedStudents: ArchiveStudent[] = [];
@@ -737,11 +767,11 @@ export default function ArchivePage() {
             archived_at: parsed.archived_at,
             student: parsed.student,
             submissions: Array.isArray(parsed.submissions)
-            ? parsed.submissions.map((submission) => ({
-                ...submission,
-                data: filterArchiveData(submission.data),
-              }))
-            : [],
+              ? parsed.submissions.map((submission) => ({
+                  ...submission,
+                  data: filterArchiveData(submission.data),
+                }))
+              : [],
             proofs: Array.isArray(parsed.proofs)
               ? parsed.proofs
               : [],
@@ -755,10 +785,12 @@ export default function ArchivePage() {
       }
 
       if (parsedStudents.length === 0) {
-        throw new Error("Không có dữ liệu sinh viên hợp lệ trong bản lưu trữ.");
+        throw new Error(
+          "Không có dữ liệu sinh viên hợp lệ trong bản lưu trữ.",
+        );
       }
 
-      // Chỉ thay bản lưu trữ đang đọc khi bản ZIP mới hợp lệ.
+      // Chỉ cập nhật state khi ZIP hợp lệ.
       setArchiveManifest(manifest);
       setArchiveStudents(parsedStudents);
       setArchiveSearch("");
@@ -781,6 +813,7 @@ export default function ArchivePage() {
       setArchiveLoading(false);
     }
   }
+
 
   function latestVersion<T extends { version: number }>(
     records: T[],
