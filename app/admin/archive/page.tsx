@@ -107,7 +107,7 @@ const HIDDEN_ARCHIVE_KEYS = new Set([
   "email",
   "address",
   "youthuniondate",
-  "youthunionHasDate",,
+  "youthunionHasDate",
   "unionEvaluation".toLowerCase(),
 ]);
 
