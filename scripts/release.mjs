@@ -1,5 +1,11 @@
 
 import { execFileSync } from "node:child_process";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from "node:fs";
 
 function git(args) {
   return execFileSync("git", args, {
@@ -8,11 +14,49 @@ function git(args) {
   }).trim();
 }
 
-function runVersionScript() {
-  console.log("\nĐang cập nhật APP_VERSION...");
-  execFileSync("node", ["scripts/update-version.mjs"], {
-    stdio: "inherit",
+function updateVersion(version) {
+  mkdirSync("lib", { recursive: true });
+
+  writeFileSync(
+    "lib/version.ts",
+    `/**
+ * Phiên bản hiện tại của SV5T Form.
+ * File này được tự động tạo trước khi phát hành.
+ */
+export const APP_VERSION = "${version}";
+`,
+    "utf8",
+  );
+}
+
+function updateChangelog(version, message) {
+  const filePath = "CHANGELOG.md";
+
+  const date = new Date().toLocaleDateString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
   });
+
+  const entry = `## ${version} — ${date}
+
+${message}
+
+`;
+
+  const header = "# SV5T Form — Changelog";
+
+  const oldContent = existsSync(filePath)
+    ? readFileSync(filePath, "utf8")
+    : `${header}\n\n`;
+
+  const content = oldContent.startsWith(header)
+    ? oldContent.slice(header.length).trimStart()
+    : oldContent;
+
+  writeFileSync(
+    filePath,
+    `${header}\n\n${entry}${content}`,
+    "utf8",
+  );
 }
 
 try {
@@ -32,6 +76,7 @@ try {
   const major = Number(match[1]);
   const minor = Number(match[2]);
   const patch = Number(match[3]) + 1;
+
   const nextVersion = `v${major}.${minor}.${patch}`;
 
   const commitMessage =
@@ -48,29 +93,13 @@ try {
   console.log(`\nPhiên bản hiện tại: ${latestTag}`);
   console.log(`Phiên bản tiếp theo: ${nextVersion}`);
 
-  // 3. Cập nhật version.ts tự động
-  // Dùng tag mới làm nguồn version trong lúc tạo file
-  // update-version.mjs hiện lấy tag Git hiện tại,
-  // nên tạo tag mới sau khi commit là chưa đủ.
-  // Vì vậy, ta sẽ tạo file version.ts trực tiếp ở đây.
+  // 3. Cập nhật APP_VERSION
+  updateVersion(nextVersion);
 
-  const { mkdirSync, writeFileSync } = await import("node:fs");
-  mkdirSync("lib", { recursive: true });
+  // 4. Cập nhật CHANGELOG
+  updateChangelog(nextVersion, commitMessage);
 
-  writeFileSync(
-    "lib/version.ts",
-    `/**
- * Phiên bản hiện tại của SV5T Form.
- * File này được tự động tạo trước khi phát hành.
- */
-export const APP_VERSION = "${nextVersion}";
-`,
-    "utf8",
-  );
-
-  console.log(`✓ APP_VERSION = ${nextVersion}`);
-
-  // 4. Stage và commit
+  // 5. Stage và commit
   git(["add", "."]);
 
   const staged = git(["diff", "--cached", "--name-only"]);
@@ -79,24 +108,27 @@ export const APP_VERSION = "${nextVersion}";
     throw new Error("Không có file nào được stage để commit.");
   }
 
-  git(["commit", "-m", commitMessage]);
+  git(["commit", "-m", `${nextVersion}: ${commitMessage}`]);
 
-  // 5. Tạo tag cho commit vừa tạo
+  // 6. Tạo Git tag cho commit vừa tạo
   git([
     "tag",
     "-a",
     nextVersion,
     "-m",
-    `Release ${nextVersion}`,
+    `${nextVersion}: ${commitMessage}`,
   ]);
 
-  // 6. Push commit và tag
+  // 7. Push commit và tag
   git(["push"]);
   git(["push", "origin", nextVersion]);
 
   console.log(`\n✓ Phát hành thành công ${nextVersion}`);
+  console.log("✓ CHANGELOG.md đã cập nhật");
 } catch (error) {
   console.error("\n✗ Phát hành thất bại.");
-  console.error(error.message);
+  console.error(
+    error instanceof Error ? error.message : error,
+  );
   process.exitCode = 1;
 }
