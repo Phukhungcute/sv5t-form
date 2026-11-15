@@ -74,6 +74,16 @@ type StudentSubmission = {
 
 type ReviewStatus = "passed" | "failed" | "consider" | null;
 
+type SubmissionFilter =
+  | "all"
+  | "not_submitted"
+  | "submitted"
+  | "consider"
+  | "passed"
+  | "failed"
+  | "university"
+  | "representative";
+
 /* =====================================================
    CONFIG
 ===================================================== */
@@ -152,7 +162,7 @@ export default function SubmissionsPage() {
     useState(false);
 
   const [statusFilter, setStatusFilter] =
-    useState<ReviewStatus | "all">("all");
+    useState<SubmissionFilter>("all");
 
   const [selected, setSelected] =
     useState<StudentSubmission | null>(null);
@@ -506,25 +516,77 @@ export default function SubmissionsPage() {
      SEARCH
   ===================================================== */
 
+  
   const filteredStudents = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
     const result = students.filter((item) => {
+      const submission = item.submission;
+
+      // ==========================================
+      // SEARCH
+      // ==========================================
+
       const matchesSearch =
         !keyword ||
-        item.student.mssv
-          .toLowerCase()
-          .includes(keyword) ||
-        item.student.full_name
-          .toLowerCase()
-          .includes(keyword);
+        item.student.mssv.toLowerCase().includes(keyword) ||
+        item.student.full_name.toLowerCase().includes(keyword);
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        item.submission?.status === statusFilter;
+      // ==========================================
+      // FILTER
+      // ==========================================
+
+      let matchesStatus = true;
+
+      switch (statusFilter) {
+        case "not_submitted":
+          matchesStatus = submission === null;
+          break;
+
+        case "submitted":
+          matchesStatus =
+            submission !== null &&
+            !["passed", "failed", "consider"].includes(
+              submission.status
+            );
+          break;
+
+        case "consider":
+          matchesStatus = submission?.status === "consider";
+          break;
+
+        case "passed":
+          matchesStatus = submission?.status === "passed";
+          break;
+
+        case "failed":
+          matchesStatus = submission?.status === "failed";
+          break;
+
+        case "university":
+          matchesStatus =
+            submission?.status === "passed" &&
+            submission.is_university_level;
+          break;
+
+        case "representative":
+          matchesStatus =
+            submission?.status === "passed" &&
+            submission.is_representative;
+          break;
+
+        case "all":
+        default:
+          matchesStatus = true;
+          break;
+      }
 
       return matchesSearch && matchesStatus;
     });
+
+    // ==========================================
+    // SORT
+    // ==========================================
 
     if (sortNewest) {
       result.sort((a, b) => {
@@ -542,6 +604,7 @@ export default function SubmissionsPage() {
 
     return result;
   }, [students, search, statusFilter, sortNewest]);
+
 
   /* =====================================================
      LOGOUT
@@ -1364,82 +1427,95 @@ function exportToExcel() {
         </header>
 
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-gray-900">
-              Lọc:
-            </span>
+          <div className="flex flex-wrap items-center gap-4">
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("all")}
-              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
-                statusFilter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              TẤT CẢ
-            </button>
+            {/* FILTER */}
+            <div className="flex flex-1 flex-wrap items-center gap-3">
+              <label
+                htmlFor="submission-filter"
+                className="text-lg font-bold text-gray-900"
+              >
+                Lọc:
+              </label>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("passed")}
-              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
-                statusFilter === "passed"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              ĐẠT
-            </button>
+              <select
+                id="submission-filter"
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as SubmissionFilter)
+                }
+                className="min-w-[240px] cursor-pointer rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 outline-none transition hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="all">
+                  Tất cả hồ sơ
+                </option>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("failed")}
-              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
-                statusFilter === "failed"
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              KHÔNG ĐẠT
-            </button>
+                <option value="not_submitted">
+                  Chưa nộp
+                </option>
 
-            <button
-              type="button"
-              onClick={() => setStatusFilter("consider")}
-              className={`w-[130px] cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
-                statusFilter === "consider"
-                  ? "bg-yellow-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              XEM XÉT
-            </button>
+                <option value="submitted">
+                  Đã nộp - Chưa duyệt
+                </option>
 
-            <button
-              type="button"
-              onClick={() => setSortNewest((prev) => !prev)}
-              className={`cursor-pointer rounded-lg px-4 py-4 text-sm font-medium transition ${
-                sortNewest
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {sortNewest ? "MỚI NHẤT ↓" : "SẮP XẾP: MẶC ĐỊNH"}
-            </button>
+                <option value="consider">
+                  Xem xét
+                </option>
 
-            <div className="ml-4 menu-btn-wrapper-inline">
+                <option value="passed">
+                  Đạt
+                </option>
+
+                <option value="failed">
+                  Không đạt
+                </option>
+
+                <option value="university">
+                  Đạt - Cấp trường
+                </option>
+
+                <option value="representative">
+                  Đạt - Tiêu biểu
+                </option>
+              </select>
+
+              {/* SORT */}
               <button
                 type="button"
-                onClick={exportToExcel}
-                className="menu-btn menu-btn-gray"
+                onClick={() => setSortNewest((prev) => !prev)}
+                className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  sortNewest
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
               >
-                📊 Tải Excel
+                {sortNewest
+                  ? "MỚI NHẤT ↓"
+                  : "SẮP XẾP: MẶC ĐỊNH"}
               </button>
             </div>
+
+            {/* EXPORT */}
+            <button
+              type="button"
+              onClick={exportToExcel}
+              className="menu-btn menu-btn-inline menu-btn-gray"
+            >
+              📊 Tải Excel
+            </button>
+
           </div>
+
+          {/* SỐ LƯỢNG */}
+          <p className="mt-3 text-sm text-gray-500">
+            Hiển thị{" "}
+            <span className="font-semibold text-gray-800">
+              {filteredStudents.length}
+            </span>{" "}
+            / {students.length} sinh viên
+          </p>
         </div>
+
 
         {/* ============================================
             SEARCH

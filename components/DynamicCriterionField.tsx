@@ -50,7 +50,7 @@ export default function DynamicCriterionField({
 
       {criterion.input_type === "text" ? (
         <textarea
-          rows={32}
+          rows={5}
           maxLength={2000}
           value={value}
           onChange={(event) => onChange(event.target.value)}

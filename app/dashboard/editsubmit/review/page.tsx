@@ -880,9 +880,10 @@ async function cleanupOldSubmissions(
 
       </div>
 
+      
       {showBackAlert && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -895,51 +896,100 @@ async function cleanupOldSubmissions(
             aria-modal="true"
             aria-labelledby="back-alert-title"
             aria-describedby="back-alert-description"
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
-            <div className="mb-4 flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                <span className="text-xl text-amber-700">!</span>
+            {/* Header cảnh báo */}
+            <div className="px-6 pt-6">
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-7 w-7 text-amber-600"
+                  aria-hidden="true"
+                >
+                  <path d="M10.3 3.9 1.8 18.2a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                  <path d="M12 9v4" />
+                  <path d="M12 17h.01" />
+                </svg>
               </div>
 
-              <div>
-                <h2
-                  id="back-alert-title"
-                  className="text-lg font-bold text-gray-900"
-                >
-                  Xác nhận quay lại chỉnh sửa?
-                </h2>
+              <h2
+                id="back-alert-title"
+                className="text-xl font-bold tracking-tight text-gray-900"
+              >
+                Bạn chưa nộp hồ sơ!
+              </h2>
 
-                <p
-                  id="back-alert-description"
-                  className="mt-2 text-sm leading-6 text-gray-600"
+              <p
+                id="back-alert-description"
+                className="mt-3 text-sm leading-6 text-gray-600"
+              >
+                Bạn đã hoàn tất việc khai báo thông tin, nhưng{" "}
+                <strong className="font-semibold text-red-600">
+                  chưa thực hiện bước xác nhận nộp hồ sơ cuối cùng.
+                </strong>
+              </p>
+
+              {/* Thông tin nhấn mạnh */}
+              <div className="mt-4 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mt-0.5 h-5 w-5 shrink-0 text-amber-600"
+                  aria-hidden="true"
                 >
-                  Các dữ liệu chỉnh sửa của bạn sẽ không được lưu.
-                  Bạn có chắc chắn muốn quay lại?
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+
+                <p className="text-sm leading-5 text-amber-900">
+                  Nếu thoát khỏi trang này, hồ sơ của bạn sẽ{" "}
+                  <strong>chưa được ghi nhận là đã nộp</strong> và bản
+                    nháp cũng sẽ <strong> không được lưu.</strong>
+                  <br />
+                  (Bạn có thể lưu hồ sơ hiện tại ở nút xác nhận bên dưới)
                 </p>
+              
               </div>
+
+              <p className="mt-4 text-sm font-medium text-gray-800">
+                Bạn có chắc chắn muốn thoát?
+              </p>
             </div>
 
-            <div className="flex justify-end gap-3">
+            {/* Footer nút hành động */}
+            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setShowBackAlert(false)}
-                className="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
+                className="cursor-pointer rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
               >
-                Không, ở lại
+                Ở lại nộp hồ sơ
               </button>
 
               <button
                 type="button"
-                onClick={() => router.push("/dashboard/editsubmit")}
-                className="cursor-pointer rounded-lg bg-sv5t-blue px-4 py-2 font-medium text-white transition hover:opacity-90"
+                onClick={() => router.push("/dashboard")}
+                className="cursor-pointer rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
               >
-                Có, quay lại
+                Vẫn thoát
               </button>
             </div>
           </div>
         </div>
       )}
+
     </main>
   );
 }

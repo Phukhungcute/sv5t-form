@@ -933,6 +933,15 @@ useEffect(() => {
           </p>
         </div>
 
+        <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <span className="text-base">⚠️</span>
+          <p className="leading-relaxed">
+            <strong>Lưu ý:</strong> Hệ thống hỗ trợ lưu nháp tự động tại mục này.
+            Dữ liệu nháp chỉ được lưu và có thể khôi phục trên
+            <strong> cùng một thiết bị và trình duyệt</strong>.
+          </p>
+        </div>
+
         {/* CÁC MỤC */}
 
         <div className="space-y-6">
