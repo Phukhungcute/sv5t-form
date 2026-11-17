@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACADEMIC_YEAR, FACULTY_NAME_NORMAL } from "@/lib/constants";
 import { useReviewCriteria } from "@/lib/useReviewCriteria";
 import { INTEGRATION_GROUPS } from "@/lib/review-criteria";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown , Loader2 , Download } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
 type Student = {
@@ -185,6 +185,15 @@ export default function SubmissionsPage() {
   const [awardPhotosLoading, setAwardPhotosLoading] = useState(false);
   const [awardListOpen, setAwardListOpen] = useState(true);
 
+  const [awardParticipationFilter, setAwardParticipationFilter] =
+    useState<"all" | "yes" | "no" | "pending">("all");
+
+  const [awardPhotoFilter, setAwardPhotoFilter] =
+    useState<"all" | "uploaded" | "missing">("all");
+
+  const [isDownloadingAwardPhotos, setIsDownloadingAwardPhotos] =
+    useState(false);
+
   const [selectedAwardMssv, setSelectedAwardMssv] = useState<string[]>([]);
 
   const awardStudents = students
@@ -201,6 +210,28 @@ export default function SubmissionsPage() {
         file_path: photo?.file_path ?? null,
       };
     });
+  
+  const filteredAwardStudents = awardStudents.filter((item) => {
+    // Lọc trạng thái tham gia
+    const matchesParticipation =
+      awardParticipationFilter === "all" ||
+      (awardParticipationFilter === "yes" &&
+        item.participation === true) ||
+      (awardParticipationFilter === "no" &&
+        item.participation === false) ||
+      (awardParticipationFilter === "pending" &&
+        item.participation === null);
+
+    // Lọc trạng thái ảnh
+    const matchesPhoto =
+      awardPhotoFilter === "all" ||
+      (awardPhotoFilter === "uploaded" &&
+        !!item.file_path) ||
+      (awardPhotoFilter === "missing" &&
+        !item.file_path);
+
+    return matchesParticipation && matchesPhoto;
+  });
 
   async function loadAwardPhotos() {
     setAwardPhotosLoading(true);
@@ -707,8 +738,6 @@ export default function SubmissionsPage() {
     }
   }
 
-
-  
   async function openAwardPhoto(filePath: string) {
     // Mở tab ngay khi người dùng nhấn nút.
     const newTab = window.open("about:blank", "_blank");
@@ -764,6 +793,213 @@ export default function SubmissionsPage() {
       );
     }
   }
+  
+  
+  // Chuẩn hóa đường dẫn Storage
+  function normalizeAwardPhotoPath(filePath: string): string {
+    let path = filePath.trim();
+
+    if (path.startsWith("/")) {
+      path = path.slice(1);
+    }
+
+    if (path.startsWith("student-awards/")) {
+      path = path.slice("student-awards/".length);
+    }
+
+    return path;
+  }
+
+  // Chuyển ảnh sang JPEG
+  async function convertToJpeg(blob: Blob): Promise<Blob> {
+    const bitmap = await createImageBitmap(blob);
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Không thể xử lý ảnh.");
+      }
+
+      // Nền trắng để xử lý ảnh có nền trong suốt
+      context.fillStyle = "#FFFFFF";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      context.drawImage(bitmap, 0, 0);
+
+      const jpegBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(new Error("Không thể chuyển ảnh sang JPEG."));
+            }
+          },
+          "image/jpeg",
+          0.95
+        );
+      });
+
+      return jpegBlob;
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  // HÀM TẢI ZIP CHUNG
+  async function downloadAwardPhotos(
+    targetStudents: AwardStudent[],
+    zipFileName: string
+  ): Promise<void> {
+    if (isDownloadingAwardPhotos) return;
+
+    const studentsWithPhotos = targetStudents.filter(
+      (item) => item.file_path
+    );
+
+    if (studentsWithPhotos.length === 0) {
+      alert("Không có ảnh tuyên dương trong danh sách đã chọn.");
+      return;
+    }
+
+    setIsDownloadingAwardPhotos(true);
+
+    try {
+      const JSZip = (await import("jszip")).default;
+
+      const zip = new JSZip();
+      const folder = zip.folder("Anh_tuyen_duong");
+
+      if (!folder) {
+        throw new Error("Không thể tạo thư mục ZIP.");
+      }
+
+      let successCount = 0;
+      const failedStudents: string[] = [];
+      const usedFileNames = new Set<string>();
+
+      for (const student of studentsWithPhotos) {
+        try {
+          const filePath = student.file_path;
+
+          if (!filePath) continue;
+
+          const path = normalizeAwardPhotoPath(filePath);
+
+            // Tải ảnh từ Supabase Storage
+            const { data, error } = await supabase.storage
+              .from("student-awards")
+              .download(path);
+
+            if (error || !data) {
+              throw error ?? new Error("Không tải được ảnh.");
+            }
+
+            // Chuyển ảnh về JPEG
+            const jpegBlob = await convertToJpeg(data);
+
+            // Chuẩn hóa tên file
+            const safeName = student.full_name
+              .trim()
+              .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+              .replace(/[. ]+$/g, "");
+
+            const baseName = safeName || student.mssv;
+
+            // Tránh trùng tên file
+            let fileName = `${baseName}.jpg`;
+
+            if (usedFileNames.has(fileName.toLowerCase())) {
+              fileName = `${baseName} - ${student.mssv}.jpg`;
+            }
+
+            usedFileNames.add(fileName.toLowerCase());
+
+            folder.file(fileName, jpegBlob);
+
+            successCount++;
+          } catch (error) {
+            console.error(
+              `Lỗi tải ảnh ${student.mssv}:`,
+              error
+            );
+
+            failedStudents.push(student.mssv);
+          }
+        }
+
+        if (successCount === 0) {
+          throw new Error("Không tải được ảnh của sinh viên nào.");
+        }
+
+        // Tạo ZIP
+        const zipBlob = await zip.generateAsync({
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: {
+            level: 6,
+          },
+        });
+
+        const url = URL.createObjectURL(zipBlob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = zipFileName;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        // Thông báo kết quả
+        if (failedStudents.length > 0) {
+          alert(
+            `Đã tải thành công ${successCount}/${studentsWithPhotos.length} ảnh.\n\n` +
+            `Không tải được ảnh của MSSV:\n${failedStudents.join(", ")}`
+          );
+        } else {
+          alert(`Đã tải thành công ${successCount} ảnh tuyên dương!`);
+        }
+      } catch (error) {
+        console.error("DOWNLOAD AWARD PHOTOS ERROR:", error);
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Có lỗi xảy ra khi tạo file ZIP."
+        );
+      } finally {
+        setIsDownloadingAwardPhotos(false);
+      }
+    }
+
+    // TẢI TẤT CẢ
+    async function downloadAllAwardPhotos(): Promise<void> {
+      await downloadAwardPhotos(
+        awardStudents,
+        "Anh_tuyen_duong.zip"
+      );
+    }
+
+    // TẢI SINH VIÊN ĐÃ CHỌN
+    async function downloadSelectedAwardPhotos(): Promise<void> {
+      const selectedStudents = awardStudents.filter((item) =>
+        selectedAwardMssv.includes(item.mssv)
+      );
+
+      await downloadAwardPhotos(
+        selectedStudents,
+        "Anh_tuyen_duong_da_chon.zip"
+      );
+    }
+
 
 
   /* =====================================================
@@ -1803,41 +2039,97 @@ function exportToExcel() {
                   </div>
                 ) : (
                   <>
-                    {/* CHỌN TẤT CẢ / BỎ CHỌN TẤT CẢ */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-5 py-4">
-                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={
-                            awardStudents.length > 0 &&
-                            awardStudents.every((item) =>
-                              selectedAwardMssv.includes(item.mssv)
-                            )
-                          }
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedAwardMssv(
-                                awardStudents.map((item) => item.mssv)
-                              );
-                            } else {
-                              setSelectedAwardMssv([]);
-                            }
-                          }}
-                          className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                        />
-                        Chọn tất cả
-                      </label>
+                    
+              {/* BỘ LỌC */}
+              <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-5 py-4">
 
-                      <span className="text-sm text-gray-500">
-                        Đã chọn{" "}
-                        {
-                          awardStudents.filter((item) =>
-                            selectedAwardMssv.includes(item.mssv)
-                          ).length
-                        }{" "}
-                        / {awardStudents.length} sinh viên
-                      </span>
-                    </div>
+                <span className="text-sm font-semibold text-gray-700">
+                  Lọc:
+                </span>
+
+                {/* LỌC THAM GIA */}
+                <select
+                  value={awardParticipationFilter}
+                  onChange={(e) =>
+                    setAwardParticipationFilter(
+                      e.target.value as typeof awardParticipationFilter
+                    )
+                  }
+                  className="min-w-[190px] cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                >
+                  <option value="all">Tất cả trạng thái tham gia</option>
+                  <option value="yes">Được tham gia</option>
+                  <option value="no">Không tham gia</option>
+                  <option value="pending">Chưa phản hồi</option>
+                </select>
+
+                {/* LỌC ẢNH */}
+                <select
+                  value={awardPhotoFilter}
+                  onChange={(e) =>
+                    setAwardPhotoFilter(
+                      e.target.value as typeof awardPhotoFilter
+                    )
+                  }
+                  className="min-w-[190px] cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="uploaded">Đã gửi ảnh</option>
+                  <option value="missing">Chưa gửi ảnh</option>
+                </select>
+
+                {/* CHỌN TẤT CẢ SINH VIÊN ĐANG HIỂN THỊ */}
+                <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredAwardStudents.length > 0 &&
+                      filteredAwardStudents.every((item) =>
+                        selectedAwardMssv.includes(item.mssv)
+                      )
+                    }
+                    onChange={(e) => {
+                      const visibleMssv = filteredAwardStudents.map(
+                        (item) => item.mssv
+                      );
+
+                      if (e.target.checked) {
+                        setSelectedAwardMssv((prev) =>
+                          Array.from(new Set([...prev, ...visibleMssv]))
+                        );
+                      } else {
+                        setSelectedAwardMssv((prev) =>
+                          prev.filter((mssv) => !visibleMssv.includes(mssv))
+                        );
+                      }
+                    }}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                  />
+                  Chọn tất cả
+                </label>
+              </div>
+
+              {/* THÔNG TIN SỐ LƯỢNG */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-5 py-3">
+                <span className="text-sm text-gray-500">
+                  Hiển thị{" "}
+                  <strong className="text-gray-800">
+                    {filteredAwardStudents.length}
+                  </strong>
+                  {" "}/ {awardStudents.length} sinh viên
+                </span>
+
+                <span className="text-sm text-gray-500">
+                  Đã chọn{" "}
+                  <strong className="text-green-700">
+                    {selectedAwardMssv.filter((mssv) =>
+                      awardStudents.some((item) => item.mssv === mssv)
+                    ).length}
+                  </strong>
+                  {" "}sinh viên
+                </span>
+              </div>
+
 
                     {/* HEADER CỘT */}
                     <div className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b bg-gray-50 px-5 py-4 text-sm font-semibold text-gray-700">
@@ -1850,12 +2142,15 @@ function exportToExcel() {
 
                     {/* BODY */}
                     <div className="max-h-[600px] overflow-y-auto">
-                    {awardStudents.length === 0 ? (
+                    
+                    {filteredAwardStudents.length === 0 ? (
                       <div className="px-6 py-12 text-center text-gray-500">
-                        Chưa có sinh viên nào đạt.
+                        {awardStudents.length === 0
+                          ? "Chưa có sinh viên nào đạt."
+                          : "Không có sinh viên phù hợp với bộ lọc."}
                       </div>
                     ) : (
-                      awardStudents.map((item) => {
+                      filteredAwardStudents.map((item) => {
                         const isSelected = selectedAwardMssv.includes(item.mssv);
 
                         const participationStatus =
@@ -1888,9 +2183,7 @@ function exportToExcel() {
                                   setSelectedAwardMssv((prev) =>
                                     e.target.checked
                                       ? [...prev, item.mssv]
-                                      : prev.filter(
-                                          (mssv) => mssv !== item.mssv
-                                        )
+                                      : prev.filter((mssv) => mssv !== item.mssv)
                                   );
                                 }}
                                 aria-label={`Chọn ${item.full_name}`}
@@ -1922,17 +2215,13 @@ function exportToExcel() {
                               {item.file_path ? (
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    openAwardPhoto(item.file_path!)
-                                  }
+                                  onClick={() => openAwardPhoto(item.file_path!)}
                                   className="cursor-pointer font-medium text-blue-600 hover:underline"
                                 >
                                   🖼️ Xem
                                 </button>
                               ) : (
-                                <span className="text-sm text-gray-300">
-                                  —
-                                </span>
+                                <span className="text-sm text-gray-300">—</span>
                               )}
                             </div>
                           </div>
@@ -1940,24 +2229,78 @@ function exportToExcel() {
                       })
                     )}
 
-                    {/* FOOTER */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 px-5 py-4">
-                      <p className="text-sm text-gray-500">
-                        Chọn sinh viên để chuẩn bị tải ảnh tuyên dương.
-                      </p>
 
+                    
+                  </div>
+                  
+                  {/* FOOTER */}
+                  <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-5 py-4 shadow-[0_-3px_8px_rgba(0,0,0,0.05)]">
+
+                    <p className="text-sm text-gray-500">
+                      Đã chọn{" "}
+                      <strong className="text-gray-800">
+                        {selectedAwardMssv.filter((mssv) =>
+                          awardStudents.some((item) => item.mssv === mssv)
+                        ).length}
+                      </strong>
+                      {" "}sinh viên
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3">
+
+                      {/* TẢI TẤT CẢ */}
                       <button
                         type="button"
-                        disabled={selectedAwardMssv.length === 0}
-                        onClick={() => {
-                          alert("Chức năng tải ZIP sẽ được bổ sung ở bước tiếp theo.");
-                        }}
-                        className="menu-btn menu-btn-inline menu-btn-green"
+                        disabled={
+                          isDownloadingAwardPhotos ||
+                          !awardStudents.some((item) => item.file_path)
+                        }
+                        onClick={downloadAllAwardPhotos}
+                        className="menu-btn menu-btn-inline menu-btn-green inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Tải ảnh đã chọn
+                        {isDownloadingAwardPhotos ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Đang tải ảnh...
+                          </>
+                        ) : (
+                          <>
+                            <Download size={16} />
+                            Tải tất cả ảnh
+                          </>
+                        )}
                       </button>
+
+                      {/* TẢI ẢNH ĐÃ CHỌN */}
+                      <button
+                        type="button"
+                        disabled={
+                          isDownloadingAwardPhotos ||
+                          !awardStudents.some(
+                            (item) =>
+                              selectedAwardMssv.includes(item.mssv) &&
+                              item.file_path
+                          )
+                        }
+                        onClick={downloadSelectedAwardPhotos}
+                        className="menu-btn menu-btn-inline menu-btn-green inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isDownloadingAwardPhotos ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Đang xử lý...
+                          </>
+                        ) : (
+                          <>
+                            <Download size={16} />
+                            Tải ảnh đã chọn
+                          </>
+                        )}
+                      </button>
+
                     </div>
                   </div>
+
                   </>
                 )}
               </div>
