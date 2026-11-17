@@ -1,3 +1,4 @@
+// Test page result
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,8 +8,8 @@ import {
   FACULTY_NAME_NORMAL,
   ACADEMIC_YEAR,
 } from "@/lib/constants";
-import { initializeStudentPage } from "@/lib/initializeStudentPage";
 import { Success } from "@/lib/success-notification";
+import { initializeStudentPage } from "@/lib/initializeStudentPage";
 
 type Student = {
   mssv: string;
@@ -475,19 +476,64 @@ export default function ResultPage() {
       return (
         <>
           <p>
-            Chúc mừng{" "}
+            Chào{" "}
             <strong>
               {displayName}
-            </strong>{" "}
-            đã xuất sắc đạt danh hiệu
-            “Sinh viên 5 tốt”! 🎉
+            </strong>{" "},
           </p>
 
           <p className="mt-3">
-            Ban xét duyệt ghi nhận những
-            nỗ lực và thành tích của bạn
-            trong quá trình xét chọn.
+            Sau quá trình xét duyệt khách quan và đối chiếu các tiêu chí 
+            theo quy định, chúng mình vui mừng thông báo rằng bạn đã 
+            xuất sắc đạt Danh hiệu <strong>“Sinh viên 5 tốt{submission?.is_representative ? " Tiêu biểu" : ""}” khoa 
+            Giáo dục Tiểu học năm học {ACADEMIC_YEAR}</strong>.
           </p>
+
+          <p className="mt-3">
+            Danh hiệu này là kết quả của sự cố gắng, tinh thần rèn luyện 
+            và thái độ nghiêm túc trong học tập, hoạt động phong trào 
+            cũng như sự phát triển bản thân của bạn. Hy vọng đây sẽ 
+            là động lực để bạn tiếp tục duy trì, phát huy và lan tỏa 
+            những giá trị tốt đẹp trong thời gian tới.
+          </p>
+
+          {status === "passed" && submission?.is_university_level && (
+            <div>
+              <p className="mt-3">
+                Bên cạnh đó, sau khi xem xét hồ sơ, chúng mình nhận thấy 
+                bạn đã có nhiều tiêu chí đáp ứng danh hiệu <strong>“Sinh viên 5 Tốt” 
+                cấp trường</strong>. Vì vậy, chúng mình khuyến khích bạn tiếp tục hoàn 
+                thiện hồ sơ theo các biểu mẫu đính kèm và gửi về email 
+                hsv.gdth@sgu.edu.vn với tiêu đề “HỒ SƠ XÉT SV5T CẤP TRƯỜNG” 
+                trước ngày 22/11/2026 (Chủ nhật). Chúng mình sẽ hỗ trợ rà soát, 
+                góp ý và hoàn thiện hồ sơ trước khi gửi về Hội Sinh viên trường nhé!
+              </p>
+              <p className="mt-3">
+                Mẫu hồ sơ: 
+                <a
+                  href="https://drive.google.com/drive/folders/1n_5saaoSihneFnJlbKhxrrDbQsUtv6hl?usp=sharing"
+                  className="ml-2 text-blue-600 underline hover:text-blue-800"
+                >
+                  Xem tại đây
+                </a>
+              </p>
+              <p className="mt-3">
+                Tham gia vào nhóm Zalo hỗ trợ để nhận thông báo nhanh nhất: 
+                <a
+                  href="https://zalo.me/g/lumd16zyu8tgktd7hxpq"
+                  className="ml-2 text-blue-600 underline hover:text-blue-800"
+                >
+                  Ấn vào đây
+                </a>
+              </p>
+              <p className="mt-3">
+                Hy vọng với những nỗ lực và sự cố gắng của mình, bạn sẽ tiếp tục 
+                chinh phục thành công danh hiệu “Sinh viên 5 Tốt” trường Đại học 
+                Sài Gòn năm 2026. Chúc bạn thật nhiều may mắn và sớm gặt hái được 
+                thành quả xứng đáng nhé!
+              </p>
+            </div>
+          )}
         </>
       );
     }
@@ -496,19 +542,42 @@ export default function ResultPage() {
       return (
         <>
           <p>
-            Rất tiếc,{" "}
+            Chào{" "}
             <strong>
               {displayName}
-            </strong>{" "}
-            chưa đạt yêu cầu để được công
-            nhận danh hiệu “Sinh viên 5 tốt”
-            trong đợt xét duyệt này.
+            </strong>{" "},
           </p>
 
           <p className="mt-3">
-            Bạn có thể tiếp tục cố gắng và
-            hoàn thiện các tiêu chí trong
-            những đợt xét duyệt tiếp theo.
+            Lời đầu tiên, Liên Chi hội Sinh viên khoa cùng với Câu lạc bộ 
+            “Sinh viên 5 tốt” xin gửi lời cảm ơn chân thành đến bạn vì đã 
+            dành sự quan tâm và tham gia gửi hồ sơ xét chọn danh hiệu 
+            “Sinh viên 5 tốt” năm học {ACADEMIC_YEAR}. Chúng mình hiểu rằng 
+            để hoàn thiện hồ sơ và đáp ứng các tiêu chí của danh hiệu, 
+            bạn đã dành rất nhiều thời gian, nỗ lực và sự cố gắng trong 
+            suốt quá trình rèn luyện và phát triển bản thân - và điều đó 
+            thật sự rất đáng trân trọng.
+          </p>
+
+          <p className="mt-3">
+            Tuy nhiên, sau quá trình rà soát và xét duyệt theo quy định, 
+            chúng mình rất tiếc khi phải thông tin rằng bạn hiện vẫn chưa 
+            đáp ứng đầy đủ các tiêu chí để đạt Danh hiệu “Sinh viên 5 tốt” 
+            trong năm học này.
+          </p>
+
+          <p className="mt-3">
+            Dù kết quả chưa như kỳ vọng, nhưng hành trình bạn theo đuổi danh 
+            hiệu đã thể hiện sự chủ động, trách nhiệm và ý chí phấn đấu của 
+            bản thân. Chúng mình tin rằng với tinh thần đó, bạn hoàn toàn có 
+            thể chạm đến danh hiệu ý nghĩa này trong năm học tiếp theo. 
+            Hẹn gặp bạn đợt xét chọn danh hiệu "Sinh viên 5 tốt" ở năm học tới!
+          </p>
+
+          <p className="mt-3">
+            Nếu bạn có bất kỳ thắc mắc nào liên quan đến kết quả xét duyệt, 
+            vui lòng phản hồi qua email <strong> hsv.gdth@sgu.edu.vn </strong>
+            trước ngày <strong>16/11/2026</strong> để được hỗ trợ nhé!
           </p>
         </>
       );
@@ -682,8 +751,8 @@ export default function ResultPage() {
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
 
               <p className="font-semibold text-gray-900">
-                Xác nhận tham gia được Lễ tuyên dương danh hiệu "Sinh viên 5 tốt" Năm học 2025 - 2026
-                khoa Giáo dục Tiểu học
+                Xác nhận tham gia được Lễ tuyên dương danh hiệu "Sinh viên 5 tốt" Năm học
+                 {ACADEMIC_YEAR} khoa Giáo dục Tiểu học
               </p>
 
               <div className="mt-2 text-sm leading-6 text-gray-600">
@@ -868,14 +937,31 @@ export default function ResultPage() {
           {status === "passed" && (
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
               <h2 className="font-semibold text-gray-900">
-                Ảnh tuyên dương của bạn
+                Tải lên ảnh chân dung của bạn
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-gray-600">
-                Vui lòng tải lên ảnh tuyên dương của bạn.
-                Chấp nhận định dạng JPG, dung lượng
-                không quá 4 MB.
+              <div className="mt-2 text-sm leading-6 text-gray-600">
+              <p>
+                Ảnh được sử dụng để đăng tải trên các phương tiện truyền thông
+                nhằm mục đích tuyên dương các gương "Sinh viên 5 tốt".
               </p>
+
+              <p>
+                Yêu cầu về ảnh:
+              </p>
+              <p>
+                1/ Định dạng ảnh JPG, dung lượng không quá 4 MB.
+              </p>
+              <p>
+                2/ Trang phục áo Hội Sinh viên Việt Nam/áo sơ mi trắng và quần hoặc váy đen dài qua gối.
+              </p>
+              <p>
+                3/ Chụp rõ mặt, bố cục nửa người, không quá cận mặt.
+              </p>
+              <p>
+                
+              </p>
+              </div>
 
               {/* Ô tải ảnh */}
 

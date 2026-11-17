@@ -1,5 +1,9 @@
 # SV5T Form — Changelog
 
+## v1.3.52 — 17/11/2026
+
+Fix result page
+
 ## v1.3.51 — 15/11/2026
 
 Thêm lưu ý draft ở các trang submit, proof và editproof. Thêm alert không draft ở editsubmit. Thêm bộ lọc submissions ở trang admin/submissions
