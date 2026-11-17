@@ -1,5 +1,9 @@
 # SV5T Form — Changelog
 
+## v1.3.53 — 17/11/2026
+
+Minor result page fix
+
 ## v1.3.52 — 17/11/2026
 
 Fix result page

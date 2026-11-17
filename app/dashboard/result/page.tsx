@@ -577,7 +577,7 @@ export default function ResultPage() {
           <p className="mt-3">
             Nếu bạn có bất kỳ thắc mắc nào liên quan đến kết quả xét duyệt, 
             vui lòng phản hồi qua email <strong> hsv.gdth@sgu.edu.vn </strong>
-            trước ngày <strong>16/11/2026</strong> để được hỗ trợ nhé!
+            trước ngày <strong>18/11/2026</strong> để được hỗ trợ nhé!
           </p>
         </>
       );
@@ -751,8 +751,7 @@ export default function ResultPage() {
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-6">
 
               <p className="font-semibold text-gray-900">
-                Xác nhận tham gia được Lễ tuyên dương danh hiệu "Sinh viên 5 tốt" Năm học
-                 {ACADEMIC_YEAR} khoa Giáo dục Tiểu học
+                Xác nhận tham gia được Lễ tuyên dương danh hiệu "Sinh viên 5 tốt" Năm học {ACADEMIC_YEAR} khoa Giáo dục Tiểu học
               </p>
 
               <div className="mt-2 text-sm leading-6 text-gray-600">
