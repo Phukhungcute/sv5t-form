@@ -322,7 +322,7 @@ export default function ResultPage() {
     if (!file || !student) return;
 
     const allowedTypes = ["image/jpeg"];
-    const maxSize = 4 * 1024 * 1024;
+    const maxSize = 6 * 1024 * 1024; // Kích cỡ ảnh tuyên dương tối đa 6MB
 
     if (!allowedTypes.includes(file.type)) {
       alert("Vui lòng chọn ảnh JPG.");
@@ -330,7 +330,7 @@ export default function ResultPage() {
     }
 
     if (file.size > maxSize) {
-      alert("Ảnh không được vượt quá 4 MB.");
+      alert("Ảnh không được vượt quá 6 MB.");
       return;
     }
 
@@ -949,7 +949,7 @@ export default function ResultPage() {
                 Yêu cầu về ảnh:
               </p>
               <p>
-                1/ Định dạng ảnh JPG, dung lượng không quá 4 MB.
+                1/ Định dạng ảnh JPG, dung lượng không quá 6 MB.
               </p>
               <p>
                 2/ Trang phục áo Hội Sinh viên Việt Nam/áo sơ mi trắng và quần hoặc váy đen dài qua gối.
@@ -990,7 +990,7 @@ export default function ResultPage() {
                   </span>
 
                   <span className="mt-1 text-sm text-gray-500">
-                    JPG · Tối đa 4 MB
+                    JPG · Tối đa 6 MB
                   </span>
 
                   <input
