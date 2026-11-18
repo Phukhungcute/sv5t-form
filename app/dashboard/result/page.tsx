@@ -504,7 +504,7 @@ export default function ResultPage() {
                 bạn đã có nhiều tiêu chí đáp ứng danh hiệu <strong>“Sinh viên 5 Tốt” 
                 cấp trường</strong>. Vì vậy, chúng mình khuyến khích bạn tiếp tục hoàn 
                 thiện hồ sơ theo các biểu mẫu đính kèm và gửi về email 
-                hsv.gdth@sgu.edu.vn với tiêu đề “HỒ SƠ XÉT SV5T CẤP TRƯỜNG” 
+                danhhieusinhvien5tot.gdth.sgu@gmail.com với tiêu đề “HỒ SƠ XÉT SV5T CẤP TRƯỜNG” 
                 trước ngày 22/11/2026 (Chủ nhật). Chúng mình sẽ hỗ trợ rà soát, 
                 góp ý và hoàn thiện hồ sơ trước khi gửi về Hội Sinh viên trường nhé!
               </p>

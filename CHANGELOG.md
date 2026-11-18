@@ -1,5 +1,9 @@
 # SV5T Form — Changelog
 
+## v1.3.56 — 18/11/2026
+
+change mail
+
 ## v1.3.55 — 17/11/2026
 
 Thêm bộ lọc phản hồi và nút tải ảnh
