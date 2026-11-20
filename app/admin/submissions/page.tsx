@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACADEMIC_YEAR, FACULTY_NAME_NORMAL } from "@/lib/constants";
 import { useReviewCriteria } from "@/lib/useReviewCriteria";
 import { INTEGRATION_GROUPS } from "@/lib/review-criteria";
-import { ChevronDown , Loader2 , Download } from "lucide-react";
+import { ChevronDown , Loader2 , Download , X , Search} from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 
 type Student = {
@@ -188,6 +188,9 @@ export default function SubmissionsPage() {
   const [awardParticipationFilter, setAwardParticipationFilter] =
     useState<"all" | "yes" | "no" | "pending">("all");
 
+  const [awardSearchQuery, setAwardSearchQuery] = 
+    useState("");
+
   const [awardPhotoFilter, setAwardPhotoFilter] =
     useState<"all" | "uploaded" | "missing">("all");
 
@@ -212,6 +215,14 @@ export default function SubmissionsPage() {
     });
   
   const filteredAwardStudents = awardStudents.filter((item) => {
+    // Lọc tìm kiếm
+    const query = awardSearchQuery.trim().toLowerCase();
+
+    const matchesSearch =
+      !query ||
+      item.mssv.toLowerCase().includes(query) ||
+      item.full_name.toLowerCase().includes(query);
+    
     // Lọc trạng thái tham gia
     const matchesParticipation =
       awardParticipationFilter === "all" ||
@@ -230,7 +241,7 @@ export default function SubmissionsPage() {
       (awardPhotoFilter === "missing" &&
         !item.file_path);
 
-    return matchesParticipation && matchesPhoto;
+    return matchesSearch && matchesParticipation && matchesPhoto;
   });
 
   async function loadAwardPhotos() {
@@ -1662,115 +1673,6 @@ function exportToExcel() {
 
         </header>
 
-        <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-4">
-
-            {/* FILTER */}
-            <div className="flex flex-1 flex-wrap items-center gap-3">
-              <label
-                htmlFor="submission-filter"
-                className="text-lg font-bold text-gray-900"
-              >
-                Lọc:
-              </label>
-
-              <select
-                id="submission-filter"
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as SubmissionFilter)
-                }
-                className="min-w-[240px] cursor-pointer rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 outline-none transition hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="all">
-                  Tất cả hồ sơ
-                </option>
-
-                <option value="not_submitted">
-                  Chưa nộp
-                </option>
-
-                <option value="submitted">
-                  Đã nộp - Chưa duyệt
-                </option>
-
-                <option value="consider">
-                  Xem xét
-                </option>
-
-                <option value="passed">
-                  Đạt
-                </option>
-
-                <option value="failed">
-                  Không đạt
-                </option>
-
-                <option value="university">
-                  Đạt - Cấp trường
-                </option>
-
-                <option value="representative">
-                  Đạt - Tiêu biểu
-                </option>
-              </select>
-
-              {/* SORT */}
-              <button
-                type="button"
-                onClick={() => setSortNewest((prev) => !prev)}
-                className={`cursor-pointer rounded-xl px-4 py-3 text-sm font-medium transition ${
-                  sortNewest
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {sortNewest
-                  ? "MỚI NHẤT ↓"
-                  : "SẮP XẾP: MẶC ĐỊNH"}
-              </button>
-            </div>
-
-            {/* EXPORT */}
-            <button
-              type="button"
-              onClick={exportToExcel}
-              className="menu-btn menu-btn-inline menu-btn-gray"
-            >
-              📊 Tải Excel
-            </button>
-
-          </div>
-
-          {/* SỐ LƯỢNG */}
-          <p className="mt-3 text-sm text-gray-500">
-            Hiển thị{" "}
-            <span className="font-semibold text-gray-800">
-              {filteredStudents.length}
-            </span>{" "}
-            / {students.length} sinh viên
-          </p>
-        </div>
-
-
-        {/* ============================================
-            SEARCH
-        ============================================ */}
-
-        <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-          
-          <input
-            type="text"
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            placeholder="Tìm theo MSSV hoặc họ tên..."
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-
-        </section>
-
         {/* ============================================
             LIST — HỒ SƠ SINH VIÊN
         ============================================ */}
@@ -1806,6 +1708,92 @@ function exportToExcel() {
           {/* BODY */}
           {submissionsListOpen && (
             <div className="border-t border-blue-200">
+              {/* Seach DS SV */}
+              <div className="mt-3 ml-3 mr-3 relative min-w-[240px] flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm theo tên, MSSV..."
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-10 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* BỘ LỌC */}
+              <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-5 py-4">
+
+                <span className="text-sm font-semibold text-gray-700">
+                  Lọc:
+                </span>
+
+                {/* LỌC TRẠNG THÁI */}
+                <select
+                  id="submission-filter"
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as SubmissionFilter)
+                  }
+                  className="min-w-[240px] cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="all">Tất cả hồ sơ</option>
+                  <option value="not_submitted">Chưa nộp</option>
+                  <option value="submitted">Đã nộp - Chưa duyệt</option>
+                  <option value="consider">Xem xét</option>
+                  <option value="passed">Đạt</option>
+                  <option value="failed">Không đạt</option>
+                  <option value="university">Đạt - Cấp trường</option>
+                  <option value="representative">Đạt - Tiêu biểu</option>
+                </select>
+
+                {/* SẮP XẾP */}
+                <button
+                  type="button"
+                  onClick={() => setSortNewest((prev) => !prev)}
+                  className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    sortNewest
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {sortNewest ? "MỚI NHẤT ↓" : "SẮP XẾP: MẶC ĐỊNH"}
+                </button>
+
+                {/* EXPORT */}
+                <button
+                  type="button"
+                  onClick={exportToExcel}
+                  className="menu-btn menu-btn-inline menu-btn-gray"
+                >
+                  📊 Tải Excel
+                </button>
+              </div>
+
+              {/* THÔNG TIN SỐ LƯỢNG */}
+              <div className="border-b border-gray-200 px-5 py-3">
+                <span className="text-sm text-gray-500">
+                  Hiển thị{" "}
+                  <strong className="text-gray-800">
+                    {filteredStudents.length}
+                  </strong>
+                  {" "}/ {students.length} sinh viên
+                </span>
+              </div>
               {/* KHUNG CUỘN */}
               <div className="max-h-[600px] overflow-auto">
                 <table className="w-full min-w-[1200px] border-collapse text-sm">
@@ -2005,7 +1993,7 @@ function exportToExcel() {
             DANH SÁCH PHẢN HỒI CỦA SINH VIÊN ĐẠT
         ===================================================== */}
 
-        <section className="mt-8 overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-sm">
+        <section className="mt-6 overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-sm">
           {/* HEADER ĐÓNG / MỞ */}
           <button
             type="button"
@@ -2039,6 +2027,32 @@ function exportToExcel() {
                   </div>
                 ) : (
                   <>
+              {/* Seach DS SV tuyên dương */}
+              <div className="mt-3 ml-3 mr-3 relative min-w-[240px] flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+
+                <input
+                  type="text"
+                  value={awardSearchQuery}
+                  onChange={(e) => setAwardSearchQuery(e.target.value)}
+                  placeholder="Tìm theo tên, MSSV..."
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-10 text-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+
+                {awardSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAwardSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
                     
               {/* BỘ LỌC */}
               <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-5 py-4">
@@ -2129,7 +2143,6 @@ function exportToExcel() {
                   {" "}sinh viên
                 </span>
               </div>
-
 
                     {/* HEADER CỘT */}
                     <div className="grid grid-cols-[44px_minmax(140px,1fr)_minmax(180px,1.5fr)_minmax(150px,1fr)_minmax(130px,1fr)] items-center border-b bg-gray-50 px-5 py-4 text-sm font-semibold text-gray-700">
